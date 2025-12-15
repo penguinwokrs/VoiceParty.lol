@@ -5,6 +5,7 @@ import app from "./index";
 const env = {
 	RIOT_CLIENT_ID: "test-client-id",
 	RIOT_CLIENT_SECRET: "test-client-secret",
+	// biome-ignore lint/suspicious/noExplicitAny: Mocking KV
 	VC_SESSIONS: {} as any, // Mock KV
 };
 
@@ -48,6 +49,7 @@ describe("Worker Auth", () => {
 });
 
 describe("Session Management", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: Mocking KV
 	const mockKV: any = {
 		put: vi.fn(),
 		get: vi.fn(),
@@ -61,6 +63,7 @@ describe("Session Management", () => {
 	it("POST /sessions creates a new session", async () => {
 		const res = await app.request("/sessions", { method: "POST" }, env);
 		expect(res.status).toBe(200);
+		// biome-ignore lint/suspicious/noExplicitAny: Test assertion
 		const body = (await res.json()) as any;
 		expect(body.sessionId).toBeDefined();
 		expect(body.users).toEqual([]);
@@ -87,6 +90,7 @@ describe("Session Management", () => {
 		);
 
 		expect(res.status).toBe(200);
+		// biome-ignore lint/suspicious/noExplicitAny: Test assertion
 		const body = (await res.json()) as any;
 		expect(body.users).toHaveLength(1);
 		expect(body.users[0].userId).toBe("user-1");
