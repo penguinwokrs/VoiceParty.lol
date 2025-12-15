@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
-import { Counter } from '../Counter'
+import { Counter } from './index'
 
 describe('Counter', () => {
     it('renders initial count', () => {

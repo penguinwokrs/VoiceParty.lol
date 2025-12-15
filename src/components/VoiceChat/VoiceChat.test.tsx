@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
-import { VoiceChat } from '../VoiceChat'
+import { describe, it, expect } from 'vitest'
+import { VoiceChat } from './index'
 
 describe('VoiceChat', () => {
     it('renders login form initially', () => {
