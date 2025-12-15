@@ -1,23 +1,36 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import { VoiceChat } from "./index";
 
 describe("VoiceChat", () => {
 	it("renders login form initially", () => {
-		render(<VoiceChat />);
+		render(
+			<MemoryRouter>
+				<VoiceChat />
+			</MemoryRouter>,
+		);
 		expect(screen.getByText("Voice Chat")).toBeInTheDocument();
 		expect(screen.getByLabelText("User ID")).toBeInTheDocument();
 		expect(screen.getByLabelText("Session ID")).toBeInTheDocument();
 	});
 
 	it("Create New button is disabled without User ID", () => {
-		render(<VoiceChat />);
+		render(
+			<MemoryRouter>
+				<VoiceChat />
+			</MemoryRouter>,
+		);
 		const createBtn = screen.getByText("Create New");
 		expect(createBtn).toBeDisabled();
 	});
 
 	it("updates input fields", () => {
-		render(<VoiceChat />);
+		render(
+			<MemoryRouter>
+				<VoiceChat />
+			</MemoryRouter>,
+		);
 		const userInput = screen.getByLabelText("User ID") as HTMLInputElement;
 		fireEvent.change(userInput, { target: { value: "test-user" } });
 		expect(userInput.value).toBe("test-user");
@@ -30,7 +43,14 @@ describe("VoiceChat", () => {
 	});
 
 	it("simulates joining a session", async () => {
-		render(<VoiceChat />);
+		render(
+			<MemoryRouter initialEntries={["/"]}>
+				<Routes>
+					<Route path="/" element={<VoiceChat />} />
+					<Route path="/:sessionId" element={<VoiceChat />} />
+				</Routes>
+			</MemoryRouter>,
+		);
 		const userInput = screen.getByLabelText("User ID");
 		fireEvent.change(userInput, { target: { value: "test-user" } });
 

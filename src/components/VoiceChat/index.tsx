@@ -18,7 +18,8 @@ import {
 	TextField,
 	Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "../Button"; // Reusing our MUI wrapper
 
 type User = {
@@ -34,37 +35,41 @@ type Session = {
 };
 
 export const VoiceChat = () => {
-	const [sessionId, setSessionId] = useState("");
-	const [userId, setUserId] = useState("");
+	const { sessionId: routeSessionId } = useParams();
+	const navigate = useNavigate();
+	const [sessionId, setSessionId] = useState(routeSessionId || "");
+	const [userId, setUserId] = useState(
+		() => localStorage.getItem("vp_user_id") || "",
+	);
 	const [currentSession, setCurrentSession] = useState<Session | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 	const [isMuted, setIsMuted] = useState(false);
 
+	useEffect(() => {
+		if (userId) {
+			localStorage.setItem("vp_user_id", userId);
+		}
+	}, [userId]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Only trigger when route param changes
+	useEffect(() => {
+		if (routeSessionId && userId && !currentSession) {
+			joinSession(routeSessionId);
+		}
+		if (routeSessionId) {
+			setSessionId(routeSessionId);
+		}
+	}, [routeSessionId]);
+
 	const createSession = async () => {
 		setLoading(true);
 		setError("");
 		try {
-			// In a real app, point to the deployed worker URL
-			// For creating a session, we strictly post to the worker endpoint
-			// Mocking fetch for creating session
-			/* 
-			const res = await fetch('http://localhost:8787/sessions', { method: 'POST' });
-			const data = await res.json();
-			*/
-
 			// Simulation for UI demo
 			await new Promise((r) => setTimeout(r, 800));
 			const mockSessionId = crypto.randomUUID().slice(0, 8);
-			const data = {
-				sessionId: mockSessionId,
-				users: [],
-				createdAt: Date.now(),
-			};
-
-			setSessionId(data.sessionId);
-			// Auto join after create?
-			joinSession(data.sessionId);
+			navigate(`/${mockSessionId}`);
 		} catch (_err) {
 			setError("Failed to create session");
 		} finally {
@@ -77,20 +82,16 @@ export const VoiceChat = () => {
 			setError("Session ID and User ID are required");
 			return;
 		}
+		// If we are not on the correct route, navigate there first
+		// But if we are already there (auto-join case), just proceed
+		if (!routeSessionId || targetSessionId !== routeSessionId) {
+			navigate(`/${targetSessionId}`);
+			return;
+		}
+
 		setLoading(true);
 		setError("");
 		try {
-			// Mocking fetch for joining
-			/*
-			const res = await fetch(`http://localhost:8787/sessions/${targetSessionId}/join`, {
-			  method: 'POST',
-			  body: JSON.stringify({ userId }),
-			  headers: { 'Content-Type': 'application/json' }
-			});
-			if (!res.ok) throw new Error(await res.text());
-			const data = await res.json();
-			*/
-
 			// Simulation
 			await new Promise((r) => setTimeout(r, 800));
 			setCurrentSession({
@@ -115,6 +116,7 @@ export const VoiceChat = () => {
 	const leaveSession = () => {
 		setCurrentSession(null);
 		setSessionId("");
+		navigate("/");
 	};
 
 	if (currentSession) {
@@ -195,6 +197,7 @@ export const VoiceChat = () => {
 						onChange={(e) => setSessionId(e.target.value)}
 						fullWidth
 						placeholder="Enter session ID to join"
+						disabled={!!routeSessionId}
 					/>
 
 					<Stack direction="row" spacing={2}>

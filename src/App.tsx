@@ -16,6 +16,8 @@ const darkTheme = createTheme({
 	},
 });
 
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+
 function App() {
 	return (
 		<ThemeProvider theme={darkTheme}>
@@ -41,7 +43,12 @@ function App() {
 						alignItems: "center",
 					}}
 				>
-					<VoiceChat />
+					<BrowserRouter>
+						<Routes>
+							<Route path="/" element={<VoiceChat />} />
+							<Route path="/:sessionId" element={<VoiceChat />} />
+						</Routes>
+					</BrowserRouter>
 
 					<Card sx={{ p: 4, width: "100%", maxWidth: 400 }}>
 						<Typography variant="h6" gutterBottom>
