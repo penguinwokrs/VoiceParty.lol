@@ -1,15 +1,15 @@
 {
-	"name": "lobump-voice-chat",
+	"name": "voiceparty",
 	"main": "worker/index.ts",
 	"compatibility_date": "2024-04-01",
 	"kv_namespaces": [
 		{
 			"binding": "VC_SESSIONS",
-			"id": "replaced-by-actual-id",
-			"preview_id": "replaced-by-actual-preview-id"
+			"id": "voiceparty-kv",
+			"preview_id": "voiceparty-kv-preview"
 		}
 	],
-	"calls": {
-		"app_name": "voiceparty.lol"
+	"vars": {
+		"REALTIME_KIT_APP_ID": "voiceparty.lol"
 	}
 }
