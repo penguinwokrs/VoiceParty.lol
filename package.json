@@ -4,9 +4,7 @@
 	"version": "0.0.0",
 	"type": "module",
 	"scripts": {
-		"dev": "concurrently \"pnpm dev:frontend\" \"pnpm dev:worker\"",
-		"dev:frontend": "vite",
-		"dev:worker": "wrangler dev",
+		"dev": "wrangler pages dev -- pnpm vite",
 		"build": "tsc -b && vite build",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
@@ -17,6 +15,8 @@
 		"type-check": "tsc --noEmit"
 	},
 	"dependencies": {
+		"@cloudflare/realtimekit": "^1.2.1",
+		"@cloudflare/realtimekit-react": "^1.2.1",
 		"@emotion/react": "^11.14.0",
 		"@emotion/styled": "^11.14.1",
 		"@fontsource/roboto": "^5.2.9",

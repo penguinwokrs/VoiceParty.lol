@@ -1,3 +1,5 @@
+// @ts-expect-error - Assuming package structure as we can't read d.ts
+import { useRealtime } from "@cloudflare/realtimekit-react";
 import CallEndIcon from "@mui/icons-material/CallEnd";
 import MicIcon from "@mui/icons-material/Mic";
 import MicOffIcon from "@mui/icons-material/MicOff";
@@ -20,7 +22,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "../Button"; // Reusing our MUI wrapper
+import { Button } from "../Button";
 
 type User = {
 	userId: string;
@@ -34,6 +36,15 @@ type Session = {
 	createdAt: number;
 };
 
+type JoinResponse = {
+	session: Session;
+	realtime?: {
+		meetingId: string;
+		token: string;
+		appId: string;
+	};
+};
+
 export const VoiceChat = () => {
 	const { sessionId: routeSessionId } = useParams();
 	const navigate = useNavigate();
@@ -44,7 +55,8 @@ export const VoiceChat = () => {
 	const [currentSession, setCurrentSession] = useState<Session | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
-	const [isMuted, setIsMuted] = useState(false);
+
+	const { join, leave, toggleMic, isMicMuted, isConnected } = useRealtime();
 
 	useEffect(() => {
 		if (userId) {
@@ -52,7 +64,7 @@ export const VoiceChat = () => {
 		}
 	}, [userId]);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Only trigger when route param changes
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
 		if (routeSessionId && userId && !currentSession) {
 			joinSession(routeSessionId);
@@ -60,18 +72,19 @@ export const VoiceChat = () => {
 		if (routeSessionId) {
 			setSessionId(routeSessionId);
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [routeSessionId]);
 
 	const createSession = async () => {
 		setLoading(true);
 		setError("");
 		try {
-			// Simulation for UI demo
-			await new Promise((r) => setTimeout(r, 800));
-			const mockSessionId = crypto.randomUUID().slice(0, 8);
-			navigate(`/${mockSessionId}`);
-		} catch (_err) {
-			setError("Failed to create session");
+			const res = await fetch("/api/sessions", { method: "POST" });
+			if (!res.ok) throw new Error("Failed to create session");
+			const session: Session = await res.json();
+			navigate(`/${session.sessionId}`);
+		} catch (err) {
+			setError((err as Error).message);
 		} finally {
 			setLoading(false);
 		}
@@ -82,8 +95,7 @@ export const VoiceChat = () => {
 			setError("Session ID and User ID are required");
 			return;
 		}
-		// If we are not on the correct route, navigate there first
-		// But if we are already there (auto-join case), just proceed
+
 		if (!routeSessionId || targetSessionId !== routeSessionId) {
 			navigate(`/${targetSessionId}`);
 			return;
@@ -92,28 +104,38 @@ export const VoiceChat = () => {
 		setLoading(true);
 		setError("");
 		try {
-			// Simulation
-			await new Promise((r) => setTimeout(r, 800));
-			setCurrentSession({
-				sessionId: targetSessionId,
-				users: [
-					{
-						userId: userId,
-						joinedAt: Date.now(),
-						iconUrl: `https://api.dicebear.com/9.x/avataaars/svg?seed=${userId}`,
-					},
-					{ userId: "other-user", joinedAt: Date.now() },
-				],
-				createdAt: Date.now(),
+			const res = await fetch(`/api/sessions/${targetSessionId}/join`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ userId }),
 			});
+
+			if (!res.ok) {
+				const text = await res.text();
+				throw new Error(text || "Failed to join session");
+			}
+
+			const data: JoinResponse = await res.json();
+			setCurrentSession(data.session);
+
+			// Connect to RealtimeKit if credentials provided
+			if (data.realtime) {
+				try {
+					await join(data.realtime.token); // Assuming join takes the token
+				} catch (rtErr) {
+					console.error("Realtime connection failed:", rtErr);
+					setError("Joined session but failed to connect to audio");
+				}
+			}
 		} catch (err) {
-			setError((err as Error).message || "Failed to join session");
+			setError((err as Error).message);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const leaveSession = () => {
+	const handleLeave = () => {
+		leave();
 		setCurrentSession(null);
 		setSessionId("");
 		navigate("/");
@@ -125,6 +147,13 @@ export const VoiceChat = () => {
 				<CardContent>
 					<Typography variant="h5" gutterBottom>
 						Session: {currentSession.sessionId}
+					</Typography>
+					<Typography
+						variant="caption"
+						display="block"
+						color={isConnected ? "success.main" : "error.main"}
+					>
+						Status: {isConnected ? "Connected" : "Disconnected"}
 					</Typography>
 					<Box sx={{ my: 2 }}>
 						<Typography variant="subtitle2" color="text.secondary">
@@ -148,16 +177,16 @@ export const VoiceChat = () => {
 					</Box>
 					<Stack direction="row" spacing={2} justifyContent="center" mt={3}>
 						<IconButton
-							color={isMuted ? "error" : "primary"}
-							onClick={() => setIsMuted(!isMuted)}
+							color={isMicMuted ? "error" : "primary"}
+							onClick={toggleMic}
 							size="large"
 							sx={{ border: "1px solid currentColor" }}
 						>
-							{isMuted ? <MicOffIcon /> : <MicIcon />}
+							{isMicMuted ? <MicOffIcon /> : <MicIcon />}
 						</IconButton>
 						<IconButton
 							color="error"
-							onClick={leaveSession}
+							onClick={handleLeave}
 							size="large"
 							sx={{ border: "1px solid currentColor" }}
 						>

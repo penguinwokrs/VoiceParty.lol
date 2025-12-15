@@ -1,7 +1,19 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { VoiceChat } from "./index";
+
+// Mock the RealtimeKit hook
+vi.mock("@cloudflare/realtimekit-react", () => ({
+	useRealtime: () => ({
+		join: vi.fn(),
+		leave: vi.fn(),
+		toggleMic: vi.fn(),
+		isMicMuted: false,
+		isConnected: false,
+		peers: [],
+	}),
+}));
 
 describe("VoiceChat", () => {
 	it("renders login form initially", () => {
@@ -43,6 +55,21 @@ describe("VoiceChat", () => {
 	});
 
 	it("simulates joining a session", async () => {
+		// Mock fetch
+		global.fetch = vi.fn().mockResolvedValue({
+			ok: true,
+			text: () => Promise.resolve(""),
+			json: () =>
+				Promise.resolve({
+					session: {
+						sessionId: "session-123",
+						users: [{ userId: "test-user", joinedAt: Date.now() }],
+						createdAt: Date.now(),
+					},
+					realtime: { token: "mock-token", meetingId: "mock-id" },
+				}),
+		});
+
 		render(
 			<MemoryRouter initialEntries={["/"]}>
 				<Routes>

@@ -1,0 +1,8 @@
+name = "voiceparty"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-04-01"
+
+[[kv_namespaces]]
+binding = "VC_SESSIONS"
+id = "voiceparty-kv"
+preview_id = "voiceparty-kv-preview"
