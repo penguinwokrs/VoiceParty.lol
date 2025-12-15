@@ -1,5 +1,3 @@
-// @ts-expect-error - Assuming package structure as we can't read d.ts
-import { useRealtime } from "@cloudflare/realtimekit-react";
 import CallEndIcon from "@mui/icons-material/CallEnd";
 import MicIcon from "@mui/icons-material/Mic";
 import MicOffIcon from "@mui/icons-material/MicOff";
@@ -23,6 +21,7 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "../Button";
+import { useRealtime } from "./useRealtime";
 
 type User = {
 	userId: string;
