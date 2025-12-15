@@ -15,7 +15,7 @@ import {
     CircularProgress,
     Alert
 } from '@mui/material';
-import { Button } from './Button'; // Reusing our MUI wrapper
+import { Button } from '../Button'; // Reusing our MUI wrapper
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
 import CallEndIcon from '@mui/icons-material/CallEnd';

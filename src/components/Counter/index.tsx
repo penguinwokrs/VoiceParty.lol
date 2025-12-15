@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button } from './Button'
+import { Button } from '../Button'
 import { Box, Typography, Stack } from '@mui/material'
 
 export const Counter = () => {
