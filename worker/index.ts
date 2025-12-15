@@ -66,6 +66,7 @@ app.get("/auth/callback", async (c) => {
 type User = {
 	userId: string;
 	joinedAt: number;
+	iconUrl?: string; // Optional icon URL
 };
 
 type Session = {
@@ -90,7 +91,10 @@ app.post("/sessions", async (c) => {
 
 app.post("/sessions/:id/join", async (c) => {
 	const sessionId = c.req.param("id");
-	const { userId } = await c.req.json<{ userId: string }>();
+	const { userId, iconUrl } = await c.req.json<{
+		userId: string;
+		iconUrl?: string;
+	}>();
 
 	if (!userId) {
 		return c.text("User ID is required", 400);
@@ -111,7 +115,7 @@ app.post("/sessions/:id/join", async (c) => {
 		return c.json(session); // User already joined, return session
 	}
 
-	session.users.push({ userId, joinedAt: Date.now() });
+	session.users.push({ userId, joinedAt: Date.now(), iconUrl });
 	await c.env.VC_SESSIONS.put(`session:${sessionId}`, JSON.stringify(session));
 
 	return c.json(session);

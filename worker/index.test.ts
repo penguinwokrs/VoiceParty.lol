@@ -83,7 +83,10 @@ describe("Session Management", () => {
 			`/sessions/${sessionId}/join`,
 			{
 				method: "POST",
-				body: JSON.stringify({ userId: "user-1" }),
+				body: JSON.stringify({
+					userId: "user-1",
+					iconUrl: "http://example.com/icon.png",
+				}),
 				headers: { "Content-Type": "application/json" },
 			},
 			env,
@@ -94,6 +97,7 @@ describe("Session Management", () => {
 		const body = (await res.json()) as any;
 		expect(body.users).toHaveLength(1);
 		expect(body.users[0].userId).toBe("user-1");
+		expect(body.users[0].iconUrl).toBe("http://example.com/icon.png");
 
 		expect(mockKV.put).toHaveBeenCalled();
 	});

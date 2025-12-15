@@ -24,6 +24,7 @@ import { Button } from "../Button"; // Reusing our MUI wrapper
 type User = {
 	userId: string;
 	joinedAt: number;
+	iconUrl?: string;
 };
 
 type Session = {
@@ -95,7 +96,11 @@ export const VoiceChat = () => {
 			setCurrentSession({
 				sessionId: targetSessionId,
 				users: [
-					{ userId: userId, joinedAt: Date.now() },
+					{
+						userId: userId,
+						joinedAt: Date.now(),
+						iconUrl: `https://api.dicebear.com/9.x/avataaars/svg?seed=${userId}`,
+					},
 					{ userId: "other-user", joinedAt: Date.now() },
 				],
 				createdAt: Date.now(),
@@ -127,8 +132,8 @@ export const VoiceChat = () => {
 							{currentSession.users.map((u) => (
 								<ListItem key={u.userId}>
 									<ListItemAvatar>
-										<Avatar>
-											<PersonIcon />
+										<Avatar src={u.iconUrl} alt={u.userId}>
+											{!u.iconUrl && <PersonIcon />}
 										</Avatar>
 									</ListItemAvatar>
 									<ListItemText
