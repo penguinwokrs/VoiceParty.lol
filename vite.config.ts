@@ -6,6 +6,10 @@ import { defineConfig } from "vitest/config";
 // https://vite.dev/config/
 export default defineConfig({
 	plugins: [react()],
+	define: {
+		"process.env": {},
+		global: "window",
+	},
 	server: {
 		host: true,
 	},
