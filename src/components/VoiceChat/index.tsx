@@ -189,15 +189,6 @@ export const VoiceChat = () => {
 						placeholder="Enter your name"
 					/>
 
-					<Box sx={{ position: "relative" }}>
-						<Typography
-							variant="caption"
-							sx={{ display: "block", mb: 1, textAlign: "center" }}
-						>
-							OR
-						</Typography>
-					</Box>
-
 					<TextField
 						label="Session ID"
 						value={sessionId}
