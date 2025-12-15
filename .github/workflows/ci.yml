@@ -33,7 +33,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run Biome Check (Lint & Format)
-        run: pnpm lint
+        run: pnpm check:ci
 
       - name: Run Tests
         run: pnpm test -- run
