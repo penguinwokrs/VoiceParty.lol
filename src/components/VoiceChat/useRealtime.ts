@@ -3,44 +3,79 @@ import { useCallback, useEffect, useState } from "react";
 
 export const useRealtime = () => {
 	const [client, initClient] = useRealtimeKitClient();
-	// biome-ignore lint/nursery/useExplicitType: <explanation>
-	const [, setTick] = useState(0);
+	const [isConnected, setIsConnected] = useState(false);
+	const [isMicMuted, setIsMicMuted] = useState(true);
 
 	useEffect(() => {
-		if (!client) return;
+		if (!client) {
+			setIsConnected(false);
+			return;
+		}
 
-		const handleUpdate = () => setTick((t) => t + 1);
+		// Initial states
+		setIsConnected(!!client.peerId);
+		// biome-ignore lint/suspicious/noExplicitAny: library types issue
+		const c = client as any;
+		if (c.self?.media) {
+			setIsMicMuted(!c.self.media.audioEnabled);
+		}
 
-		// @ts-expect-error - addListener is not in the type definition but used in library internals
-		if (typeof client.addListener === "function") {
-			// @ts-expect-error
-			client.addListener("*", handleUpdate);
+		const handleUpdate = () => {
+			// biome-ignore lint/suspicious/noExplicitAny: library types issue
+			const cur = client as any;
+			if (cur.self?.media) {
+				setIsMicMuted(!cur.self.media.audioEnabled);
+			}
+			setIsConnected(!!client.peerId);
+		};
+
+		// RealtimeKit event handling
+		// biome-ignore lint/suspicious/noExplicitAny: check for methods at runtime
+		const eventSource = client as any;
+
+		// Support both 'on' and 'addListener' (older versions/internals)
+		if (typeof eventSource.on === "function") {
+			eventSource.on("peer.joined", handleUpdate);
+			eventSource.on("peer.left", handleUpdate);
+			eventSource.on("self.updated", handleUpdate);
+			eventSource.on("connected", handleUpdate);
+			eventSource.on("disconnected", handleUpdate);
+		} else if (typeof eventSource.addListener === "function") {
+			eventSource.addListener("*", handleUpdate);
 		}
 
 		return () => {
-			// @ts-expect-error
-			if (typeof client.removeListener === "function") {
-				// @ts-expect-error
-				client.removeListener("*", handleUpdate);
+			if (typeof eventSource.off === "function") {
+				eventSource.off("peer.joined", handleUpdate);
+				eventSource.off("peer.left", handleUpdate);
+				eventSource.off("self.updated", handleUpdate);
+				eventSource.off("connected", handleUpdate);
+				eventSource.off("disconnected", handleUpdate);
+			} else if (typeof eventSource.removeListener === "function") {
+				eventSource.removeListener("*", handleUpdate);
 			}
 		};
 	}, [client]);
 
-	const isConnected = !!client?.peerId;
-
-	const isMicMuted = (() => {
-		if (!client?.self?.media) return true;
-		return !client.self.media.audioEnabled;
-	})();
-
 	const join = useCallback(
-		async (token: string) => {
-			// Initialize with the token
-			const newClient = await initClient({
-				authToken: token,
-			});
-			if (newClient) {
-				await newClient.join();
+		async (token: string, appId?: string) => {
+			try {
+				// biome-ignore lint/suspicious/noExplicitAny: debugging
+				const config: any = {
+					authToken: token,
+				};
+				if (appId) {
+					config.appId = appId;
+				}
+				const newClient = await initClient(config);
+				if (newClient) {
+					await newClient.join();
+				}
+			} catch (e) {
+				console.error("Failed to join RealtimeKit:", e);
+				// We don't re-throw here to allow UI to handle the error state if needed,
+				// or we could throw. Ideally the component handles it.
+				throw e;
 			}
 		},
 		[initClient],
@@ -53,11 +88,13 @@ export const useRealtime = () => {
 	}, [client]);
 
 	const toggleMic = useCallback(async () => {
-		if (client?.self?.media) {
-			if (client.self.media.audioEnabled) {
-				await client.self.media.disableAudio();
+		// biome-ignore lint/suspicious/noExplicitAny: library types issue
+		const c = client as any;
+		if (c?.self?.media) {
+			if (c.self.media.audioEnabled) {
+				await c.self.media.disableAudio();
 			} else {
-				await client.self.media.enableAudio();
+				await c.self.media.enableAudio();
 			}
 		}
 	}, [client]);
@@ -66,7 +103,8 @@ export const useRealtime = () => {
 		join,
 		leave,
 		toggleMic,
-		isMicMuted: !!isMicMuted,
-		isConnected: !!isConnected,
+		isMicMuted,
+		isConnected,
+		client,
 	};
 };

@@ -66,9 +66,9 @@ export const VoiceChat = () => {
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
 	useEffect(() => {
 		if (routeSessionId && userId && !currentSession) {
+			setSessionId(routeSessionId);
 			joinSession(routeSessionId);
-		}
-		if (routeSessionId) {
+		} else if (routeSessionId && routeSessionId !== sessionId) {
 			setSessionId(routeSessionId);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -82,6 +82,7 @@ export const VoiceChat = () => {
 			if (!res.ok) throw new Error("Failed to create session");
 			const session: Session = await res.json();
 			navigate(`/${session.sessionId}`);
+			// If we are already on the page (e.g. from home), logic updates
 		} catch (err) {
 			setError((err as Error).message);
 		} finally {
@@ -97,6 +98,10 @@ export const VoiceChat = () => {
 
 		if (!routeSessionId || targetSessionId !== routeSessionId) {
 			navigate(`/${targetSessionId}`);
+			// The useEffect will trigger joinSession again, so we can return here
+			// But if we want instant feedback, we can proceed.
+			// However, navigating unmounts/remounts components usually unless router preserves state.
+			// Here we assume it might remount.
 			return;
 		}
 
@@ -120,21 +125,26 @@ export const VoiceChat = () => {
 			// Connect to RealtimeKit if credentials provided
 			if (data.realtime) {
 				try {
-					await join(data.realtime.token); // Assuming join takes the token
+					await join(data.realtime.token, data.realtime.appId);
 				} catch (rtErr) {
 					console.error("Realtime connection failed:", rtErr);
-					setError("Joined session but failed to connect to audio");
+					// We don't block the UI, but show warning
+					setError(
+						"Joined session but voice connection failed (check console/creds)",
+					);
 				}
 			}
 		} catch (err) {
 			setError((err as Error).message);
+			// If session fetch failed, we shouldn't show the session UI
+			setCurrentSession(null);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const handleLeave = () => {
-		leave();
+	const handleLeave = async () => {
+		await leave();
 		setCurrentSession(null);
 		setSessionId("");
 		navigate("/");
@@ -142,18 +152,56 @@ export const VoiceChat = () => {
 
 	if (currentSession) {
 		return (
-			<Card sx={{ maxWidth: 400, mx: "auto", mt: 4 }}>
+			<Card sx={{ maxWidth: 400, mx: "auto", mt: 4, position: "relative" }}>
+				{loading && (
+					<Box
+						sx={{
+							position: "absolute",
+							top: 0,
+							left: 0,
+							right: 0,
+							height: 4,
+							overflow: "hidden",
+						}}
+					>
+						<CircularProgress
+							size={20}
+							thickness={5}
+							sx={{ display: "block", mx: "auto", mt: 1 }}
+						/>
+					</Box>
+				)}
 				<CardContent>
 					<Typography variant="h5" gutterBottom>
-						Session: {currentSession.sessionId}
+						Session: {currentSession.sessionId.slice(0, 8)}...
 					</Typography>
-					<Typography
-						variant="caption"
-						display="block"
-						color={isConnected ? "success.main" : "error.main"}
-					>
-						Status: {isConnected ? "Connected" : "Disconnected"}
-					</Typography>
+					<Stack direction="row" alignItems="center" spacing={1} mb={2}>
+						<Box
+							sx={{
+								width: 10,
+								height: 10,
+								borderRadius: "50%",
+								bgcolor: isConnected ? "success.main" : "error.main",
+							}}
+						/>
+						<Typography
+							variant="caption"
+							color={isConnected ? "success.main" : "error.main"}
+						>
+							{isConnected ? "Voice Connected" : "Voice Disconnected"}
+						</Typography>
+					</Stack>
+
+					{error && (
+						<Alert
+							severity="warning"
+							onClose={() => setError("")}
+							sx={{ mb: 2 }}
+						>
+							{error}
+						</Alert>
+					)}
+
 					<Box sx={{ my: 2 }}>
 						<Typography variant="subtitle2" color="text.secondary">
 							Participants ({currentSession.users.length}/5)
@@ -162,7 +210,14 @@ export const VoiceChat = () => {
 							{currentSession.users.map((u) => (
 								<ListItem key={u.userId}>
 									<ListItemAvatar>
-										<Avatar src={u.iconUrl} alt={u.userId}>
+										<Avatar
+											src={u.iconUrl}
+											alt={u.userId}
+											sx={{
+												bgcolor:
+													u.userId === userId ? "primary.main" : "grey.600",
+											}}
+										>
 											{!u.iconUrl && <PersonIcon />}
 										</Avatar>
 									</ListItemAvatar>
@@ -180,6 +235,7 @@ export const VoiceChat = () => {
 							onClick={toggleMic}
 							size="large"
 							sx={{ border: "1px solid currentColor" }}
+							disabled={!isConnected}
 						>
 							{isMicMuted ? <MicOffIcon /> : <MicIcon />}
 						</IconButton>
@@ -235,7 +291,7 @@ export const VoiceChat = () => {
 							onClick={createSession}
 							disabled={loading || !userId}
 						>
-							Create New
+							{loading ? <CircularProgress size={24} /> : "Create New"}
 						</Button>
 						<Button
 							fullWidth

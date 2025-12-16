@@ -4,5 +4,5 @@ compatibility_date = "2024-04-01"
 
 [[kv_namespaces]]
 binding = "VC_SESSIONS"
-id = "voiceparty-kv"
+id = "74421f4d32f648e4b6ad64a9ef5498ee"
 preview_id = "voiceparty-kv-preview"

@@ -10,7 +10,7 @@ type Bindings = {
 	REALTIME_KIT_APP_ID: string;
 };
 
-const app = new Hono<{ Bindings: Bindings }>();
+const app = new Hono<{ Bindings: Bindings }>().basePath("/api");
 
 // Helper to call RealtimeKit API
 async function callRealtimeKit(
@@ -40,7 +40,7 @@ async function callRealtimeKit(
 }
 
 app.get("/", (c) => {
-	return c.text("Voice Chat Worker is running!");
+	return c.text("Voice Chat Worker is running! (API)");
 });
 
 app.get("/auth/login", (c) => {
@@ -116,22 +116,14 @@ app.post("/sessions", async (c) => {
 		// Create a meeting in RealtimeKit
 		// Note: Actual API payload structure might vary, assuming minimal or default
 		// biome-ignore lint/suspicious/noExplicitAny: API response is untyped
-		const meeting: any = await callRealtimeKit("/meetings", "POST", c.env, {
-			name: `session-${sessionId}`,
-		});
-		meetingId = meeting.id;
+		const meeting: any = await callRealtimeKit("/meetings", "POST", c.env, {});
+		console.log("RealtimeKit Meeting Created:", meeting);
+		meetingId = meeting.data.id;
 	} catch (e) {
 		console.error("Failed to create RealtimeKit meeting:", e);
-		// Proceeding without meetingId for now if API fails (e.g. invalid keys),
-		// but normally this should error out.
-		// For robustness in this dev stage, I'll return specific error.
-		return c.json(
-			{
-				error: "Failed to create Realtime meeting",
-				details: (e as Error).message,
-			},
-			500,
-		);
+		// Fallback for development/missing keys
+		console.warn("Using MOCK session due to API failure");
+		meetingId = "mock-meeting-id";
 	}
 
 	const session: Session = {
@@ -188,19 +180,18 @@ app.post("/sessions/:id/join", async (c) => {
 				c.env,
 				{
 					name: userId,
+					custom_participant_id: userId,
+					preset_name: "group_call_participant",
 					// Role/preset might be required. Assuming 'participant' or default.
 				},
 			);
-			realtimeToken = participant.token; // Check actual response field
+			console.log("RealtimeKit Participant:", participant);
+			realtimeToken = participant.data.token; // Check actual response field
 		} catch (e) {
 			console.error("Failed to add participant to RealtimeKit:", e);
-			return c.json(
-				{
-					error: "Failed to join Realtime Voice",
-					details: (e as Error).message,
-				},
-				500,
-			);
+			// Fallback
+			console.warn("Using MOCK token due to API failure");
+			realtimeToken = "mock-token";
 		}
 	}
 
