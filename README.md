@@ -1,4 +1,4 @@
-# LoBump (VoiceParty)
+# VoiceParty.lol
 
 A real-time voice chat application designed for gamers, featuring "Game ID" based room creation and Riot Games authentication.
 
