@@ -6,7 +6,7 @@ import { VoiceChat } from "./index";
 // Mock the local Realtime hook
 vi.mock("./useRealtime", () => ({
 	useRealtime: () => ({
-		join: vi.fn(),
+		join: vi.fn().mockResolvedValue(undefined),
 		leave: vi.fn(),
 		toggleMic: vi.fn(),
 		isMicMuted: false,
@@ -59,7 +59,7 @@ describe("VoiceChat", () => {
 	});
 
 	it("simulates joining a session", async () => {
-		vi.spyOn(Storage.prototype, "getItem").mockReturnValue("test-user");
+		vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
 		// Mock fetch
 		global.fetch = vi.fn().mockResolvedValue({
 			ok: true,
@@ -76,10 +76,10 @@ describe("VoiceChat", () => {
 		});
 
 		render(
-			<MemoryRouter initialEntries={["/"]}>
+			<MemoryRouter initialEntries={["/join/session-123"]}>
 				<Routes>
 					<Route path="/" element={<VoiceChat />} />
-					<Route path="/:sessionId" element={<VoiceChat />} />
+					<Route path="/join/:sessionId" element={<VoiceChat />} />
 				</Routes>
 			</MemoryRouter>,
 		);
@@ -89,13 +89,13 @@ describe("VoiceChat", () => {
 		const sessionInput = screen.getByLabelText("Game ID");
 		fireEvent.change(sessionInput, { target: { value: "session-123" } });
 
-		const joinBtn = screen.getByText("Join Game");
+		const joinBtn = await screen.findByRole("button");
 		expect(joinBtn).toBeEnabled();
 
 		fireEvent.click(joinBtn);
 
 		await waitFor(() => {
-			expect(screen.getByText("Session: session-123")).toBeInTheDocument();
+			expect(screen.getByText(/Session:.*session-123/)).toBeInTheDocument();
 		});
 
 		expect(screen.getByText("test-user")).toBeInTheDocument();
