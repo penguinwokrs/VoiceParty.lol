@@ -11,6 +11,22 @@ export const useRealtime = () => {
 	// biome-ignore lint/suspicious/noExplicitAny: Peer type
 	const [peers, setPeers] = useState<any[]>([]);
 
+	// Initialize mute state helper
+	const updateMuteState = useCallback(() => {
+		if (!client) return;
+		// Try accessing audioEnabled directly from client.self (SelfMedia)
+		// biome-ignore lint/suspicious/noExplicitAny: library types
+		const self = client.self as any;
+		if (self) {
+			if (typeof self.audioEnabled === "boolean") {
+				setIsMicMuted(!self.audioEnabled);
+			} else if (self.media) {
+				// Fallback to media if direct access fails
+				setIsMicMuted(!self.media.audioEnabled);
+			}
+		}
+	}, [client]);
+
 	useEffect(() => {
 		if (isMock) return;
 
@@ -22,39 +38,42 @@ export const useRealtime = () => {
 		// Initial states
 		setIsConnected(!!client.peerId);
 
-		// client is typed as Client | null, but we checked !client above.
-		// However, types might not show self/media if they are optional or not in the main type?
-		// Let's assume the library provides a loose Client type or we need to cast for specifics.
-		// If Client definition is robust, this works. If not, we might need 'as any' back or a custom interface.
-		// Based on previous errors "Property 'on' does not exist on type 'Client'", the type IS 'Client'.
-		// Let's try attempting access. If it fails, I'll define an interface.
+		// Initial mute check
+		updateMuteState();
 
-		// biome-ignore lint/suspicious/noExplicitAny: Client type definition might be incomplete
-		const c = client as any;
-		if (c.self?.media) {
-			setIsMicMuted(!c.self.media.audioEnabled);
-		}
-
-		const handleUpdate = () => {
-			// biome-ignore lint/suspicious/noExplicitAny: Client type definition might be incomplete
-			const cur = client as any;
-			if (cur.self?.media) {
-				setIsMicMuted(!cur.self.media.audioEnabled);
-			}
-			setIsConnected(!!client.peerId);
-
-			// Update peers list
-			// Assuming client.peers comes as a Map or Object, need to convert to array
-			// If cur.peers is a collection we can iterate
-			if (cur.peers) {
-				// If it's a Map
-				if (cur.peers instanceof Map) {
-					setPeers(Array.from(cur.peers.values()));
-				} else if (typeof cur.peers === "object") {
-					// If it's an object/map
-					setPeers(Object.values(cur.peers));
+		const updatePeers = () => {
+			// biome-ignore lint/suspicious/noExplicitAny: library types
+			const c = client as any;
+			// Check for participants.joined which is the correct way to get active peers
+			if (c.participants?.joined) {
+				const joined = c.participants.joined;
+				if (typeof joined.toArray === "function") {
+					setPeers(joined.toArray());
+				} else if (joined instanceof Map) {
+					setPeers(Array.from(joined.values()));
+				} else {
+					console.warn("[useRealtime] Unknown participants structure", joined);
+					setPeers([]);
+				}
+			} else if (c.peers) {
+				// Fallback to legacy or incorrect 'peers' property if 'participants' is missing
+				const p = c.peers;
+				if (p instanceof Map) {
+					setPeers(Array.from(p.values()));
+				} else if (typeof p === "object") {
+					setPeers(Object.values(p));
 				}
 			}
+		};
+
+		const handleUpdate = (...args: any[]) => {
+			console.log("[useRealtime] handleUpdate triggered:", args);
+			updateMuteState();
+			setIsConnected(!!client.peerId);
+			// Add a small delay to allow internal state to update before reading participants
+			setTimeout(() => {
+				updatePeers();
+			}, 100);
 		};
 
 		// RealtimeKit event handling
@@ -63,27 +82,59 @@ export const useRealtime = () => {
 
 		// Support both 'on' and 'addListener' (older versions/internals)
 		if (typeof eventSource.on === "function") {
+			// 'peer.joined' is not in standard types, use 'peer/joined-internal' or fallback
 			eventSource.on("peer.joined", handleUpdate);
+			eventSource.on("peer/joined-internal", handleUpdate);
 			eventSource.on("peer.left", handleUpdate);
-			eventSource.on("self.updated", handleUpdate);
+			// 'self.updated' might not be emitted by client, check client.self events
+			eventSource.on("self.updated", handleUpdate); // Keep for backwards compat if it exists
 			eventSource.on("connected", handleUpdate);
 			eventSource.on("disconnected", handleUpdate);
+
+			// Listen for media track events which might indicate audio started
+			eventSource.on("websocket/new-consumer", handleUpdate);
+			eventSource.on("websocket/consumer-resumed", handleUpdate);
+			eventSource.on("media/update-active", handleUpdate);
+
+			// Listen to self events directly
+			if (client.self && typeof client.self.on === "function") {
+				// biome-ignore lint/suspicious/noExplicitAny: self events
+				const s = client.self as any;
+				s.on("audioUpdate", handleUpdate);
+				s.on("videoUpdate", handleUpdate);
+			}
 		} else if (typeof eventSource.addListener === "function") {
 			eventSource.addListener("*", handleUpdate);
 		}
 
+		// Backup: Poll for peer updates periodically to ensure consistency
+		const intervalId = setInterval(updatePeers, 2000);
+
 		return () => {
+			clearInterval(intervalId);
 			if (typeof eventSource.off === "function") {
+				// Use explicit event names for cleanup
 				eventSource.off("peer.joined", handleUpdate);
+				eventSource.off("peer/joined-internal", handleUpdate);
 				eventSource.off("peer.left", handleUpdate);
 				eventSource.off("self.updated", handleUpdate);
 				eventSource.off("connected", handleUpdate);
 				eventSource.off("disconnected", handleUpdate);
+				eventSource.off("websocket/new-consumer", handleUpdate);
+				eventSource.off("websocket/consumer-resumed", handleUpdate);
+				eventSource.off("media/update-active", handleUpdate);
+
+				if (client.self && typeof client.self.off === "function") {
+					// biome-ignore lint/suspicious/noExplicitAny: self events
+					const s = client.self as any;
+					s.off("audioUpdate", handleUpdate);
+					s.off("videoUpdate", handleUpdate);
+				}
 			} else if (typeof eventSource.removeListener === "function") {
 				eventSource.removeListener("*", handleUpdate);
 			}
 		};
-	}, [client, isMock]);
+	}, [client, isMock, updateMuteState]);
 
 	const join = useCallback(
 		async (token: string, appId?: string) => {
@@ -114,8 +165,6 @@ export const useRealtime = () => {
 				}
 			} catch (e) {
 				console.error("Failed to join RealtimeKit:", e);
-				// We don't re-throw here to allow UI to handle the error state if needed,
-				// or we could throw. Ideally the component handles it.
 				throw e;
 			}
 		},
@@ -141,61 +190,34 @@ export const useRealtime = () => {
 		}
 		// biome-ignore lint/suspicious/noExplicitAny: casting for potential missing types
 		const c = client as any;
-		console.log(
-			"[useRealtime] toggleMic clicked. Client keys:",
-			Object.keys(c || {}),
-		);
 
-		// If media is missing, try to set it up
-		if (!c?.self?.media) {
-			console.warn(
-				"[useRealtime] c.self.media is missing. Attempting to setup tracks manually...",
-			);
-			if (c?.self?.setupTracks) {
-				try {
-					console.log("[useRealtime] Calling setupTracks({ audio: true })...");
-					await c.self.setupTracks({ audio: true, video: false });
-					console.log("[useRealtime] Track setup requested.");
-
-					// After setup, check again or just try to enable if it appeared
-					if (c.self?.media) {
-						// Success
-					}
-				} catch (err) {
-					console.error("[useRealtime] Failed to manual setup tracks:", err);
-					return; // Stop if setup failed
+		try {
+			// Try direct enable/disable first
+			if (c.self) {
+				const self = c.self;
+				// Check current state
+				// Depending on implementation, audioEnabled might be on self directly or self.media
+				let isAudioEnabled = self.audioEnabled;
+				if (typeof isAudioEnabled === "undefined" && self.media) {
+					isAudioEnabled = self.media.audioEnabled;
 				}
-			} else {
-				console.error(
-					"[useRealtime] c.self.setupTracks method not found. Cannot initialize audio.",
-				);
-				return;
-			}
-		}
 
-		// Re-check media existence after potential setup
-		if (c?.self?.media) {
-			console.log(
-				"[useRealtime] Media object found. AudioEnabled:",
-				c.self.media.audioEnabled,
-			);
-			try {
-				if (c.self.media.audioEnabled) {
-					console.log("[useRealtime] Disabling audio...");
-					await c.self.media.disableAudio();
-					// isMicMuted will be updated by event listener
+				if (isAudioEnabled) {
+					console.log("[useRealtime] Disabling audio via self.disableAudio()");
+					await self.disableAudio();
 				} else {
-					console.log("[useRealtime] Enabling audio...");
-					await c.self.media.enableAudio();
+					console.log("[useRealtime] Enabling audio via self.enableAudio()");
+					await self.enableAudio();
 				}
-				console.log("[useRealtime] Toggle audio completed.");
-			} catch (err) {
-				console.error("[useRealtime] Failed to toggle audio:", err);
+				// Force state update after action
+				updateMuteState();
+			} else {
+				console.error("[useRealtime] client.self is missing!");
 			}
-		} else {
-			console.error("[useRealtime] Still no media object after setup attempt.");
+		} catch (err) {
+			console.error("[useRealtime] Failed to toggle audio:", err);
 		}
-	}, [client, isMock]);
+	}, [client, isMock, updateMuteState]);
 
 	return {
 		join,

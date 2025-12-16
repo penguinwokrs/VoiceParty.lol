@@ -17,6 +17,7 @@ import {
 	Stack,
 	Typography,
 } from "@mui/material";
+import { useEffect, useRef } from "react";
 import type { Session } from "./types";
 
 type ActiveSessionViewProps = {
@@ -35,44 +36,54 @@ type ActiveSessionViewProps = {
 interface Peer {
 	id: string;
 	peerId?: string;
+	userId?: string; // Add userId which might come from RealtimeKit
 	media?: {
 		enableAudio?: () => void;
 	};
 	stream?: MediaStream;
+	audioTrack?: MediaStreamTrack;
 }
 
 // Helper component for remote audio
 const RemoteAudio = ({ peer }: { peer: Peer }) => {
-	const audioRef = (node: HTMLAudioElement | null) => {
-		if (node && peer.media) {
-			// Attach tracks. Note: RealtimeKit uses 'peer.media.enableAudio()' which usually handles sending.
-			// For playback we need to get the MediaStream or Track.
-			// RealtimeKit often handles this internally if using their UI components,
-			// but raw SDK requires attaching tracks.
-			// Let's assume peer.media.tracks is a MediaStream or has audio tracks.
-			// Or check peer.stream.
+	const audioRef = useRef<HTMLAudioElement>(null);
 
-			// According to common WebRTC SDK patterns:
-			// peer.media might provide tracks.
-			// Docs say "seamlessly ... play media".
-			// If we inspect the peer object in useRealtime we might know better.
-			// But sticking to standard:
-			// if (peer.stream) node.srcObject = peer.stream;
+	useEffect(() => {
+		const node = audioRef.current;
+		if (!node || !peer) return;
 
-			// Let's protect against errors.
-			try {
-				if (peer.stream) {
-					node.srcObject = peer.stream;
-				}
-			} catch (e) {
-				console.error("Failed to attach stream", e);
+		try {
+			// Participant (Peer) usually has audioTrack (MediaStreamTrack) but not 'stream' (MediaStream)
+			// We need to create a MediaStream from the track.
+
+			// Check for audioTrack directly
+			if (peer.audioTrack) {
+				console.log(
+					`[RemoteAudio] Attaching track ${peer.audioTrack.id} for peer ${peer.id}`,
+				);
+				// Create a new MediaStream with the track
+				const stream = new MediaStream([peer.audioTrack]);
+				node.srcObject = stream;
+				// Ensure playback
+				node
+					.play()
+					.catch((e) => console.error("[RemoteAudio] Playback failed:", e));
+			} else if (peer.stream) {
+				console.log(`[RemoteAudio] Attaching stream for peer ${peer.id}`);
+				// Fallback if 'stream' property exists
+				node.srcObject = peer.stream;
+				node
+					.play()
+					.catch((e) => console.error("[RemoteAudio] Playback failed:", e));
+			} else {
+				console.warn(
+					`[RemoteAudio] Peer ${peer.id} has no audio track or stream`,
+				);
 			}
+		} catch (e) {
+			console.error("Failed to attach stream", e);
 		}
-	};
-
-	// We can try to attach ref.
-	// Actually, straightforward way in React:
-	// useEffect(() => { if(ref.current) ref.current.srcObject = peer.stream }, [peer.stream])
+	}, [peer, peer.audioTrack, peer.stream]);
 
 	return (
 		// biome-ignore lint/a11y/useMediaCaption: Audio for voice chat
@@ -155,29 +166,42 @@ export const ActiveSessionView = ({
 
 				<Box sx={{ my: 2 }}>
 					<Typography variant="subtitle2" color="text.secondary">
-						Participants ({session.users.length}/5)
+						Participants ({peers.length + 1}/5)
 					</Typography>
 					<List dense>
-						{session.users.map((u) => {
-							// Determine if user is speaking or connected based on peers list?
-							// For now, simple list.
+						{/* Render Local User */}
+						<ListItem key={userId}>
+							<ListItemAvatar>
+								<Avatar
+									src={session.users.find((u) => u.userId === userId)?.iconUrl}
+									alt={userId}
+									sx={{ bgcolor: "primary.main" }}
+								>
+									<PersonIcon />
+								</Avatar>
+							</ListItemAvatar>
+							<ListItemText primary={userId} secondary="(You)" />
+						</ListItem>
+
+						{/* Render Remote Peers */}
+						{peers.map((peer) => {
+							// Try to find metadata from session users (best effort)
+							const meta = session.users.find(
+								(u) => u.userId === (peer.userId || peer.id),
+							);
 							return (
-								<ListItem key={u.userId}>
+								<ListItem key={peer.id || peer.peerId}>
 									<ListItemAvatar>
 										<Avatar
-											src={u.iconUrl}
-											alt={u.userId}
-											sx={{
-												bgcolor:
-													u.userId === userId ? "primary.main" : "grey.600",
-											}}
+											src={meta?.iconUrl}
+											alt={meta?.userId || peer.userId || "Unknown"}
+											sx={{ bgcolor: "grey.600" }}
 										>
-											{!u.iconUrl && <PersonIcon />}
+											<PersonIcon />
 										</Avatar>
 									</ListItemAvatar>
 									<ListItemText
-										primary={u.userId}
-										secondary={u.userId === userId ? "(You)" : null}
+										primary={meta?.userId || peer.userId || peer.id}
 									/>
 								</ListItem>
 							);

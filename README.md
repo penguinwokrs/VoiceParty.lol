@@ -8,17 +8,17 @@ The system uses a serverless architecture powered by Cloudflare's ecosystem.
 
 ```mermaid
 graph TD
-    User[User] -->|Browser| Frontend[Frontend (React/Vite)]
-    Frontend -->|API Requests| Worker[Backend API (Cloudflare Pages Functions)]
-    Frontend -->|WebRTC Voice| Realtime[Cloudflare RealtimeKit]
+    User[User] -->|Browser| Frontend["Frontend (React/Vite)"]
+    Frontend -->|API Requests| Worker["Backend API (Cloudflare Pages Functions)"]
+    Frontend -->|WebRTC Voice| Realtime["Cloudflare RealtimeKit"]
     
     subgraph Cloudflare Platform
-        Worker -->|Manage Sessions| KV[(KV: VC_SESSIONS)]
-        Worker -->|Create Rooms/Tokens| RealtimeAPI[RealtimeKit API]
+        Worker -->|Manage Sessions| KV[("KV: VC_SESSIONS")]
+        Worker -->|Create Rooms/Tokens| RealtimeAPI["RealtimeKit API"]
     end
 
     subgraph External
-        Worker -->|OAuth| Riot[Riot Games Auth]
+        Worker -->|OAuth| Riot["Riot Games Auth"]
     end
 
     %% Data Flow
@@ -31,11 +31,11 @@ graph TD
 
 ## Tech Stack
 
--   **Frontend**: React, TypeScript, Vite, Material UI (MUI), Cloudflare RealtimeKit React SDK.
--   **Backend**: Cloudflare Pages Functions (Hono Framework).
--   **Database**: Cloudflare KV (Session persistence).
--   **Realtime**: Cloudflare RealtimeKit (WebRTC Audio).
--   **Auth**: Riot Games (OAuth 2.0).
+- **Frontend**: React, TypeScript, Vite, Material UI (MUI), Cloudflare RealtimeKit React SDK.
+- **Backend**: Cloudflare Pages Functions (Hono Framework).
+- **Database**: Cloudflare KV (Session persistence).
+- **Realtime**: Cloudflare RealtimeKit (WebRTC Audio).
+- **Auth**: Riot Games (OAuth 2.0).
 
 ## RealtimeKit Connection Flow
 
@@ -43,10 +43,10 @@ Steps to establish a voice connection:
 
 ```mermaid
 sequenceDiagram
-    participant U as User (Frontend)
-    participant A as API (/api/sessions)
-    participant R as RealtimeKit API
-    participant W as WebSocket (Voice)
+    participant U as "User (Frontend)"
+    participant A as "API (/api/sessions)"
+    participant R as "RealtimeKit API"
+    participant W as "WebSocket (Voice)"
 
     U->>A: POST /join {userId, gameId}
     A->>A: Check KV for existing MeetingID
@@ -72,18 +72,18 @@ sequenceDiagram
 
 ## Features
 
--   **Game ID Rooms**: Join or create voice rooms simply by entering a Game ID.
--   **Auto-Creation**: Rooms are automatically created on-demand if they don't exist.
--   **Mock Mode**: Built-in mock mode for development and testing without requiring live API keys.
--   **Riot Auth**: Secure identity verification via Riot Games accounts.
+- **Game ID Rooms**: Join or create voice rooms simply by entering a Game ID.
+- **Auto-Creation**: Rooms are automatically created on-demand if they don't exist.
+- **Mock Mode**: Built-in mock mode for development and testing without requiring live API keys.
+- **Riot Auth**: Secure identity verification via Riot Games accounts.
 
 ## Getting Started
 
 ### Prerequisites
 
--   Node.js (v18+)
--   pnpm
--   Cloudflare Wrangler CLI
+- Node.js (v18+)
+- pnpm
+- Cloudflare Wrangler CLI
 
 ### Installation
 
@@ -105,11 +105,14 @@ pnpm dev
 
 Run without needing RealtimeKit or Riot credentials. Uses simulated voice connection and mocked API.
 
-1.  Set default env var or use `.dev.vars`:
-    ```
+1. Set default env var or use `.dev.vars`:
+
+    ```bash
     USE_MOCK_REALTIME="true"
     ```
-2.  Run:
+
+2. Run:
+
     ```bash
     pnpm dev
     ```
