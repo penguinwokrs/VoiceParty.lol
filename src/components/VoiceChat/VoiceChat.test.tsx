@@ -23,7 +23,7 @@ describe("VoiceChat", () => {
 			</MemoryRouter>,
 		);
 		expect(screen.getByText("Voice Chat")).toBeInTheDocument();
-		expect(screen.getByLabelText("User ID")).toBeInTheDocument();
+		expect(screen.getByLabelText("Summoner ID")).toBeInTheDocument();
 		expect(screen.getByLabelText("Game ID")).toBeInTheDocument();
 	});
 
@@ -47,7 +47,7 @@ describe("VoiceChat", () => {
 		const joinBtn = screen.getByText("Join Game");
 		expect(joinBtn).toBeDisabled();
 
-		const userInput = screen.getByLabelText("User ID") as HTMLInputElement;
+		const userInput = screen.getByLabelText("Summoner ID") as HTMLInputElement;
 		fireEvent.change(userInput, { target: { value: "test-user" } });
 		expect(userInput.value).toBe("test-user");
 		expect(joinBtn).toBeDisabled(); // Still disabled, no Game ID
@@ -68,7 +68,7 @@ describe("VoiceChat", () => {
 				Promise.resolve({
 					session: {
 						sessionId: "session-123",
-						users: [{ userId: "test-user", joinedAt: Date.now() }],
+						users: [{ summonerId: "test-user", joinedAt: Date.now() }],
 						createdAt: Date.now(),
 					},
 					realtime: { token: "mock-token", meetingId: "mock-id" },
@@ -83,7 +83,7 @@ describe("VoiceChat", () => {
 				</Routes>
 			</MemoryRouter>,
 		);
-		const userInput = screen.getByLabelText("User ID");
+		const userInput = screen.getByLabelText("Summoner ID");
 		fireEvent.change(userInput, { target: { value: "test-user" } });
 
 		const sessionInput = screen.getByLabelText("Game ID");

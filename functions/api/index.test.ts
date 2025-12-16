@@ -159,7 +159,7 @@ describe("Session Management", () => {
 			{
 				method: "POST",
 				body: JSON.stringify({
-					userId: "user-1",
+					summonerId: "user-1",
 					iconUrl: "http://example.com/icon.png",
 				}),
 				headers: { "Content-Type": "application/json" },
@@ -187,7 +187,7 @@ describe("Session Management", () => {
 		const sessionData = {
 			sessionId,
 			meetingId: "mock-meeting-id",
-			users: Array(5).fill({ userId: "u", joinedAt: 0 }),
+			users: Array(5).fill({ summonerId: "u", joinedAt: 0 }),
 			createdAt: Date.now(),
 		};
 		// This logic doesn't depend on Mock/Real mode, just internal logic
@@ -199,7 +199,7 @@ describe("Session Management", () => {
 			`/api/sessions/${sessionId}/join`,
 			{
 				method: "POST",
-				body: JSON.stringify({ userId: "user-new" }),
+				body: JSON.stringify({ summonerId: "user-new" }),
 				headers: { "Content-Type": "application/json" },
 			},
 			testEnv,
@@ -246,7 +246,7 @@ describe("Session Management", () => {
 				`/api/sessions/${sessionId}/join`,
 				{
 					method: "POST",
-					body: JSON.stringify({ userId: "int-user" }),
+					body: JSON.stringify({ summonerId: "int-user" }),
 					headers: { "Content-Type": "application/json" },
 				},
 				integrationEnv,
@@ -270,7 +270,7 @@ describe("Session Management", () => {
 				`/api/sessions/${sessionId}/join`,
 				{
 					method: "POST",
-					body: JSON.stringify({ userId: "int-user-2" }),
+					body: JSON.stringify({ summonerId: "int-user-2" }),
 					headers: { "Content-Type": "application/json" },
 				},
 				integrationEnv,

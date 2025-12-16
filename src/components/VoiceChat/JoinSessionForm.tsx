@@ -10,22 +10,22 @@ import {
 import { Button } from "../Button";
 
 type JoinSessionFormProps = {
-	userId: string;
+	summonerId: string;
 	sessionId: string;
 	loading: boolean;
 	error: string;
-	onUserIdChange: (userId: string) => void;
+	onSummonerIdChange: (summonerId: string) => void;
 	onSessionIdChange: (sessionId: string) => void;
 	onJoin: () => void;
 	disableSessionInput?: boolean;
 };
 
 export const JoinSessionForm = ({
-	userId,
+	summonerId,
 	sessionId,
 	loading,
 	error,
-	onUserIdChange,
+	onSummonerIdChange,
 	onSessionIdChange,
 	onJoin,
 	disableSessionInput,
@@ -45,9 +45,9 @@ export const JoinSessionForm = ({
 
 				<Stack spacing={3}>
 					<TextField
-						label="User ID"
-						value={userId}
-						onChange={(e) => onUserIdChange(e.target.value)}
+						label="Summoner ID"
+						value={summonerId}
+						onChange={(e) => onSummonerIdChange(e.target.value)}
 						fullWidth
 						placeholder="Enter your name"
 					/>
@@ -65,7 +65,7 @@ export const JoinSessionForm = ({
 						fullWidth
 						variant="contained"
 						onClick={onJoin}
-						disabled={loading || !userId || !sessionId}
+						disabled={loading || !summonerId || !sessionId}
 					>
 						{loading ? (
 							<CircularProgress size={24} color="inherit" />

@@ -9,8 +9,8 @@ export const VoiceChat = () => {
 	const { sessionId: routeSessionId } = useParams();
 	const navigate = useNavigate();
 	const [sessionId, setSessionId] = useState(routeSessionId || "");
-	const [userId, setUserId] = useState(() => {
-		const stored = localStorage.getItem("vp_user_id") || "";
+	const [summonerId, setSummonerId] = useState(() => {
+		const stored = localStorage.getItem("vp_summoner_id") || "";
 		return stored.length > 32 ? "" : stored;
 	});
 	const [currentSession, setCurrentSession] = useState<Session | null>(null);
@@ -21,14 +21,14 @@ export const VoiceChat = () => {
 		useRealtime();
 
 	useEffect(() => {
-		if (userId) {
-			localStorage.setItem("vp_user_id", userId);
+		if (summonerId) {
+			localStorage.setItem("vp_summoner_id", summonerId);
 		}
-	}, [userId]);
+	}, [summonerId]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Only run once on mount when params exist
 	useEffect(() => {
-		if (routeSessionId && userId && !currentSession) {
+		if (routeSessionId && summonerId && !currentSession) {
 			setSessionId(routeSessionId);
 			joinSession(routeSessionId);
 		} else if (routeSessionId && routeSessionId !== sessionId) {
@@ -38,8 +38,8 @@ export const VoiceChat = () => {
 	}, [routeSessionId]);
 
 	const joinSession = async (targetSessionId: string) => {
-		if (!targetSessionId || !userId) {
-			setError("Session ID and User ID are required");
+		if (!targetSessionId || !summonerId) {
+			setError("Session ID and Summoner ID are required");
 			return;
 		}
 
@@ -58,7 +58,7 @@ export const VoiceChat = () => {
 			const res = await fetch(`/api/sessions/${targetSessionId}/join`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ userId }),
+				body: JSON.stringify({ summonerId }),
 			});
 
 			if (!res.ok) {
@@ -101,7 +101,7 @@ export const VoiceChat = () => {
 		return (
 			<ActiveSessionView
 				session={currentSession}
-				userId={userId}
+				summonerId={summonerId}
 				isConnected={isConnected}
 				isMicMuted={isMicMuted}
 				loading={loading}
@@ -116,11 +116,11 @@ export const VoiceChat = () => {
 
 	return (
 		<JoinSessionForm
-			userId={userId}
+			summonerId={summonerId}
 			sessionId={sessionId}
 			loading={loading}
 			error={error}
-			onUserIdChange={setUserId}
+			onSummonerIdChange={setSummonerId}
 			onSessionIdChange={setSessionId}
 			onJoin={() => joinSession(sessionId)}
 			disableSessionInput={!!routeSessionId}

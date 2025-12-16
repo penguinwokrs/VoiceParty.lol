@@ -22,7 +22,7 @@ import type { Session } from "./types";
 
 type ActiveSessionViewProps = {
 	session: Session;
-	userId: string;
+	summonerId: string;
 	isConnected: boolean;
 	isMicMuted: boolean;
 	loading: boolean;
@@ -36,7 +36,7 @@ type ActiveSessionViewProps = {
 interface Peer {
 	id: string;
 	peerId?: string;
-	userId?: string; // Add userId which might come from RealtimeKit
+	summonerId?: string; // Add summonerId which might come from RealtimeKit
 	media?: {
 		enableAudio?: () => void;
 	};
@@ -99,7 +99,7 @@ const RemoteAudio = ({ peer }: { peer: Peer }) => {
 
 export const ActiveSessionView = ({
 	session,
-	userId,
+	summonerId,
 	isConnected,
 	isMicMuted,
 	loading,
@@ -170,38 +170,41 @@ export const ActiveSessionView = ({
 					</Typography>
 					<List dense>
 						{/* Render Local User */}
-						<ListItem key={userId}>
+						<ListItem key={summonerId}>
 							<ListItemAvatar>
 								<Avatar
-									src={session.users.find((u) => u.userId === userId)?.iconUrl}
-									alt={userId}
+									src={
+										session.users.find((u) => u.summonerId === summonerId)
+											?.iconUrl
+									}
+									alt={summonerId}
 									sx={{ bgcolor: "primary.main" }}
 								>
 									<PersonIcon />
 								</Avatar>
 							</ListItemAvatar>
-							<ListItemText primary={userId} secondary="(You)" />
+							<ListItemText primary={summonerId} secondary="(You)" />
 						</ListItem>
 
 						{/* Render Remote Peers */}
 						{peers.map((peer) => {
 							// Try to find metadata from session users (best effort)
 							const meta = session.users.find(
-								(u) => u.userId === (peer.userId || peer.id),
+								(u) => u.summonerId === (peer.summonerId || peer.id),
 							);
 							return (
 								<ListItem key={peer.id || peer.peerId}>
 									<ListItemAvatar>
 										<Avatar
 											src={meta?.iconUrl}
-											alt={meta?.userId || peer.userId || "Unknown"}
+											alt={meta?.summonerId || peer.summonerId || "Unknown"}
 											sx={{ bgcolor: "grey.600" }}
 										>
 											<PersonIcon />
 										</Avatar>
 									</ListItemAvatar>
 									<ListItemText
-										primary={meta?.userId || peer.userId || peer.id}
+										primary={meta?.summonerId || peer.summonerId || peer.id}
 									/>
 								</ListItem>
 							);

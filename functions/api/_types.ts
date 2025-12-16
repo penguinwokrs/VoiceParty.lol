@@ -9,7 +9,7 @@ export type Bindings = {
 };
 
 export type User = {
-	userId: string;
+	summonerId: string;
 	joinedAt: number;
 	iconUrl?: string;
 };

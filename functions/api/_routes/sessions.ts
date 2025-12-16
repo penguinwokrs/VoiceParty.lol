@@ -59,17 +59,17 @@ app.post("/", async (c) => {
 
 app.post("/:id/join", async (c) => {
 	const sessionId = c.req.param("id");
-	const { userId, iconUrl } = await c.req.json<{
-		userId: string;
+	const { summonerId, iconUrl } = await c.req.json<{
+		summonerId: string;
 		iconUrl?: string;
 	}>();
 
-	if (!userId) {
-		return c.text("User ID is required", 400);
+	if (!summonerId) {
+		return c.text("Summoner ID is required", 400);
 	}
 
-	if (userId.length > 32) {
-		return c.text("User ID is too long (max 32 chars)", 400);
+	if (summonerId.length > 32) {
+		return c.text("Summoner ID is too long (max 32 chars)", 400);
 	}
 
 	// Try fetching existing session via Mapping
@@ -144,7 +144,7 @@ app.post("/:id/join", async (c) => {
 	}
 
 	// Check if user already exists
-	const existingUser = session.users.find((u) => u.userId === userId);
+	const existingUser = session.users.find((u) => u.summonerId === summonerId);
 
 	if (!existingUser) {
 		// Only check capacity for NEW users
@@ -152,7 +152,7 @@ app.post("/:id/join", async (c) => {
 			return c.text("Session is full (max 5 users)", 403);
 		}
 
-		session.users.push({ userId, joinedAt: Date.now(), iconUrl });
+		session.users.push({ summonerId, joinedAt: Date.now(), iconUrl });
 		await c.env.VC_SESSIONS.put(
 			`session:${session.meetingId}`, // Save to session:meetingId
 			JSON.stringify(session),
@@ -174,8 +174,8 @@ app.post("/:id/join", async (c) => {
 					"POST",
 					c.env,
 					{
-						name: userId,
-						custom_participant_id: userId,
+						name: summonerId,
+						custom_participant_id: summonerId,
 						preset_name: "group_call_participant",
 					},
 				);

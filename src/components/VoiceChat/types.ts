@@ -1,5 +1,5 @@
 export type User = {
-	userId: string;
+	summonerId: string;
 	joinedAt: number;
 	iconUrl?: string;
 };
