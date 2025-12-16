@@ -6,3 +6,6 @@ compatibility_date = "2024-04-01"
 binding = "VC_SESSIONS"
 id = "74421f4d32f648e4b6ad64a9ef5498ee"
 preview_id = "voiceparty-kv-preview"
+
+[assets]
+directory = "./dist"
