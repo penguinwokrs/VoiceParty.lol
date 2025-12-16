@@ -1,48 +1,9 @@
-import CallEndIcon from "@mui/icons-material/CallEnd";
-import MicIcon from "@mui/icons-material/Mic";
-import MicOffIcon from "@mui/icons-material/MicOff";
-import PersonIcon from "@mui/icons-material/Person";
-import {
-	Alert,
-	Avatar,
-	Box,
-	Card,
-	CardContent,
-	CircularProgress,
-	IconButton,
-	List,
-	ListItem,
-	ListItemAvatar,
-	ListItemText,
-	Stack,
-	TextField,
-	Typography,
-} from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "../Button";
+import { ActiveSessionView } from "./ActiveSessionView";
+import { JoinSessionForm } from "./JoinSessionForm";
+import type { JoinResponse, Session } from "./types";
 import { useRealtime } from "./useRealtime";
-
-type User = {
-	userId: string;
-	joinedAt: number;
-	iconUrl?: string;
-};
-
-type Session = {
-	sessionId: string;
-	users: User[];
-	createdAt: number;
-};
-
-type JoinResponse = {
-	session: Session;
-	realtime?: {
-		meetingId: string;
-		token: string;
-		appId: string;
-	};
-};
 
 export const VoiceChat = () => {
 	const { sessionId: routeSessionId } = useParams();
@@ -136,155 +97,30 @@ export const VoiceChat = () => {
 
 	if (currentSession) {
 		return (
-			<Card sx={{ maxWidth: 400, mx: "auto", mt: 4, position: "relative" }}>
-				{loading && (
-					<Box
-						sx={{
-							position: "absolute",
-							top: 0,
-							left: 0,
-							right: 0,
-							height: 4,
-							overflow: "hidden",
-						}}
-					>
-						<CircularProgress
-							size={20}
-							thickness={5}
-							sx={{ display: "block", mx: "auto", mt: 1 }}
-						/>
-					</Box>
-				)}
-				<CardContent>
-					<Typography variant="h5" gutterBottom>
-						Session:{" "}
-						{currentSession.sessionId.length > 12
-							? `${currentSession.sessionId.slice(0, 8)}...`
-							: currentSession.sessionId}
-					</Typography>
-					<Stack direction="row" alignItems="center" spacing={1} mb={2}>
-						<Box
-							sx={{
-								width: 10,
-								height: 10,
-								borderRadius: "50%",
-								bgcolor: isConnected ? "success.main" : "error.main",
-							}}
-						/>
-						<Typography
-							variant="caption"
-							color={isConnected ? "success.main" : "error.main"}
-						>
-							{isConnected ? "Voice Connected" : "Voice Disconnected"}
-						</Typography>
-					</Stack>
-
-					{error && (
-						<Alert
-							severity="warning"
-							onClose={() => setError("")}
-							sx={{ mb: 2 }}
-						>
-							{error}
-						</Alert>
-					)}
-
-					<Box sx={{ my: 2 }}>
-						<Typography variant="subtitle2" color="text.secondary">
-							Participants ({currentSession.users.length}/5)
-						</Typography>
-						<List dense>
-							{currentSession.users.map((u) => (
-								<ListItem key={u.userId}>
-									<ListItemAvatar>
-										<Avatar
-											src={u.iconUrl}
-											alt={u.userId}
-											sx={{
-												bgcolor:
-													u.userId === userId ? "primary.main" : "grey.600",
-											}}
-										>
-											{!u.iconUrl && <PersonIcon />}
-										</Avatar>
-									</ListItemAvatar>
-									<ListItemText
-										primary={u.userId}
-										secondary={u.userId === userId ? "(You)" : null}
-									/>
-								</ListItem>
-							))}
-						</List>
-					</Box>
-					<Stack direction="row" spacing={2} justifyContent="center" mt={3}>
-						<IconButton
-							color={isMicMuted ? "error" : "primary"}
-							onClick={toggleMic}
-							size="large"
-							sx={{ border: "1px solid currentColor" }}
-							disabled={!isConnected}
-						>
-							{isMicMuted ? <MicOffIcon /> : <MicIcon />}
-						</IconButton>
-						<IconButton
-							color="error"
-							onClick={handleLeave}
-							size="large"
-							sx={{ border: "1px solid currentColor" }}
-						>
-							<CallEndIcon />
-						</IconButton>
-					</Stack>
-				</CardContent>
-			</Card>
+			<ActiveSessionView
+				session={currentSession}
+				userId={userId}
+				isConnected={isConnected}
+				isMicMuted={isMicMuted}
+				loading={loading}
+				error={error}
+				onErrorClose={() => setError("")}
+				onToggleMic={toggleMic}
+				onLeave={handleLeave}
+			/>
 		);
 	}
 
 	return (
-		<Card sx={{ maxWidth: 400, mx: "auto", mt: 4 }}>
-			<CardContent>
-				<Typography variant="h5" component="h2" gutterBottom>
-					Voice Chat
-				</Typography>
-
-				{error && (
-					<Alert severity="error" sx={{ mb: 2 }}>
-						{error}
-					</Alert>
-				)}
-
-				<Stack spacing={3}>
-					<TextField
-						label="User ID"
-						value={userId}
-						onChange={(e) => setUserId(e.target.value)}
-						fullWidth
-						placeholder="Enter your name"
-					/>
-
-					<TextField
-						label="Game ID"
-						value={sessionId}
-						onChange={(e) => setSessionId(e.target.value)}
-						fullWidth
-						placeholder="Enter game ID to join"
-						disabled={!!routeSessionId}
-					/>
-
-					<Button
-						fullWidth
-						variant="contained"
-						onClick={() => joinSession(sessionId)}
-						disabled={loading || !userId || !sessionId}
-					>
-						{loading ? (
-							<CircularProgress size={24} color="inherit" />
-						) : (
-							"Join Game"
-						)}
-					</Button>
-				</Stack>
-			</CardContent>
-		</Card>
+		<JoinSessionForm
+			userId={userId}
+			sessionId={sessionId}
+			loading={loading}
+			error={error}
+			onUserIdChange={setUserId}
+			onSessionIdChange={setSessionId}
+			onJoin={() => joinSession(sessionId)}
+			disableSessionInput={!!routeSessionId}
+		/>
 	);
 };
