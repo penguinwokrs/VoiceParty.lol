@@ -7,6 +7,3 @@ pages_build_output_dir = "dist"
 binding = "VC_SESSIONS"
 id = "74421f4d32f648e4b6ad64a9ef5498ee"
 preview_id = "voiceparty-kv-preview"
-
-[assets]
-directory = "./dist"
