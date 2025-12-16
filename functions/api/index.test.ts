@@ -103,6 +103,7 @@ describe("Session Management", () => {
 				});
 			}
 			return Promise.reject(new Error("Unknown URL"));
+			// biome-ignore lint/suspicious/noExplicitAny: Mocking fetch requires any cast
 		}) as any;
 	});
 

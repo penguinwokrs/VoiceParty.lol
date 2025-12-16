@@ -29,12 +29,20 @@ type ActiveSessionViewProps = {
 	onErrorClose: () => void;
 	onToggleMic: () => void;
 	onLeave: () => void;
-	peers?: any[];
+	peers?: Peer[];
 };
 
+interface Peer {
+	id: string;
+	peerId?: string;
+	media?: {
+		enableAudio?: () => void;
+	};
+	stream?: MediaStream;
+}
+
 // Helper component for remote audio
-// biome-ignore lint/suspicious/noExplicitAny: Peer type
-const RemoteAudio = ({ peer }: { peer: any }) => {
+const RemoteAudio = ({ peer }: { peer: Peer }) => {
 	const audioRef = (node: HTMLAudioElement | null) => {
 		if (node && peer.media) {
 			// Attach tracks. Note: RealtimeKit uses 'peer.media.enableAudio()' which usually handles sending.
@@ -93,8 +101,8 @@ export const ActiveSessionView = ({
 	return (
 		<Card sx={{ maxWidth: 400, mx: "auto", mt: 4, position: "relative" }}>
 			{/* Render invisible audio elements for all remote peers */}
-			{peers.map((p: any) => (
-				<RemoteAudio key={p.id || p.peerId} peer={p} />
+			{peers.map((p) => (
+				<RemoteAudio key={p.id || p.peerId || "unknown"} peer={p} />
 			))}
 
 			{loading && (
