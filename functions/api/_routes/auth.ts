@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import type { Bindings } from "../types";
+import type { Bindings } from "../_types";
 
 const app = new Hono<{ Bindings: Bindings }>();
 

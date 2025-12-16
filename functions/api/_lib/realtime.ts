@@ -1,4 +1,4 @@
-import type { Bindings } from "../types";
+import type { Bindings } from "../_types";
 
 // Helper to call RealtimeKit API
 export async function callRealtimeKit(

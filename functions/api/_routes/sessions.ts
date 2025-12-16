@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { callRealtimeKit } from "../lib/realtime";
-import type { Bindings, Session } from "../types";
+import { callRealtimeKit } from "../_lib/realtime";
+import type { Bindings, Session } from "../_types";
 
 const app = new Hono<{ Bindings: Bindings }>();
 

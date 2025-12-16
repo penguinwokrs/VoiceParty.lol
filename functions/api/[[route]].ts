@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { handle } from "hono/cloudflare-pages";
-import auth from "./routes/auth";
-import sessions from "./routes/sessions";
-import type { Bindings } from "./types";
+import auth from "./_routes/auth";
+import sessions from "./_routes/sessions";
+import type { Bindings } from "./_types";
 
 const app = new Hono<{ Bindings: Bindings }>().basePath("/api");
 
