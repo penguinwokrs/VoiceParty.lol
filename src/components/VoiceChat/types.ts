@@ -15,6 +15,6 @@ export type JoinResponse = {
 	realtime?: {
 		meetingId: string;
 		token: string;
-		appId: string;
+		appId?: string;
 	};
 };

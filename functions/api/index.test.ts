@@ -219,10 +219,13 @@ describe("Session Management", () => {
 				integrationEnv,
 			);
 			expect(res.status).toBe(200);
-			// Fetch SHOuld be called
+			// Fetch SHOULD be called with specific checks
 			expect(global.fetch).toHaveBeenCalledWith(
 				expect.stringContaining("/meetings"),
-				expect.anything(),
+				expect.objectContaining({
+					method: "POST",
+					body: expect.stringMatching(/"title":".+"/), // Verify title is present
+				}),
 			);
 		});
 
@@ -248,6 +251,42 @@ describe("Session Management", () => {
 				integrationEnv,
 			);
 			expect(res.status).toBe(200);
+			expect(global.fetch).toHaveBeenCalledWith(
+				expect.stringContaining("/participants"),
+				expect.objectContaining({
+					method: "POST",
+					body: expect.stringContaining('"name":"int-user"'),
+				}),
+			);
+		});
+
+		it("should attempt to create RealtimeKit meeting with Title when joining non-existent session", async () => {
+			const sessionId = "new-integration-session";
+			// Mock KV: Return null to simulate non-existent session
+			mockKV.get.mockResolvedValue(null);
+
+			const res = await app.request(
+				`/api/sessions/${sessionId}/join`,
+				{
+					method: "POST",
+					body: JSON.stringify({ userId: "int-user-2" }),
+					headers: { "Content-Type": "application/json" },
+				},
+				integrationEnv,
+			);
+
+			expect(res.status).toBe(200);
+
+			// Verify Meeting Creation with Title
+			expect(global.fetch).toHaveBeenCalledWith(
+				expect.stringContaining("/meetings"),
+				expect.objectContaining({
+					method: "POST",
+					body: expect.stringContaining(`"title":"${sessionId}"`),
+				}),
+			);
+
+			// Verify Participant Addition
 			expect(global.fetch).toHaveBeenCalledWith(
 				expect.stringContaining("/participants"),
 				expect.anything(),
