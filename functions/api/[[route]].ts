@@ -124,12 +124,9 @@ app.post("/sessions", async (c) => {
 			// Create a meeting in RealtimeKit
 			// Note: Actual API payload structure might vary, assuming minimal or default
 			// biome-ignore lint/suspicious/noExplicitAny: API response is untyped
-			const meeting: any = await callRealtimeKit(
-				"/meetings",
-				"POST",
-				c.env,
-				{},
-			);
+			const meeting: any = await callRealtimeKit("/meetings", "POST", c.env, {
+				title: sessionId,
+			});
 			console.log("RealtimeKit Meeting Created:", meeting);
 			meetingId = meeting.data.id;
 		} catch (e) {
@@ -222,7 +219,7 @@ app.post("/sessions/:id/join", async (c) => {
 				// Create a meeting in RealtimeKit with Game ID as name/title
 				// biome-ignore lint/suspicious/noExplicitAny: API response is untyped
 				const meeting: any = await callRealtimeKit("/meetings", "POST", c.env, {
-					name: sessionId,
+					title: sessionId,
 				});
 				console.log("RealtimeKit Meeting Created:", meeting);
 				meetingId = meeting.data.id;
@@ -302,13 +299,14 @@ app.post("/sessions/:id/join", async (c) => {
 
 	return c.json({
 		session,
-		realtime: session.meetingId
-			? {
-					meetingId: session.meetingId,
-					token: realtimeToken,
-					appId: c.env.REALTIME_KIT_APP_ID,
-				}
-			: undefined,
+		realtime:
+			session.meetingId && realtimeToken
+				? {
+						meetingId: session.meetingId,
+						token: realtimeToken,
+						appId: c.env.REALTIME_KIT_APP_ID,
+					}
+				: undefined,
 	});
 });
 
