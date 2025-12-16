@@ -2,7 +2,21 @@ import json
 import os
 import re
 
+import urllib.request
+import sys
+
 OUTPUT_DIR = 'client/typespec'
+SCHEMA_URL = "https://mingweisamuel.github.io/riotapi-schema/openapi-3.0.0.json"
+SCHEMA_FILE = "riot_openapi.json"
+
+def download_schema():
+    print(f"Downloading schema from {SCHEMA_URL}...")
+    try:
+        urllib.request.urlretrieve(SCHEMA_URL, SCHEMA_FILE)
+        print(f"Schema saved to {SCHEMA_FILE}")
+    except Exception as e:
+        print(f"Error downloading schema: {e}")
+        sys.exit(1)
 
 def to_pascal_case(s):
     # s can be 'account-v1' -> 'AccountV1'
@@ -69,11 +83,15 @@ def map_type(schema, current_namespace_prefix, all_namespaces):
     return 'unknown'
 
 def main():
+    if not os.path.exists(SCHEMA_FILE):
+        print(f"{SCHEMA_FILE} not found.")
+        download_schema()
+    
     try:
-        with open('riot_openapi.json', 'r') as f:
+        with open(SCHEMA_FILE, 'r') as f:
             data = json.load(f)
-    except FileNotFoundError:
-        print("riot_openapi.json not found")
+    except Exception as e:
+        print(f"Error reading {SCHEMA_FILE}: {e}")
         return
 
     components = data.get('components', {}).get('schemas', {})
