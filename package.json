@@ -49,6 +49,7 @@
 		"@typespec/compiler": "^1.7.1",
 		"@typespec/http": "^1.7.0",
 		"@typespec/openapi3": "^1.7.0",
+		"@typespec/rest": "^0.77.0",
 		"@vitejs/plugin-react": "^5.1.1",
 		"concurrently": "^9.2.1",
 		"eslint": "^9.39.1",
