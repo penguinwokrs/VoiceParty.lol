@@ -35,3 +35,17 @@ jobs:
 
       - name: Run Tests
         run: pnpm test -- run
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Storybook
+        run: pnpm build-storybook
+
+      - name: Run Storybook E2E Tests
+        run: |
+          npx http-server storybook-static --port 6006 --silent &
+          sleep 3
+          pnpm test-storybook:ci --url http://localhost:6006
+        env:
+          CI: true

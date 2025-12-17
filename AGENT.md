@@ -87,3 +87,34 @@ Controlled by `USE_MOCK_REALTIME` environment variable.
 - `RIOT_CLIENT_ID`, `RIOT_CLIENT_SECRET`: Riot Auth.
 - `REALTIME_ORG_ID`, `REALTIME_API_KEY`, `REALTIME_KIT_APP_ID`: RealtimeKit Auth.
 - `USE_MOCK_REALTIME`: "true" to enable Mock Mode.
+
+## Storybook Integration
+
+This project is configured with Storybook and the `@storybook/addon-mcp` for AI integration.
+
+### Setup
+1. Run Storybook:
+   ```bash
+   pnpm storybook
+   ```
+2. The Storybook instance provides an MCP server at `http://localhost:6006/mcp`.
+
+### Cursor Configuration
+This project includes a Cursor MCP configuration file at `.cursor/mcp.json` that automatically connects to the Storybook MCP server.
+
+**Automatic Setup (Recommended):**
+The project-specific configuration file (`.cursor/mcp.json`) is already set up. Cursor will automatically detect and use this configuration when you open the project.
+
+**Manual Setup (Alternative):**
+If you prefer to configure it manually:
+1. Open Cursor Settings > Features > MCP.
+2. Add a new MCP Server:
+   - **Type**: SSE
+   - **Name**: storybook
+   - **URL**: `http://localhost:6006/mcp`
+
+**Note:** Make sure Storybook is running (`pnpm storybook`) before Cursor tries to connect to the MCP server.
+
+### Development Guidelines
+- When creating or modifying UI components, always create or update the corresponding `*.stories.tsx` file.
+- Use the Storybook MCP tools to retrieve component usage examples and guidelines.

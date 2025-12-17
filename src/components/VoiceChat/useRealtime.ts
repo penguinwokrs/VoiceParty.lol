@@ -66,7 +66,7 @@ export const useRealtime = () => {
 			}
 		};
 
-		const handleUpdate = (...args: any[]) => {
+		const handleUpdate = (...args: unknown[]) => {
 			console.log("[useRealtime] handleUpdate triggered:", args);
 			updateMuteState();
 			setIsConnected(!!client.peerId);

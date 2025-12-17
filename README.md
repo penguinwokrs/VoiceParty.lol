@@ -125,6 +125,35 @@ Run the test suite (defaults to Mock Mode):
 pnpm test
 ```
 
+### Storybook E2E Testing
+
+This project includes Storybook Test Runner for E2E testing of components.
+
+**Run Storybook E2E tests:**
+
+1. Start Storybook in one terminal:
+   ```bash
+   pnpm storybook
+   ```
+
+2. In another terminal, run the test runner:
+   ```bash
+   pnpm test-storybook
+   ```
+
+**For CI/CD:**
+```bash
+pnpm test-storybook:ci
+```
+
+The test runner automatically:
+- Tests all stories with `play` functions
+- Validates component interactions
+- Checks accessibility
+- Verifies visual states
+
+See [JoinSessionForm.stories.tsx](./src/components/VoiceChat/JoinSessionForm.stories.tsx) for examples of E2E tests using the `play` function.
+
 ## Developer Guide
 
 For detailed project analysis, directory structure, and internal workflows, see [AGENT.md](./AGENT.md).

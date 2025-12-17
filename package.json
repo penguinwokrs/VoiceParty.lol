@@ -19,7 +19,13 @@
 		"test:watch": "vitest",
 		"type-check": "tsc --noEmit",
 		"gen:api": "tsp compile client/typespec && orval --config client/orval.config.ts",
-		"gen:all": "python3 generate_typespec.py && pnpm gen:api"
+		"gen:all": "python3 generate_typespec.py && pnpm gen:api",
+		"storybook": "storybook dev -p 6006",
+		"build-storybook": "storybook build",
+		"test-storybook": "test-storybook",
+		"test-storybook:ci": "test-storybook --ci",
+		"test-storybook:ci:full": "start-server-and-test storybook http://localhost:6006 test-storybook:ci",
+		"test-storybook:build": "pnpm build-storybook && start-server-and-test 'npx http-server storybook-static --port 6006 --silent' http://localhost:6006 test-storybook:ci"
 	},
 	"dependencies": {
 		"@cloudflare/realtimekit": "^1.2.1",
@@ -29,6 +35,7 @@
 		"@fontsource/roboto": "^5.2.9",
 		"@mui/icons-material": "^6.1.10",
 		"@mui/material": "^6.1.10",
+		"@storybook/addon-mcp": "^0.1.6",
 		"axios": "^1.13.2",
 		"hono": "^4.11.1",
 		"react": "^19.2.0",
@@ -37,8 +44,16 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.9",
+		"@chromatic-com/storybook": "^4.1.3",
 		"@cloudflare/workers-types": "^4.20251213.0",
 		"@eslint/js": "^9.39.1",
+		"@storybook/addon-a11y": "^10.1.9",
+		"@storybook/addon-docs": "^10.1.9",
+		"@storybook/addon-onboarding": "^10.1.9",
+		"@storybook/addon-vitest": "^10.1.9",
+		"@storybook/react": "^10.1.9",
+		"@storybook/react-vite": "^10.1.9",
+		"@storybook/test-runner": "^0.24.2",
 		"@testing-library/dom": "^10.4.1",
 		"@testing-library/jest-dom": "^6.9.1",
 		"@testing-library/react": "^16.3.1",
@@ -51,18 +66,29 @@
 		"@typespec/openapi3": "^1.7.0",
 		"@typespec/rest": "^0.77.0",
 		"@vitejs/plugin-react": "^5.1.1",
+		"@vitest/browser-playwright": "^4.0.16",
+		"@vitest/coverage-v8": "^4.0.15",
 		"concurrently": "^9.2.1",
 		"eslint": "^9.39.1",
 		"eslint-plugin-react-hooks": "^7.0.1",
 		"eslint-plugin-react-refresh": "^0.4.24",
+		"eslint-plugin-storybook": "^10.1.9",
 		"globals": "^16.5.0",
 		"jsdom": "^27.3.0",
 		"lefthook": "^2.0.12",
 		"orval": "^7.17.0",
+		"playwright": "^1.57.0",
+		"start-server-and-test": "^2.1.3",
+		"storybook": "^10.1.9",
 		"typescript": "~5.9.3",
 		"typescript-eslint": "^8.46.4",
 		"vite": "^7.2.4",
-		"vitest": "^4.0.15",
+		"vitest": "^4.0.16",
 		"wrangler": "^4.54.0"
+	},
+	"eslintConfig": {
+		"extends": [
+			"plugin:storybook/recommended"
+		]
 	}
 }

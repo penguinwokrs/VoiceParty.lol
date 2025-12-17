@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 /// <reference types="vitest" />
 
 import react from "@vitejs/plugin-react";

@@ -12,6 +12,7 @@ vi.mock("./useRealtime", () => ({
 		isMicMuted: false,
 		isConnected: false,
 		client: {},
+		peers: [],
 	}),
 }));
 

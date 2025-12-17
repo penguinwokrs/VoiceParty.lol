@@ -1,20 +1,30 @@
-export type User = {
+export interface User {
 	summonerId: string;
-	joinedAt: number;
-	iconUrl?: string;
-};
+	gameName: string;
+	tagLine: string;
+	iconUrl: string;
+}
 
-export type Session = {
+export interface Session {
 	sessionId: string;
 	users: User[];
-	createdAt: number;
-};
+}
 
-export type JoinResponse = {
+export interface JoinResponse {
 	session: Session;
 	realtime?: {
-		meetingId: string;
+		appId: string;
 		token: string;
-		appId?: string;
 	};
-};
+}
+
+export interface Peer {
+	id: string;
+	peerId?: string;
+	summonerId?: string;
+	media?: {
+		enableAudio?: () => void;
+	};
+	stream?: MediaStream;
+	audioTrack?: MediaStreamTrack;
+}

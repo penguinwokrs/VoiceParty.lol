@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ActiveSessionView } from "./ActiveSessionView";
 import { JoinSessionForm } from "./JoinSessionForm";
+import { RemoteAudio } from "./RemoteAudio";
 import type { JoinResponse, Session } from "./types";
 import { useRealtime } from "./useRealtime";
 
@@ -99,18 +100,24 @@ export const VoiceChat = () => {
 
 	if (currentSession) {
 		return (
-			<ActiveSessionView
-				session={currentSession}
-				summonerId={summonerId}
-				isConnected={isConnected}
-				isMicMuted={isMicMuted}
-				loading={loading}
-				error={error}
-				onErrorClose={() => setError("")}
-				onToggleMic={toggleMic}
-				onLeave={handleLeave}
-				peers={peers}
-			/>
+			<>
+				{/* Rendering RemoteAudio here to keep ActiveSessionView presentational */}
+				{peers.map((p) => (
+					<RemoteAudio key={p.id || p.peerId || "unknown"} peer={p} />
+				))}
+				<ActiveSessionView
+					session={currentSession}
+					summonerId={summonerId}
+					isConnected={isConnected}
+					isMicMuted={isMicMuted}
+					loading={loading}
+					error={error}
+					onErrorClose={() => setError("")}
+					onToggleMic={toggleMic}
+					onLeave={handleLeave}
+					peers={peers}
+				/>
+			</>
 		);
 	}
 
