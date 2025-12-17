@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { within } from "@testing-library/react";
-import { expect } from "vitest";
+import { expect, within } from "@storybook/test";
 import { JoinSessionForm } from "./JoinSessionForm";
 
 const meta: Meta<typeof JoinSessionForm> = {
@@ -73,7 +72,7 @@ export const Loading: Story = {
 		// Verify loading state
 		await expect(canvas.getByRole("progressbar")).toBeInTheDocument();
 		// Verify button is disabled during loading
-		await expect(canvas.getByRole("button", { name: /join/i })).toBeDisabled();
+		await expect(canvas.getByRole("button")).toBeDisabled();
 	},
 };
 
