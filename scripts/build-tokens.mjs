@@ -46,5 +46,5 @@ writeFileSync(CSS_OUT, css);
 writeFileSync(TS_OUT, ts);
 
 console.log(
-	`[tokens] wrote ${Object.keys(tokenMap).length} tokens -> ${CSS_OUT.replace(root + "/", "")}, ${TS_OUT.replace(root + "/", "")}`,
+	`[tokens] wrote ${Object.keys(tokenMap).length} tokens -> ${CSS_OUT.replace(`${root}/`, "")}, ${TS_OUT.replace(`${root}/`, "")}`,
 );
