@@ -2,21 +2,14 @@ import styled from "@emotion/styled";
 import { Box, Button, Container, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
-// LoL-inspired Color Palette
-const colors = {
-	gold: "#C8AA6E",
-	goldHover: "#F0E6D2",
-	blue: "#0AC8B9",
-	darkBlue: "#091428",
-	hextechMagice: "#CDFAFA",
-	text: "#F0E6D2",
-};
+// Colors come from design tokens exposed as CSS variables
+// (src/theme/tokens.generated.css, generated from design/tokens.json).
 
 const PageWrapper = styled.div`
   min-height: 100vh;
-  background-color: ${colors.darkBlue};
-  background-image: radial-gradient(circle at center, #1a2c4e 0%, #091428 100%);
-  color: ${colors.text};
+  background-color: var(--color-bg-base);
+  background-image: radial-gradient(circle at center, var(--color-bg-elevated) 0%, var(--color-bg-base) 100%);
+  color: var(--color-text-primary);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -51,24 +44,24 @@ const Content = styled(Container)`
 
 const Title = styled(Typography)`
   font-weight: 800;
-  color: ${colors.gold};
+  color: var(--color-brand-gold);
   text-transform: uppercase;
   text-shadow: 0 0 10px rgba(200, 170, 110, 0.5);
   letter-spacing: 0.1em;
-  font-family: serif; // Fallback for specialized fonts
+  font-family: var(--font-family-display);
 `;
 
 const Subtitle = styled(Typography)`
-  color: ${colors.hextechMagice};
+  color: var(--color-brand-hextech);
   max-width: 600px;
   font-weight: 500;
   text-shadow: 0 0 5px rgba(10, 200, 185, 0.5);
 `;
 
 const PrimaryButton = styled(Button)`
-  background: linear-gradient(180deg, ${colors.gold} 0%, #9e824c 100%);
-  color: ${colors.darkBlue};
-  border: 1px solid ${colors.gold};
+  background: linear-gradient(180deg, var(--color-brand-gold) 0%, var(--color-brand-goldDark) 100%);
+  color: var(--color-bg-base);
+  border: 1px solid var(--color-brand-gold);
   padding: 1rem 3rem;
   font-size: 1.25rem;
   font-weight: 700;
@@ -80,7 +73,7 @@ const PrimaryButton = styled(Button)`
   clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
 
   &:hover {
-    background: linear-gradient(180deg, ${colors.goldHover} 0%, ${colors.gold} 100%);
+    background: linear-gradient(180deg, var(--color-brand-goldHover) 0%, var(--color-brand-gold) 100%);
     box-shadow: 0 0 20px rgba(200, 170, 110, 0.6);
     transform: translateY(-2px);
   }
@@ -106,7 +99,7 @@ const PrimaryButton = styled(Button)`
 const Divider = styled.div`
   height: 2px;
   width: 100px;
-  background: linear-gradient(90deg, transparent, ${colors.gold}, transparent);
+  background: linear-gradient(90deg, transparent, var(--color-brand-gold), transparent);
   margin: 1rem 0;
 `;
 
@@ -134,7 +127,7 @@ export const LandingPage = () => {
 				</PrimaryButton>
 
 				<Box sx={{ mt: 8 }}>
-					<Typography variant="body2" sx={{ color: "rgba(255,255,255,0.3)" }}>
+					<Typography variant="body2" sx={{ color: "var(--color-text-muted)" }}>
 						© {new Date().getFullYear()} Voice Party. Not affiliated with Riot
 						Games.
 					</Typography>

@@ -1,0 +1,58 @@
+// AUTO-GENERATED from design/tokens.json by scripts/build-tokens.mjs. Do not edit.
+// Concrete resolved values (aliases flattened) for use in the MUI theme.
+export const tokens = {
+	"color.brand.gold": "#C8AA6E",
+	"color.brand.goldHover": "#F0E6D2",
+	"color.brand.goldDark": "#9E824C",
+	"color.brand.teal": "#0AC8B9",
+	"color.brand.tealHover": "#0FE0CE",
+	"color.brand.hextech": "#CDFAFA",
+	"color.bg.base": "#091428",
+	"color.bg.elevated": "#1A2C4E",
+	"color.text.primary": "#F0E6D2",
+	"color.text.secondary": "#A09B8C",
+	"color.text.muted": "rgba(255, 255, 255, 0.3)",
+	"color.semantic.primary": "#0AC8B9",
+	"color.semantic.secondary": "#C8AA6E",
+	"space.1": "4px",
+	"space.2": "8px",
+	"space.3": "12px",
+	"space.4": "16px",
+	"space.6": "24px",
+	"space.8": "32px",
+	"radius.sm": "4px",
+	"radius.md": "8px",
+	"radius.lg": "16px",
+	"font.family.base": "Roboto, system-ui, -apple-system, sans-serif",
+	"font.family.display": "\"Beaufort\", \"Spiegel\", Roboto, serif",
+} as const;
+
+// var(--token) references for use in CSS-in-JS / raw CSS.
+export const cssVar = {
+	"color.brand.gold": "var(--color-brand-gold)",
+	"color.brand.goldHover": "var(--color-brand-goldHover)",
+	"color.brand.goldDark": "var(--color-brand-goldDark)",
+	"color.brand.teal": "var(--color-brand-teal)",
+	"color.brand.tealHover": "var(--color-brand-tealHover)",
+	"color.brand.hextech": "var(--color-brand-hextech)",
+	"color.bg.base": "var(--color-bg-base)",
+	"color.bg.elevated": "var(--color-bg-elevated)",
+	"color.text.primary": "var(--color-text-primary)",
+	"color.text.secondary": "var(--color-text-secondary)",
+	"color.text.muted": "var(--color-text-muted)",
+	"color.semantic.primary": "var(--color-semantic-primary)",
+	"color.semantic.secondary": "var(--color-semantic-secondary)",
+	"space.1": "var(--space-1)",
+	"space.2": "var(--space-2)",
+	"space.3": "var(--space-3)",
+	"space.4": "var(--space-4)",
+	"space.6": "var(--space-6)",
+	"space.8": "var(--space-8)",
+	"radius.sm": "var(--radius-sm)",
+	"radius.md": "var(--radius-md)",
+	"radius.lg": "var(--radius-lg)",
+	"font.family.base": "var(--font-family-base)",
+	"font.family.display": "var(--font-family-display)",
+} as const;
+
+export type TokenName = keyof typeof tokens;

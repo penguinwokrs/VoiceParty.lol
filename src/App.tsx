@@ -2,24 +2,17 @@ import {
 	Box,
 	Container,
 	CssBaseline,
-	createTheme,
 	ThemeProvider,
 	Typography,
 } from "@mui/material";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { VoiceChat } from "./components/VoiceChat";
 import { LandingPage } from "./pages/LandingPage";
-
-const darkTheme = createTheme({
-	palette: {
-		mode: "dark",
-	},
-});
-
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { theme } from "./theme";
 
 function App() {
 	return (
-		<ThemeProvider theme={darkTheme}>
+		<ThemeProvider theme={theme}>
 			<CssBaseline />
 
 			<BrowserRouter>
