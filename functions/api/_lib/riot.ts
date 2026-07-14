@@ -92,15 +92,49 @@ export async function getSummonerByPuuid(
 	}
 }
 
+// Fallback if versions.json is unreachable. A stale version 403s for newer
+// profile icons, so we keep this reasonably current and prefer the live fetch.
+const FALLBACK_DDRAGON_VERSION = "16.13.1";
+const DDRAGON_VERSION_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+let cachedVersion: string | null = null;
+let cachedVersionAt = 0;
+
 /**
- * Returns the CDN URL for a profile icon ID.
- * Defaults to "latest" version, might need occasional update or fetch version.
- * Using hardcoded version for simplicity as getting Data Dragon version requires another call.
+ * Returns the latest Data Dragon version, memoized per isolate for 1 hour.
+ * Falls back to the last known good (or a hardcoded) version on failure.
  */
-export function getProfileIconUrl(iconId: number): string {
-	// Using a relatively recent version, 14.1.1 is safe fallback, or use "latest" if cdn supports it (it usually doesn't without specific version)
-	// Ideally we fetch version from https://ddragon.leagueoflegends.com/api/versions.json
-	// For now, let's hardcode a recent one "14.23.1" (from late 2024/early 2025 context) or slightly older safe bet.
-	const version = "14.23.1";
+export async function getLatestDDragonVersion(): Promise<string> {
+	const now = Date.now();
+	if (cachedVersion && now - cachedVersionAt < DDRAGON_VERSION_TTL_MS) {
+		return cachedVersion;
+	}
+	try {
+		const res = await fetch(
+			"https://ddragon.leagueoflegends.com/api/versions.json",
+		);
+		if (res.ok) {
+			const versions = (await res.json()) as string[];
+			if (Array.isArray(versions) && versions.length > 0 && versions[0]) {
+				cachedVersion = versions[0];
+				cachedVersionAt = now;
+				return cachedVersion;
+			}
+		}
+		console.error(`[DDragon] versions.json returned ${res.status}`);
+	} catch (e) {
+		console.error("[DDragon] Failed to fetch versions.json:", e);
+	}
+	// Reuse a previously cached value if we have one, else the hardcoded fallback.
+	return cachedVersion ?? FALLBACK_DDRAGON_VERSION;
+}
+
+/**
+ * Returns the CDN URL for a profile icon ID using the latest Data Dragon
+ * version. Newer icon IDs 403 on stale versions, so the version is resolved
+ * dynamically (and cached) rather than hardcoded.
+ */
+export async function getProfileIconUrl(iconId: number): Promise<string> {
+	const version = await getLatestDDragonVersion();
 	return `https://ddragon.leagueoflegends.com/cdn/${version}/img/profileicon/${iconId}.png`;
 }

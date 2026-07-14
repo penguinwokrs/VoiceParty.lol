@@ -96,7 +96,7 @@ app.post("/:id/join", async (c) => {
 		// 2. Fetch Summoner to get Icon
 		const summoner = await getSummonerByPuuid(account.puuid, apiKey);
 		if (summoner) {
-			validIconUrl = getProfileIconUrl(summoner.profileIconId);
+			validIconUrl = await getProfileIconUrl(summoner.profileIconId);
 			console.log(`[Join] Fetched Icon URL: ${validIconUrl}`);
 		} else {
 			console.warn("[Join] Could not fetch summoner details for icon");
