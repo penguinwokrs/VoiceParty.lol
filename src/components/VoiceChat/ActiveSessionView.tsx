@@ -36,13 +36,22 @@ type ActiveSessionViewProps = {
 interface Peer {
 	id: string;
 	peerId?: string;
-	summonerId?: string; // Add summonerId which might come from RealtimeKit
+	// RealtimeKit Participant identity fields. The backend sets both `name` and
+	// `custom_participant_id` to the Summoner ID when creating the participant.
+	name?: string;
+	customParticipantId?: string;
+	summonerId?: string; // legacy/fallback
 	media?: {
 		enableAudio?: () => void;
 	};
 	stream?: MediaStream;
 	audioTrack?: MediaStreamTrack;
 }
+
+// Resolve a peer's Summoner ID from the RealtimeKit participant fields.
+// `peer.id` is an internal UUID and must only be used as a last resort.
+const peerSummonerId = (peer: Peer): string =>
+	peer.customParticipantId || peer.name || peer.summonerId || peer.id;
 
 // Helper component for remote audio
 const RemoteAudio = ({ peer }: { peer: Peer }) => {
@@ -188,24 +197,24 @@ export const ActiveSessionView = ({
 
 						{/* Render Remote Peers */}
 						{peers.map((peer) => {
-							// Try to find metadata from session users (best effort)
+							// Resolve the Summoner ID from the participant, then look up
+							// session metadata (e.g. profile icon) by that ID.
+							const summonerId = peerSummonerId(peer);
 							const meta = session.users.find(
-								(u) => u.summonerId === (peer.summonerId || peer.id),
+								(u) => u.summonerId === summonerId,
 							);
 							return (
 								<ListItem key={peer.id || peer.peerId}>
 									<ListItemAvatar>
 										<Avatar
 											src={meta?.iconUrl}
-											alt={meta?.summonerId || peer.summonerId || "Unknown"}
+											alt={summonerId}
 											sx={{ bgcolor: "grey.600" }}
 										>
 											<PersonIcon />
 										</Avatar>
 									</ListItemAvatar>
-									<ListItemText
-										primary={meta?.summonerId || peer.summonerId || peer.id}
-									/>
+									<ListItemText primary={summonerId} />
 								</ListItem>
 							);
 						})}
