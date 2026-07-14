@@ -1,7 +1,64 @@
 import { Hono } from "hono";
+import {
+	getAccountByRiotId,
+	getProfileIconUrl,
+	getSummonerByPuuid,
+} from "../_lib/riot";
 import type { Bindings } from "../_types";
 
 const app = new Hono<{ Bindings: Bindings }>();
+
+/**
+ * Provisional login using a Riot ID (Name#Tag) validated via the Account-V1 API.
+ *
+ * This works with a Personal / Development API key today, unlike the RSO OAuth
+ * flow below which requires an approved Production RSO client from Riot.
+ * It verifies the identity exists and returns the resolved account + profile icon.
+ */
+app.post("/riot-id", async (c) => {
+	const apiKey = c.env.RIOT_GAME_API_KEY;
+	if (!apiKey) {
+		return c.text("Configuration error: Missing Riot API Key", 503);
+	}
+
+	let body: { riotId?: string };
+	try {
+		body = await c.req.json<{ riotId?: string }>();
+	} catch {
+		return c.text("Invalid JSON body", 400);
+	}
+
+	const riotId = body.riotId?.trim();
+	if (!riotId) {
+		return c.text("riotId is required", 400);
+	}
+	if (!riotId.includes("#")) {
+		return c.text("riotId must be in 'Name#Tag' format", 400);
+	}
+	if (riotId.length > 32) {
+		return c.text("riotId is too long (max 32 chars)", 400);
+	}
+
+	const account = await getAccountByRiotId(riotId, apiKey);
+	if (!account) {
+		return c.text("Riot ID not found", 404);
+	}
+
+	// Best-effort icon lookup; identity is valid even if this fails.
+	let iconUrl: string | undefined;
+	const summoner = await getSummonerByPuuid(account.puuid, apiKey);
+	if (summoner) {
+		iconUrl = await getProfileIconUrl(summoner.profileIconId);
+	}
+
+	return c.json({
+		puuid: account.puuid,
+		gameName: account.gameName,
+		tagLine: account.tagLine,
+		riotId: `${account.gameName}#${account.tagLine}`,
+		iconUrl,
+	});
+});
 
 app.get("/login", (c) => {
 	const clientID = c.env.RIOT_CLIENT_ID;

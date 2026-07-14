@@ -27,5 +27,9 @@ dist-ssr
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Wrangler local secrets (wrangler pages dev loads this automatically)
+.dev.vars
+.dev.vars.*
 .wrangler/
 tsp-output/
