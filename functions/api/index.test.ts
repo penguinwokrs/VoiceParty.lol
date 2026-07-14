@@ -160,6 +160,23 @@ describe("Riot ID Login (Personal Key)", () => {
 		expect(res.status).toBe(503);
 		expect(await res.text()).toContain("Missing Riot API Key");
 	});
+
+	it("skips the Riot API and echoes the ID when validation is disabled", async () => {
+		const disabledEnv = { ...loginEnv, RIOT_VALIDATION_ENABLED: "false" };
+		const res = await post({ riotId: "Anyone#XYZ" }, disabledEnv);
+		expect(res.status).toBe(200);
+		// biome-ignore lint/suspicious/noExplicitAny: Test assertion
+		const body = (await res.json()) as any;
+		expect(body).toMatchObject({
+			puuid: null,
+			gameName: "Anyone",
+			tagLine: "XYZ",
+			riotId: "Anyone#XYZ",
+			validated: false,
+		});
+		// No Riot API call should be made when validation is disabled
+		expect(global.fetch).not.toHaveBeenCalled();
+	});
 });
 
 describe("Session Management", () => {
@@ -260,6 +277,36 @@ describe("Session Management", () => {
 	});
 
 	// ... existing tests ...
+
+	it("POST /sessions/:id/join accepts any Summoner ID when validation is disabled", async () => {
+		const disabledEnv = { ...testEnv, RIOT_VALIDATION_ENABLED: "false" };
+		const sessionId = "test-session-disabled";
+		mockKV.get.mockResolvedValueOnce("mock-meeting-id").mockResolvedValueOnce(
+			JSON.stringify({
+				sessionId,
+				meetingId: "mock-meeting-id",
+				users: [],
+				createdAt: Date.now(),
+			}),
+		);
+
+		const res = await app.request(
+			`/api/sessions/${sessionId}/join`,
+			{
+				method: "POST",
+				// "invalid#tag" would 404 with validation on; here it must succeed
+				body: JSON.stringify({ summonerId: "invalid#tag" }),
+				headers: { "Content-Type": "application/json" },
+			},
+			disabledEnv,
+		);
+
+		expect(res.status).toBe(200);
+		// biome-ignore lint/suspicious/noExplicitAny: Test assertion
+		const body = (await res.json()) as any;
+		expect(body.session.users).toHaveLength(1);
+		expect(body.session.users[0].summonerId).toBe("invalid#tag");
+	});
 
 	it("POST /sessions/:id/join rejects invalid Summoner ID", async () => {
 		const sessionId = "test-session-invalid";

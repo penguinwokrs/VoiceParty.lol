@@ -16,11 +16,6 @@ const app = new Hono<{ Bindings: Bindings }>();
  * It verifies the identity exists and returns the resolved account + profile icon.
  */
 app.post("/riot-id", async (c) => {
-	const apiKey = c.env.RIOT_GAME_API_KEY;
-	if (!apiKey) {
-		return c.text("Configuration error: Missing Riot API Key", 503);
-	}
-
 	let body: { riotId?: string };
 	try {
 		body = await c.req.json<{ riotId?: string }>();
@@ -37,6 +32,27 @@ app.post("/riot-id", async (c) => {
 	}
 	if (riotId.length > 32) {
 		return c.text("riotId is too long (max 32 chars)", 400);
+	}
+
+	const [gameName, tagLine] = riotId.split("#");
+
+	// Validation temporarily disabled (e.g. awaiting RSO approval): accept the
+	// Riot ID as-is without contacting the Riot API. The RSO/validation code
+	// below is kept intact and re-enabled by unsetting the flag.
+	if (c.env.RIOT_VALIDATION_ENABLED === "false") {
+		return c.json({
+			puuid: null,
+			gameName,
+			tagLine,
+			riotId,
+			iconUrl: undefined,
+			validated: false,
+		});
+	}
+
+	const apiKey = c.env.RIOT_GAME_API_KEY;
+	if (!apiKey) {
+		return c.text("Configuration error: Missing Riot API Key", 503);
 	}
 
 	const account = await getAccountByRiotId(riotId, apiKey);
@@ -57,6 +73,7 @@ app.post("/riot-id", async (c) => {
 		tagLine: account.tagLine,
 		riotId: `${account.gameName}#${account.tagLine}`,
 		iconUrl,
+		validated: true,
 	});
 });
 

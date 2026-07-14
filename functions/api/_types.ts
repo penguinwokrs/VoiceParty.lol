@@ -3,6 +3,9 @@ export type Bindings = {
 	RIOT_CLIENT_ID: string;
 	RIOT_CLIENT_SECRET: string;
 	RIOT_GAME_API_KEY: string;
+	// Set to "false" to temporarily disable Riot API validation (e.g. while
+	// awaiting RSO production approval). Any other value keeps validation on.
+	RIOT_VALIDATION_ENABLED: string;
 	REALTIME_ORG_ID: string;
 	REALTIME_API_KEY: string;
 	REALTIME_KIT_APP_ID: string;
