@@ -1,13 +1,11 @@
 import {
 	Box,
-	Card,
 	Container,
 	CssBaseline,
 	createTheme,
 	ThemeProvider,
 	Typography,
 } from "@mui/material";
-import { Counter } from "./components/Counter";
 import { VoiceChat } from "./components/VoiceChat";
 import { LandingPage } from "./pages/LandingPage";
 
@@ -57,13 +55,6 @@ function App() {
 								>
 									{/* Main Voice Chat Component */}
 									<VoiceChat />
-
-									<Card sx={{ p: 4, width: "100%", maxWidth: 400 }}>
-										<Typography variant="h6" gutterBottom>
-											Counter Demo
-										</Typography>
-										<Counter />
-									</Card>
 								</Box>
 							</Container>
 						}
@@ -98,13 +89,6 @@ function App() {
 								>
 									{/* Main Voice Chat Component */}
 									<VoiceChat />
-
-									<Card sx={{ p: 4, width: "100%", maxWidth: 400 }}>
-										<Typography variant="h6" gutterBottom>
-											Counter Demo
-										</Typography>
-										<Counter />
-									</Card>
 								</Box>
 							</Container>
 						}
