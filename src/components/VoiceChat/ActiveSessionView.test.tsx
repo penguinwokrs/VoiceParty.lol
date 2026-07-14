@@ -5,7 +5,6 @@ import type { Session } from "./types";
 
 const session: Session = {
 	sessionId: "game-abc",
-	meetingId: "meeting-1",
 	users: [
 		{ summonerId: "Ashe#JP1", joinedAt: 1 },
 		{ summonerId: "Zed#JP1", joinedAt: 2, iconUrl: "https://cdn/icon.png" },
