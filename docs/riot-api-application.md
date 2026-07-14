@@ -10,7 +10,47 @@ once RSO access is approved.
 
 ---
 
-## Submission text (English)
+## Submission text — concise (English, recommended)
+
+Use this when the form has a character limit. `~950 chars`.
+
+> VoiceParty.lol is a browser-based voice chat for League of Legends players.
+> Players sharing the same Game ID join a WebRTC voice room (up to 5) to talk
+> while playing — no install.
+>
+> Current flow: the player enters their Riot ID (GameName#TagLine) and a Game
+> ID, then joins the matching voice room. The backend uses ACCOUNT-V1 to verify
+> the Riot ID and get the PUUID, and SUMMONER-V4 to fetch the profile icon for
+> display. Only temporary room membership is stored in Cloudflare KV; no match,
+> rank, or sensitive data is collected. All traffic is HTTPS and we respect rate
+> limits.
+>
+> After RSO approval: manual entry is removed. Players sign in with Riot (RSO);
+> their identity (PUUID, GameName#TagLine, icon) is fetched automatically via
+> RSO + ACCOUNT-V1, and the Game ID is auto-detected from their live match
+> (SPECTATOR-V5). The result is a zero-input flow with Riot-verified identities,
+> preventing impersonation.
+
+## Submission text — ultra short (English)
+
+For tighter limits. `~640 chars`.
+
+> VoiceParty.lol is a browser voice chat for League of Legends. Players sharing
+> a Game ID join a WebRTC voice room (up to 5) to talk while playing.
+>
+> Currently they enter a Riot ID (GameName#TagLine) and Game ID; the backend
+> verifies the ID via ACCOUNT-V1 (PUUID) and gets the profile icon via
+> SUMMONER-V4. Only temporary room membership is stored; no match/rank/sensitive
+> data. HTTPS, rate limits respected.
+>
+> After RSO approval, manual entry is removed: players sign in with Riot (RSO),
+> identity is fetched automatically (RSO + ACCOUNT-V1), and the Game ID is
+> auto-detected from the live match (SPECTATOR-V5) — a zero-input flow with
+> Riot-verified identities.
+
+## Submission text — extended (English)
+
+Use when there is no meaningful character limit.
 
 **Product Name:** VoiceParty.lol
 
