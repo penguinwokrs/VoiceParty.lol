@@ -48,6 +48,11 @@ automatically as part of `pnpm build`.
 Add a new token → put it in `design/tokens.json` → `pnpm tokens:build` → use
 `var(--…)` or `tokens["…"]`.
 
+> To review the **design and flow (導線)** in Penpot (import tokens + screen
+> renders and wire the prototype), see
+> [design/penpot-review.md](../design/penpot-review.md) and
+> [design/flow.md](../design/flow.md).
+
 ## Editing in Penpot
 
 You can use **Penpot Cloud** (https://penpot.app, no setup) or **self-host**:
