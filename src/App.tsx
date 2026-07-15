@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { LangLayout } from "./components/LangLayout";
 import { JoinPage } from "./pages/JoinPage";
 import { LandingPage } from "./pages/LandingPage";
+import { PrivacyPage } from "./pages/PrivacyPage";
+import { TermsPage } from "./pages/TermsPage";
 import { theme } from "./theme";
 
 function App() {
@@ -17,6 +19,8 @@ function App() {
 						<Route path="/" element={<LandingPage />} />
 						<Route path="/join" element={<JoinPage />} />
 						<Route path="/join/:sessionId" element={<JoinPage />} />
+						<Route path="/privacy" element={<PrivacyPage />} />
+						<Route path="/terms" element={<TermsPage />} />
 					</Route>
 
 					{/* Prefixed languages: /ja, /ko (and their sub-routes). */}
@@ -24,6 +28,8 @@ function App() {
 						<Route index element={<LandingPage />} />
 						<Route path="join" element={<JoinPage />} />
 						<Route path="join/:sessionId" element={<JoinPage />} />
+						<Route path="privacy" element={<PrivacyPage />} />
+						<Route path="terms" element={<TermsPage />} />
 					</Route>
 				</Routes>
 			</BrowserRouter>
