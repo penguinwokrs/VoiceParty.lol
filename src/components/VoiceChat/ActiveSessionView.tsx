@@ -39,21 +39,20 @@ const VOLUMES_KEY = "vp_volumes";
 // remembered separately from their volume level.
 const MUTED_KEY = "vp_muted";
 
-const loadVolumes = (): Record<string, number> => {
+// Guarded localStorage read: `localStorage` is undefined under SSR and can throw
+// a SecurityError in sandboxed/embedded contexts (e.g. the Storybook iframe).
+const readJson = <T,>(key: string, fallback: T): T => {
+	if (typeof window === "undefined") return fallback;
 	try {
-		return JSON.parse(localStorage.getItem(VOLUMES_KEY) || "{}");
+		return JSON.parse(localStorage.getItem(key) || "null") ?? fallback;
 	} catch {
-		return {};
+		return fallback;
 	}
 };
 
-const loadMuted = (): Record<string, boolean> => {
-	try {
-		return JSON.parse(localStorage.getItem(MUTED_KEY) || "{}");
-	} catch {
-		return {};
-	}
-};
+const loadVolumes = (): Record<string, number> => readJson(VOLUMES_KEY, {});
+
+const loadMuted = (): Record<string, boolean> => readJson(MUTED_KEY, {});
 
 // Keyframes reused by the connection indicators (defined once on the Card root).
 const connectionKeyframes = {
@@ -318,16 +317,16 @@ export const ActiveSessionView = ({
 	// Per-participant receive volume (percent), keyed by Summoner ID so a
 	// player's preferred level sticks across sessions.
 	const [volumes, setVolumes] = useState<Record<string, number>>(loadVolumes);
+	// Compute the next value and persist it directly in the handler — the state
+	// updater must stay pure (React may invoke it twice under StrictMode/concurrent).
 	const setVolume = (sid: string, pct: number) => {
-		setVolumes((prev) => {
-			const next = { ...prev, [sid]: pct };
-			try {
-				localStorage.setItem(VOLUMES_KEY, JSON.stringify(next));
-			} catch {
-				/* ignore quota errors */
-			}
-			return next;
-		});
+		const next = { ...volumes, [sid]: pct };
+		setVolumes(next);
+		try {
+			localStorage.setItem(VOLUMES_KEY, JSON.stringify(next));
+		} catch {
+			/* ignore quota errors */
+		}
 		audioCtx?.resume().catch(() => {});
 	};
 	const volumeOf = (sid: string) => volumes[sid] ?? VOLUME_DEFAULT;
@@ -336,15 +335,13 @@ export const ActiveSessionView = ({
 	const [muted, setMuted] = useState<Record<string, boolean>>(loadMuted);
 	const isMuted = (sid: string) => muted[sid] ?? false;
 	const toggleMute = (sid: string) => {
-		setMuted((prev) => {
-			const next = { ...prev, [sid]: !prev[sid] };
-			try {
-				localStorage.setItem(MUTED_KEY, JSON.stringify(next));
-			} catch {
-				/* ignore quota errors */
-			}
-			return next;
-		});
+		const next = { ...muted, [sid]: !muted[sid] };
+		setMuted(next);
+		try {
+			localStorage.setItem(MUTED_KEY, JSON.stringify(next));
+		} catch {
+			/* ignore quota errors */
+		}
 		audioCtx?.resume().catch(() => {});
 	};
 
