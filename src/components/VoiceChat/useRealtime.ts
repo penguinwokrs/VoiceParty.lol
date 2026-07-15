@@ -245,6 +245,9 @@ export const useRealtime = () => {
 				clearTimeout(speakingTimersRef.current[id]);
 			}
 			speakingTimersRef.current = {};
+			// Drop any lingering speaking indicators so they don't bleed into the
+			// next client/session.
+			setActiveSpeakers(new Set());
 			if (typeof eventSource.off === "function") {
 				// Use explicit event names for cleanup
 				eventSource.off("peer.joined", handleUpdate);
@@ -431,9 +434,14 @@ export const useRealtime = () => {
 		}
 	}, [client, isMock, updateMuteState]);
 
+	// Match on both `peerId` and `id` — the activeSpeaker event's peerId can key
+	// off either, mirroring the defensive checks used for remote peers.
 	// biome-ignore lint/suspicious/noExplicitAny: SDK self typing
-	const selfPeerId: string | undefined = (client?.self as any)?.peerId;
-	const selfSpeaking = !!(selfPeerId && activeSpeakers.has(selfPeerId));
+	const self = client?.self as any;
+	const selfSpeaking = !!(
+		(self?.peerId && activeSpeakers.has(self.peerId)) ||
+		(self?.id && activeSpeakers.has(self.id))
+	);
 
 	return {
 		join,
