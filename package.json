@@ -18,7 +18,7 @@
 		"preview": "vite preview",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"type-check": "tsc --noEmit",
+		"type-check": "tsc -b",
 		"gen:api": "tsp compile client/typespec && orval --config client/orval.config.ts",
 		"gen:all": "python3 generate_typespec.py && pnpm gen:api"
 	},

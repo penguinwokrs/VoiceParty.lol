@@ -31,18 +31,20 @@ Two-tier model:
 
 ## Credentials
 
-Secret **values** live only in **GitHub Environment secrets**, never in git.
-Terraform declares them as `sensitive` variables read from `TF_VAR_*` at
-runtime. Terraform *state* (which contains secrets in plaintext) is stored
-encrypted in R2 and is gitignored.
+**App secrets (RIOT_*, REALTIME_*, CLOUD_FLARE_API_KEY) are NOT managed by
+Terraform.** The app ships via `wrangler pages deploy` (direct upload), and
+direct-upload deployments read secrets from **Pages Functions secrets**, not
+from the project config Terraform can set. So app secrets go through
+`wrangler pages secret put` — see the `add-env-var` skill. (Terraform managing
+them via `cloudflare_pages_project.env_vars` left them empty at runtime and
+broke production; `pages.tf` now `ignore_changes`es `deployment_configs`.)
 
-Required GitHub secrets (repo Settings → Environments):
+Terraform only needs the infra credentials, and its *state* (encrypted in R2) is
+gitignored:
 
 - `infra-production` environment (require reviewers):
   `CLOUDFLARE_PROVISION_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`,
-  `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`,
-  `RIOT_GAME_API_KEY`, `RIOT_CLIENT_ID`, `RIOT_CLIENT_SECRET`,
-  `REALTIME_ORG_ID`, `REALTIME_API_KEY`, `REALTIME_KIT_APP_ID`
+  `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`
 - `app-production` environment:
   `CLOUDFLARE_DEPLOY_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
 
@@ -74,8 +76,7 @@ cd ../main
 export CLOUDFLARE_API_TOKEN=<provision-token>
 export AWS_ACCESS_KEY_ID=<r2-access-key-id>
 export AWS_SECRET_ACCESS_KEY=<r2-secret-access-key>
-# Required secrets must be supplied (no defaults) or apply errors instead of
-# dropping them — put them in terraform.tfvars (gitignored) or TF_VAR_* env.
+# No app secrets needed here — Terraform doesn't manage them (see Credentials).
 tofu init
 
 # 4. Reconcile until the plan is clean/intended, then apply (imports + changes).
@@ -95,7 +96,8 @@ tofu apply
 - Provider v5 changed schemas heavily vs v4. If a resource attribute is
   rejected, check the exact shape at
   <https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs>.
-- `secret_text` env vars are write-only; after import they always appear as
-  "to set" — expected.
+- App secrets/env vars/bindings are owned by the deploy tooling (wrangler.toml +
+  `wrangler pages secret put`), not Terraform — `pages.tf` `ignore_changes`es
+  `deployment_configs`. See the `add-env-var` skill.
 - If you'd rather not enable R2, switch the backend to HCP Terraform (free tier)
   in `versions.tf` — everything else stays the same.

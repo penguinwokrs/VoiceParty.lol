@@ -2,45 +2,18 @@
 #
 # Import the existing project (do NOT create a duplicate) with:
 #   tofu import cloudflare_pages_project.voiceparty <account_id>/voiceparty
-# then `tofu plan` and reconcile any drift between this file and the live config.
 #
-# NOTE on secrets: env vars of type "secret_text" are write-only — Cloudflare
-# never returns their values, so after import they show as needing to be set.
-# That is expected; applying re-seals them from the TF_VAR_* values.
-
-locals {
-  # Secret env vars, keyed by the name the Pages Function reads. Empty values
-  # are filtered out so that disabled integrations (e.g. RSO while awaiting
-  # approval) don't push empty secrets to Cloudflare.
-  secret_env_raw = {
-    RIOT_GAME_API_KEY   = var.riot_game_api_key
-    RIOT_CLIENT_ID      = var.riot_client_id
-    RIOT_CLIENT_SECRET  = var.riot_client_secret
-    REALTIME_ORG_ID     = var.realtime_org_id
-    REALTIME_API_KEY    = var.realtime_api_key
-    REALTIME_KIT_APP_ID = var.realtime_kit_app_id
-    CLOUD_FLARE_API_KEY = var.cloud_flare_api_key
-  }
-
-  secret_env_vars = {
-    for k, v in local.secret_env_raw : k => { type = "secret_text", value = v }
-    if v != ""
-  }
-
-  # Plain (non-secret) vars. Keep this in sync with wrangler.toml [vars] —
-  # `wrangler pages deploy` overwrites the project's plain vars to match
-  # wrangler.toml on every production deploy, so any plain var TF sets that is
-  # absent from wrangler.toml would be dropped on the next deploy.
-  plain_env_raw = {
-    RIOT_VALIDATION_ENABLED = var.riot_validation_enabled
-  }
-
-  plain_env_vars = {
-    for k, v in local.plain_env_raw : k => { type = "plain_text", value = v }
-    if v != ""
-  }
-}
-
+# IMPORTANT — Terraform does NOT manage the runtime config (env vars, secrets,
+# bindings). The app ships via `wrangler pages deploy` (direct upload), and a
+# direct-upload deployment takes its config from wrangler.toml + Pages Functions
+# secrets, NOT from the project's deployment_configs that Terraform would set.
+# So:
+#   - plain vars  -> wrangler.toml [vars]
+#   - secrets     -> `wrangler pages secret put <NAME> --project-name voiceparty`
+#   - KV bindings -> wrangler.toml [[kv_namespaces]]
+# deployment_configs is therefore left to the deploy tooling; the lifecycle
+# block below stops Terraform from fighting (or wiping) it. TF still owns the
+# durable resources: the project's existence, the KV namespaces, R2, etc.
 resource "cloudflare_pages_project" "voiceparty" {
   account_id        = var.account_id
   name              = "voiceparty"
@@ -52,26 +25,10 @@ resource "cloudflare_pages_project" "voiceparty" {
     root_dir        = ""
   }
 
-  deployment_configs = {
-    production = {
-      compatibility_date = "2024-04-01"
-
-      kv_namespaces = {
-        VC_SESSIONS = { namespace_id = cloudflare_workers_kv_namespace.sessions.id }
-      }
-
-      env_vars = merge(local.plain_env_vars, local.secret_env_vars)
-    }
-
-    preview = {
-      compatibility_date = "2024-04-01"
-
-      kv_namespaces = {
-        VC_SESSIONS = { namespace_id = cloudflare_workers_kv_namespace.sessions_preview.id }
-      }
-
-      env_vars = merge(local.plain_env_vars, local.secret_env_vars)
-    }
+  lifecycle {
+    # Runtime config is owned by wrangler.toml + `wrangler pages secret put`,
+    # not Terraform. Never let an apply reset env vars / secrets / bindings.
+    ignore_changes = [deployment_configs]
   }
 }
 
