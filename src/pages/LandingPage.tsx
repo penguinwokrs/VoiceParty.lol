@@ -456,12 +456,6 @@ export const LandingPage = () => {
 						>
 							{t("landing.cta")}
 						</PrimaryButton>
-						<Typography
-							variant="body2"
-							sx={{ color: "var(--color-text-muted)", mt: 4 }}
-						>
-							{t("landing.footer", { year: new Date().getFullYear() })}
-						</Typography>
 					</FinalCta>
 				</Container>
 			</Section>

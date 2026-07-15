@@ -3,9 +3,12 @@
 import styled from "@emotion/styled";
 import type { ReactNode } from "react";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { SiteFooter } from "./SiteFooter";
 
 const PageWrapper = styled.div`
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   position: relative;
   overflow: hidden;
   color: var(--color-text-primary);
@@ -48,6 +51,15 @@ export const AppShell = ({ children }: { children: ReactNode }) => (
 		<TopBar>
 			<LanguageSwitcher />
 		</TopBar>
-		{children}
+		{/* Grows to fill the viewport so the footer stays at the bottom on short
+		    pages while still flowing below tall content. */}
+		<Main>{children}</Main>
+		<SiteFooter />
 	</PageWrapper>
 );
+
+const Main = styled.main`
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+`;
