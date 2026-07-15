@@ -77,3 +77,8 @@ export const NoiseSuppressionOn: Story = {
 export const WithError: Story = {
 	args: { error: "Joined session but voice connection failed" },
 };
+
+export const Speaking: Story = {
+	// "p1" (Zed) and the local user are actively speaking → pulsing green ring.
+	args: { activeSpeakers: new Set(["p1"]), selfSpeaking: true },
+};

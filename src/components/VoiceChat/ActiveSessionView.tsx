@@ -73,6 +73,22 @@ const connectionKeyframes = {
 		"0%": { backgroundPosition: "200% 0" },
 		"100%": { backgroundPosition: "-200% 0" },
 	},
+	// Speaking indicator: a thick, vivid green ring + a constant soft glow +
+	// an expanding pulse halo, so it reads clearly even over the teal self avatar.
+	"@keyframes vpSpeak": {
+		"0%": {
+			boxShadow:
+				"0 0 0 3px rgba(46, 213, 115, 1), 0 0 12px 2px rgba(46, 213, 115, 0.75), 0 0 0 3px rgba(46, 213, 115, 0.6)",
+		},
+		"70%": {
+			boxShadow:
+				"0 0 0 3px rgba(46, 213, 115, 1), 0 0 12px 2px rgba(46, 213, 115, 0.75), 0 0 0 14px rgba(46, 213, 115, 0)",
+		},
+		"100%": {
+			boxShadow:
+				"0 0 0 3px rgba(46, 213, 115, 1), 0 0 12px 2px rgba(46, 213, 115, 0.75), 0 0 0 14px rgba(46, 213, 115, 0)",
+		},
+	},
 } as const;
 
 type ActiveSessionViewProps = {
@@ -90,6 +106,9 @@ type ActiveSessionViewProps = {
 	onReconnect?: () => void;
 	noiseSuppression?: boolean;
 	onToggleNoiseSuppression?: () => void;
+	// Peer IDs currently speaking, and whether the local user is speaking.
+	activeSpeakers?: Set<string>;
+	selfSpeaking?: boolean;
 	peers?: Peer[];
 };
 
@@ -117,19 +136,22 @@ const StatusDot = ({ state }: { state: ConnectionState }) => {
 	);
 };
 
-// Avatar with a connection-status dot badge at the bottom-right.
+// Avatar with a connection-status dot badge at the bottom-right, plus a pulsing
+// green ring while the participant is speaking.
 const AvatarWithStatus = ({
 	src,
 	alt,
 	state,
 	dimmed,
 	bgcolor,
+	speaking,
 }: {
 	src?: string;
 	alt: string;
 	state: ConnectionState;
 	dimmed?: boolean;
 	bgcolor: string;
+	speaking?: boolean;
 }) => (
 	<Box sx={{ position: "relative", display: "inline-flex" }}>
 		<Avatar
@@ -139,7 +161,11 @@ const AvatarWithStatus = ({
 				bgcolor,
 				opacity: dimmed ? 0.45 : 1,
 				filter: dimmed ? "grayscale(1)" : "none",
-				transition: "opacity 0.3s, filter 0.3s",
+				transition: "opacity 0.3s, filter 0.3s, box-shadow 0.2s",
+				...(speaking && {
+					boxShadow: "0 0 0 3px rgba(46, 213, 115, 1)",
+					animation: "vpSpeak 1.3s ease-out infinite",
+				}),
 			}}
 		>
 			<PersonIcon />
@@ -257,9 +283,17 @@ export const ActiveSessionView = ({
 	onReconnect,
 	noiseSuppression = false,
 	onToggleNoiseSuppression,
+	activeSpeakers,
+	selfSpeaking = false,
 	peers = [], // Default to empty array
 }: ActiveSessionViewProps) => {
 	const { t } = useTranslation();
+
+	// A remote peer is "speaking" if either of its RealtimeKit ids is active.
+	const isPeerSpeaking = (peer: Peer): boolean =>
+		!!activeSpeakers &&
+		(activeSpeakers.has(peer.id) ||
+			(!!peer.peerId && activeSpeakers.has(peer.peerId)));
 
 	// One AudioContext per session, used for per-peer gain (volume + boost).
 	// Created in an effect (never during render — a discarded render would leak
@@ -488,6 +522,7 @@ export const ActiveSessionView = ({
 									state={state}
 									dimmed={!healthy}
 									bgcolor="primary.main"
+									speaking={healthy && selfSpeaking}
 								/>
 							</ListItemAvatar>
 							<ListItemText
@@ -540,6 +575,7 @@ export const ActiveSessionView = ({
 												state={rosterState}
 												dimmed={!healthy}
 												bgcolor="grey.600"
+												speaking={healthy && isPeerSpeaking(peer)}
 											/>
 										</ListItemAvatar>
 										<ListItemText
