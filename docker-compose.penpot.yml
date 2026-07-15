@@ -1,0 +1,99 @@
+# Self-hosted Penpot for local design work. Mirrors the upstream reference
+# compose (https://github.com/penpot/penpot/blob/main/docker/images/docker-compose.yaml).
+# It is intentionally separate from the app; nothing here runs in production.
+#
+#   docker compose -f docker-compose.penpot.yml up -d
+#   open http://localhost:9001    # register a local account, then design
+#
+# If this drifts from upstream, fetch the canonical file:
+#   curl -o docker-compose.penpot.yml \
+#     https://raw.githubusercontent.com/penpot/penpot/main/docker/images/docker-compose.yaml
+
+networks:
+  penpot:
+
+volumes:
+  penpot_postgres_v15:
+  penpot_assets:
+
+services:
+  penpot-frontend:
+    image: penpotapp/frontend:latest
+    restart: always
+    ports:
+      - "9001:8080"
+    volumes:
+      - penpot_assets:/opt/data/assets
+    depends_on:
+      - penpot-backend
+      - penpot-exporter
+    networks:
+      - penpot
+    environment:
+      - PENPOT_FLAGS=enable-registration enable-login-with-password disable-email-verification
+
+  penpot-backend:
+    image: penpotapp/backend:latest
+    restart: always
+    volumes:
+      - penpot_assets:/opt/data/assets
+    depends_on:
+      penpot-postgres:
+        condition: service_healthy
+      penpot-redis:
+        condition: service_healthy
+    networks:
+      - penpot
+    environment:
+      - PENPOT_FLAGS=enable-registration enable-login-with-password disable-email-verification
+      - PENPOT_SECRET_KEY=please-change-this-to-a-random-secret
+      - PENPOT_PUBLIC_URI=http://localhost:9001
+      - PENPOT_DATABASE_URI=postgresql://penpot-postgres/penpot
+      - PENPOT_DATABASE_USERNAME=penpot
+      - PENPOT_DATABASE_PASSWORD=penpot
+      - PENPOT_REDIS_URI=redis://penpot-redis/0
+      - PENPOT_ASSETS_STORAGE_BACKEND=assets-fs
+      - PENPOT_STORAGE_ASSETS_FS_DIRECTORY=/opt/data/assets
+      - PENPOT_TELEMETRY_ENABLED=false
+      # Local-only: log emails (e.g. invites) to the backend console.
+      - PENPOT_SMTP_DEFAULT_FROM=no-reply@example.com
+      - PENPOT_SMTP_DEFAULT_REPLY_TO=no-reply@example.com
+
+  penpot-exporter:
+    image: penpotapp/exporter:latest
+    restart: always
+    networks:
+      - penpot
+    environment:
+      - PENPOT_PUBLIC_URI=http://penpot-frontend:8080
+      - PENPOT_REDIS_URI=redis://penpot-redis/0
+
+  penpot-postgres:
+    image: postgres:15
+    restart: always
+    stop_signal: SIGINT
+    volumes:
+      - penpot_postgres_v15:/var/lib/postgresql/data
+    networks:
+      - penpot
+    environment:
+      - POSTGRES_INITDB_ARGS=--data-checksums
+      - POSTGRES_DB=penpot
+      - POSTGRES_USER=penpot
+      - POSTGRES_PASSWORD=penpot
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U penpot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  penpot-redis:
+    image: valkey/valkey:8.1
+    restart: always
+    networks:
+      - penpot
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

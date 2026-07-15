@@ -36,6 +36,7 @@ graph TD
 - **Database**: Cloudflare KV (Session persistence).
 - **Realtime**: Cloudflare RealtimeKit (WebRTC Audio).
 - **Auth**: Riot Games (OAuth 2.0).
+- **Design tokens**: Penpot → `design/tokens.json` (W3C DTCG) → MUI theme + CSS variables. One-way pipeline; see [docs/design-tokens.md](./docs/design-tokens.md).
 
 ## RealtimeKit Connection Flow
 

@@ -18,6 +18,7 @@ import {
 	Typography,
 } from "@mui/material";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import type { Session } from "./types";
 
 type ActiveSessionViewProps = {
@@ -36,13 +37,22 @@ type ActiveSessionViewProps = {
 interface Peer {
 	id: string;
 	peerId?: string;
-	summonerId?: string; // Add summonerId which might come from RealtimeKit
+	// RealtimeKit Participant identity fields. The backend sets both `name` and
+	// `custom_participant_id` to the Summoner ID when creating the participant.
+	name?: string;
+	customParticipantId?: string;
+	summonerId?: string; // legacy/fallback
 	media?: {
 		enableAudio?: () => void;
 	};
 	stream?: MediaStream;
 	audioTrack?: MediaStreamTrack;
 }
+
+// Resolve a peer's Summoner ID from the RealtimeKit participant fields.
+// `peer.id` is an internal UUID and must only be used as a last resort.
+const peerSummonerId = (peer: Peer): string =>
+	peer.customParticipantId || peer.name || peer.summonerId || peer.id;
 
 // Helper component for remote audio
 const RemoteAudio = ({ peer }: { peer: Peer }) => {
@@ -109,6 +119,8 @@ export const ActiveSessionView = ({
 	onLeave,
 	peers = [], // Default to empty array
 }: ActiveSessionViewProps) => {
+	const { t } = useTranslation();
+
 	return (
 		<Card sx={{ maxWidth: 400, mx: "auto", mt: 4, position: "relative" }}>
 			{/* Render invisible audio elements for all remote peers */}
@@ -136,7 +148,7 @@ export const ActiveSessionView = ({
 			)}
 			<CardContent>
 				<Typography variant="h5" gutterBottom>
-					Session:{" "}
+					{t("session.label")}:{" "}
 					{session.sessionId.length > 12
 						? `${session.sessionId.slice(0, 8)}...`
 						: session.sessionId}
@@ -154,7 +166,7 @@ export const ActiveSessionView = ({
 						variant="caption"
 						color={isConnected ? "success.main" : "error.main"}
 					>
-						{isConnected ? "Voice Connected" : "Voice Disconnected"}
+						{isConnected ? t("session.connected") : t("session.disconnected")}
 					</Typography>
 				</Stack>
 
@@ -166,7 +178,7 @@ export const ActiveSessionView = ({
 
 				<Box sx={{ my: 2 }}>
 					<Typography variant="subtitle2" color="text.secondary">
-						Participants ({peers.length + 1}/5)
+						{t("session.participants", { n: peers.length + 1 })}
 					</Typography>
 					<List dense>
 						{/* Render Local User */}
@@ -183,29 +195,29 @@ export const ActiveSessionView = ({
 									<PersonIcon />
 								</Avatar>
 							</ListItemAvatar>
-							<ListItemText primary={summonerId} secondary="(You)" />
+							<ListItemText primary={summonerId} secondary={t("session.you")} />
 						</ListItem>
 
 						{/* Render Remote Peers */}
 						{peers.map((peer) => {
-							// Try to find metadata from session users (best effort)
+							// Resolve the Summoner ID from the participant, then look up
+							// session metadata (e.g. profile icon) by that ID.
+							const summonerId = peerSummonerId(peer);
 							const meta = session.users.find(
-								(u) => u.summonerId === (peer.summonerId || peer.id),
+								(u) => u.summonerId === summonerId,
 							);
 							return (
 								<ListItem key={peer.id || peer.peerId}>
 									<ListItemAvatar>
 										<Avatar
 											src={meta?.iconUrl}
-											alt={meta?.summonerId || peer.summonerId || "Unknown"}
+											alt={summonerId}
 											sx={{ bgcolor: "grey.600" }}
 										>
 											<PersonIcon />
 										</Avatar>
 									</ListItemAvatar>
-									<ListItemText
-										primary={meta?.summonerId || peer.summonerId || peer.id}
-									/>
+									<ListItemText primary={summonerId} />
 								</ListItem>
 							);
 						})}

@@ -60,6 +60,125 @@ describe("Worker Auth", () => {
 	});
 });
 
+describe("Riot ID Login (Personal Key)", () => {
+	const loginEnv = {
+		...env,
+		RIOT_GAME_API_KEY: "test-riot-key",
+	};
+
+	const originalFetch = global.fetch;
+
+	beforeEach(() => {
+		global.fetch = vi.fn((url: string | URL | Request) => {
+			const urlStr = url.toString();
+			if (urlStr.includes("/riot/account/v1/accounts/by-riot-id/")) {
+				if (urlStr.includes("invalid")) {
+					return Promise.resolve({
+						status: 404,
+						ok: false,
+						statusText: "Not Found",
+					});
+				}
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({
+						puuid: "mock-puuid",
+						gameName: "MockUser",
+						tagLine: "JP1",
+					}),
+				});
+			}
+			if (urlStr.includes("/lol/summoner/v4/summoners/by-puuid/")) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({ profileIconId: 1234 }),
+				});
+			}
+			if (urlStr.includes("/api/versions.json")) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ["16.13.1", "16.12.1"],
+				});
+			}
+			return Promise.reject(new Error(`Unknown URL: ${urlStr}`));
+			// biome-ignore lint/suspicious/noExplicitAny: Mocking fetch requires any cast
+		}) as any;
+	});
+
+	afterEach(() => {
+		global.fetch = originalFetch;
+		vi.clearAllMocks();
+	});
+
+	const post = (body: unknown, e: typeof env = loginEnv) =>
+		app.request(
+			"/api/auth/riot-id",
+			{
+				method: "POST",
+				body: JSON.stringify(body),
+				headers: { "Content-Type": "application/json" },
+			},
+			e,
+		);
+
+	it("returns resolved identity for a valid Riot ID", async () => {
+		const res = await post({ riotId: "MockUser#JP1" });
+		expect(res.status).toBe(200);
+		// biome-ignore lint/suspicious/noExplicitAny: Test assertion
+		const body = (await res.json()) as any;
+		expect(body).toMatchObject({
+			puuid: "mock-puuid",
+			gameName: "MockUser",
+			tagLine: "JP1",
+			riotId: "MockUser#JP1",
+		});
+		expect(body.iconUrl).toContain("/profileicon/1234.png");
+		// Uses the latest Data Dragon version from versions.json, not a stale hardcoded one
+		expect(body.iconUrl).toContain("/cdn/16.13.1/");
+	});
+
+	it("returns 400 when riotId is missing", async () => {
+		const res = await post({});
+		expect(res.status).toBe(400);
+		expect(await res.text()).toContain("riotId is required");
+	});
+
+	it("returns 400 when riotId is not in Name#Tag format", async () => {
+		const res = await post({ riotId: "NoTagHere" });
+		expect(res.status).toBe(400);
+		expect(await res.text()).toContain("Name#Tag");
+	});
+
+	it("returns 404 when the Riot ID does not exist", async () => {
+		const res = await post({ riotId: "invalid#tag" });
+		expect(res.status).toBe(404);
+		expect(await res.text()).toContain("Riot ID not found");
+	});
+
+	it("returns 503 when the Riot API key is not configured", async () => {
+		const res = await post({ riotId: "MockUser#JP1" }, env);
+		expect(res.status).toBe(503);
+		expect(await res.text()).toContain("Missing Riot API Key");
+	});
+
+	it("skips the Riot API and echoes the ID when validation is disabled", async () => {
+		const disabledEnv = { ...loginEnv, RIOT_VALIDATION_ENABLED: "false" };
+		const res = await post({ riotId: "Anyone#XYZ" }, disabledEnv);
+		expect(res.status).toBe(200);
+		// biome-ignore lint/suspicious/noExplicitAny: Test assertion
+		const body = (await res.json()) as any;
+		expect(body).toMatchObject({
+			puuid: null,
+			gameName: "Anyone",
+			tagLine: "XYZ",
+			riotId: "Anyone#XYZ",
+			validated: false,
+		});
+		// No Riot API call should be made when validation is disabled
+		expect(global.fetch).not.toHaveBeenCalled();
+	});
+});
+
 describe("Session Management", () => {
 	// biome-ignore lint/suspicious/noExplicitAny: Mocking KV
 	const mockKV: any = {
@@ -128,6 +247,13 @@ describe("Session Management", () => {
 					}),
 				});
 			}
+			// Mock Data Dragon versions
+			if (urlStr.includes("/api/versions.json")) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ["16.13.1", "16.12.1"],
+				});
+			}
 
 			return Promise.reject(new Error(`Unknown URL: ${urlStr}`));
 			// biome-ignore lint/suspicious/noExplicitAny: Mocking fetch requires any cast
@@ -151,6 +277,36 @@ describe("Session Management", () => {
 	});
 
 	// ... existing tests ...
+
+	it("POST /sessions/:id/join accepts any Summoner ID when validation is disabled", async () => {
+		const disabledEnv = { ...testEnv, RIOT_VALIDATION_ENABLED: "false" };
+		const sessionId = "test-session-disabled";
+		mockKV.get.mockResolvedValueOnce("mock-meeting-id").mockResolvedValueOnce(
+			JSON.stringify({
+				sessionId,
+				meetingId: "mock-meeting-id",
+				users: [],
+				createdAt: Date.now(),
+			}),
+		);
+
+		const res = await app.request(
+			`/api/sessions/${sessionId}/join`,
+			{
+				method: "POST",
+				// "invalid#tag" would 404 with validation on; here it must succeed
+				body: JSON.stringify({ summonerId: "invalid#tag" }),
+				headers: { "Content-Type": "application/json" },
+			},
+			disabledEnv,
+		);
+
+		expect(res.status).toBe(200);
+		// biome-ignore lint/suspicious/noExplicitAny: Test assertion
+		const body = (await res.json()) as any;
+		expect(body.session.users).toHaveLength(1);
+		expect(body.session.users[0].summonerId).toBe("invalid#tag");
+	});
 
 	it("POST /sessions/:id/join rejects invalid Summoner ID", async () => {
 		const sessionId = "test-session-invalid";

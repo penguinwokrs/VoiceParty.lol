@@ -78,11 +78,16 @@ app.post("/:id/join", async (c) => {
 	}
 
 	// Validate Summoner ID via Riot API
-	// 1. Check if API Key exists
+	// 1. Check if API Key exists (and validation is not disabled)
 	const apiKey = c.env.RIOT_GAME_API_KEY;
+	const validationDisabled = c.env.RIOT_VALIDATION_ENABLED === "false";
 	let validIconUrl = iconUrl;
 
-	if (apiKey) {
+	if (validationDisabled) {
+		console.warn(
+			"[Join] Riot validation disabled; accepting SummonerID without lookup",
+		);
+	} else if (apiKey) {
 		// Strict validation requested
 		console.log(`[Join] Validating SummonerID: ${summonerId}`);
 		const account = await getAccountByRiotId(summonerId, apiKey);
@@ -96,7 +101,7 @@ app.post("/:id/join", async (c) => {
 		// 2. Fetch Summoner to get Icon
 		const summoner = await getSummonerByPuuid(account.puuid, apiKey);
 		if (summoner) {
-			validIconUrl = getProfileIconUrl(summoner.profileIconId);
+			validIconUrl = await getProfileIconUrl(summoner.profileIconId);
 			console.log(`[Join] Fetched Icon URL: ${validIconUrl}`);
 		} else {
 			console.warn("[Join] Could not fetch summoner details for icon");
