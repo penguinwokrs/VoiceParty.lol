@@ -1,0 +1,15 @@
+# Copy to terraform.tfvars (gitignored) for LOCAL runs only.
+# Secrets should normally come from TF_VAR_* env vars, not this file.
+
+account_id = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
+zone_id    = "REPLACE_WITH_VOICEPARTY_LOL_ZONE_ID"
+
+# Optional local secret overrides (prefer TF_VAR_* env vars instead):
+# riot_game_api_key   = "..."
+# riot_client_id      = "..."
+# riot_client_secret  = "..."
+# realtime_org_id     = "..."
+# realtime_api_key    = "..."
+# realtime_kit_app_id = "..."
+# cloud_flare_api_key = "..."
+pnpm_version        = "10.24.0"
