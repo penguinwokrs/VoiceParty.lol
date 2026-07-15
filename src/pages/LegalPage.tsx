@@ -40,12 +40,6 @@ export const LegalPage = ({
 				<Typography variant="body2" sx={{ color: "var(--color-text-muted)" }}>
 					{t("legal.updated")}
 				</Typography>
-				<Typography
-					variant="body2"
-					sx={{ color: "var(--color-text-muted)", fontStyle: "italic" }}
-				>
-					{t("legal.draftNote")}
-				</Typography>
 				<Typography sx={{ whiteSpace: "pre-line" }}>{intro}</Typography>
 				<Divider sx={{ borderColor: "var(--color-border-subtle)" }} />
 				{/* Guard: t(..., returnObjects) can return a string if the key is

@@ -139,7 +139,6 @@ export const ko: TranslationResources = {
 		disclaimer:
 			"VoiceParty.lol isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
 		updated: "최종 업데이트: 2026년 7월 16일",
-		draftNote: "본 문서는 초안이며, 공개 전에 최종 확인을 거칩니다.",
 		nav: {
 			home: "홈",
 			privacy: "개인정보 처리방침",
