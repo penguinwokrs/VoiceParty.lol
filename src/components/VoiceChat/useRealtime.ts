@@ -24,9 +24,18 @@ export const useRealtime = () => {
 	// Local-mic RNNoise noise suppression. ON by default — enabled unless the
 	// user has explicitly turned it off (persisted). The middleware instance is
 	// reused so we can remove the exact same reference.
-	const [noiseSuppression, setNoiseSuppression] = useState(
-		() => localStorage.getItem(NOISE_SUPPRESSION_KEY) !== "false",
-	);
+	const [noiseSuppression, setNoiseSuppression] = useState(() => {
+		// Guard the read: localStorage is undefined under SSR and can throw a
+		// SecurityError in sandboxed contexts. Default ON when unavailable.
+		try {
+			if (typeof window !== "undefined") {
+				return localStorage.getItem(NOISE_SUPPRESSION_KEY) !== "false";
+			}
+		} catch {
+			/* ignore */
+		}
+		return true;
+	});
 	const noiseMiddlewareRef = useRef<AudioMiddleware | null>(null);
 	const noiseAppliedRef = useRef(false);
 
