@@ -101,6 +101,20 @@ export const ja = {
 	language: {
 		label: "言語",
 	},
+	report: {
+		action: "通報",
+		title: "通報する理由",
+		reportName: "{{name}} を通報",
+		submitted: "通報し、ミュートしました",
+		reasons: {
+			harassment: "ハラスメント・迷惑行為",
+			hate: "ヘイト・差別",
+			spam: "スパム",
+			inappropriate_name: "不適切な名前",
+			illegal: "違法・チート",
+			other: "その他",
+		},
+	},
 	legal: {
 		// Riot's required boilerplate is a legal notice kept in English across all
 		// locales, as mandated by the Riot Developer Policies.

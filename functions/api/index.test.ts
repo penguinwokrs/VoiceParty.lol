@@ -281,14 +281,17 @@ describe("Session Management", () => {
 	it("POST /sessions/:id/join accepts any Summoner ID when validation is disabled", async () => {
 		const disabledEnv = { ...testEnv, RIOT_VALIDATION_ENABLED: "false" };
 		const sessionId = "test-session-disabled";
-		mockKV.get.mockResolvedValueOnce("mock-meeting-id").mockResolvedValueOnce(
-			JSON.stringify({
-				sessionId,
-				meetingId: "mock-meeting-id",
-				users: [],
-				createdAt: Date.now(),
-			}),
-		);
+		mockKV.get
+			.mockResolvedValueOnce(null) // ban check → not banned
+			.mockResolvedValueOnce("mock-meeting-id")
+			.mockResolvedValueOnce(
+				JSON.stringify({
+					sessionId,
+					meetingId: "mock-meeting-id",
+					users: [],
+					createdAt: Date.now(),
+				}),
+			);
 
 		const res = await app.request(
 			`/api/sessions/${sessionId}/join`,
@@ -338,6 +341,7 @@ describe("Session Management", () => {
 
 		// Mock KV: First call gets mapping (game:...), second call gets session (session:...)
 		mockKV.get
+			.mockResolvedValueOnce(null) // ban check → not banned
 			.mockResolvedValueOnce("mock-meeting-id") // Mapping found
 			.mockResolvedValueOnce(JSON.stringify(sessionData)); // Session found
 
@@ -385,14 +389,18 @@ describe("Session Management", () => {
 
 		it("should attempt to call RealtimeKit API when joining", async () => {
 			const sessionId = "integration-session";
+			// Use a real (non-mock) meeting ID so the join resolves the existing
+			// session (and reads all three KV gets) instead of discarding a mock ID.
+			const meetingId = "rk-existing-meeting";
 			const sessionData = {
 				sessionId,
-				meetingId: "mock-meeting-id",
+				meetingId,
 				users: [],
 				createdAt: Date.now(),
 			};
 			mockKV.get
-				.mockResolvedValueOnce("mock-meeting-id")
+				.mockResolvedValueOnce(null) // ban check → not banned
+				.mockResolvedValueOnce(meetingId)
 				.mockResolvedValueOnce(JSON.stringify(sessionData));
 
 			const res = await app.request(
@@ -478,6 +486,7 @@ describe("Capacity via live presence (RealtimeKit source of truth)", () => {
 	// decision hinges entirely on the live active-session count.
 	const primeExistingMeeting = () => {
 		mockKV.get
+			.mockResolvedValueOnce(null) // ban check → not banned
 			.mockResolvedValueOnce(REAL_MEETING) // game:{id} -> meetingId
 			.mockResolvedValueOnce(
 				JSON.stringify({
@@ -577,14 +586,17 @@ describe("Capacity via live presence (RealtimeKit source of truth)", () => {
 		// Existing participant rejoins: the roster doesn't change, but BOTH the
 		// game: mapping and session: entry must be re-written with the TTL so an
 		// active room never expires.
-		mockKV.get.mockResolvedValueOnce(REAL_MEETING).mockResolvedValueOnce(
-			JSON.stringify({
-				sessionId: "room-x",
-				meetingId: REAL_MEETING,
-				users: [{ summonerId: "already#JP1", joinedAt: 0 }],
-				createdAt: 0,
-			}),
-		);
+		mockKV.get
+			.mockResolvedValueOnce(null) // ban check → not banned
+			.mockResolvedValueOnce(REAL_MEETING)
+			.mockResolvedValueOnce(
+				JSON.stringify({
+					sessionId: "room-x",
+					meetingId: REAL_MEETING,
+					users: [{ summonerId: "already#JP1", joinedAt: 0 }],
+					createdAt: 0,
+				}),
+			);
 		mockRealtime(() =>
 			Promise.resolve({ ok: false, status: 404, statusText: "Not Found" }),
 		);
@@ -605,22 +617,182 @@ describe("Capacity via live presence (RealtimeKit source of truth)", () => {
 
 	it("falls back to the KV roster when the live count is unavailable", async () => {
 		// KV roster already has 5 users; live lookup errors (500) -> fall back to KV.
-		mockKV.get.mockResolvedValueOnce(REAL_MEETING).mockResolvedValueOnce(
-			JSON.stringify({
-				sessionId: "room-x",
-				meetingId: REAL_MEETING,
-				users: Array.from({ length: 5 }, (_, i) => ({
-					summonerId: `u${i}#JP1`,
-					joinedAt: 0,
-				})),
-				createdAt: 0,
-			}),
-		);
+		mockKV.get
+			.mockResolvedValueOnce(null) // ban check → not banned
+			.mockResolvedValueOnce(REAL_MEETING)
+			.mockResolvedValueOnce(
+				JSON.stringify({
+					sessionId: "room-x",
+					meetingId: REAL_MEETING,
+					users: Array.from({ length: 5 }, (_, i) => ({
+						summonerId: `u${i}#JP1`,
+						joinedAt: 0,
+					})),
+					createdAt: 0,
+				}),
+			);
 		mockRealtime(() =>
 			Promise.resolve({ ok: false, status: 500, statusText: "Server Error" }),
 		);
 
 		const res = await join("sixth#JP1");
 		expect(res.status).toBe(403);
+	});
+});
+
+// Phase 1: report records a pseudonymized entry and (client-side) mutes the
+// reported user. Phase 2/3: distinct reporters accrue into a temporary auto-ban
+// that blocks the reported user's next join.
+describe("Reports & auto-ban (moderation)", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: Mocking KV
+	const mockKV: any = { get: vi.fn(), put: vi.fn(), list: vi.fn() };
+	const env = {
+		RIOT_CLIENT_ID: "t",
+		RIOT_CLIENT_SECRET: "t",
+		REALTIME_ORG_ID: "o",
+		REALTIME_API_KEY: "k",
+		REALTIME_KIT_APP_ID: "a",
+		VC_SESSIONS: mockKV,
+		USE_MOCK_REALTIME: "true",
+		REPORT_SALT: "test-salt",
+	};
+
+	afterEach(() => vi.clearAllMocks());
+
+	const postReport = (body: unknown) =>
+		app.request(
+			"/api/sessions/room-1/reports",
+			{
+				method: "POST",
+				body: JSON.stringify(body),
+				headers: { "Content-Type": "application/json" },
+			},
+			env,
+		);
+
+	// biome-ignore lint/suspicious/noExplicitAny: mock call tuples
+	const putKeys = () =>
+		(mockKV.put.mock.calls as any[]).map((c) => String(c[0]));
+
+	it("records a report under a report: key with TTL and metadata", async () => {
+		mockKV.list.mockResolvedValue({ keys: [] });
+		const res = await postReport({
+			reporterSummonerId: "alice#JP1",
+			reportedSummonerId: "troll#JP1",
+			reason: "harassment",
+		});
+		expect(res.status).toBe(200);
+
+		// biome-ignore lint/suspicious/noExplicitAny: mock call tuples
+		const call = (mockKV.put.mock.calls as any[]).find((c) =>
+			String(c[0]).startsWith("report:"),
+		);
+		expect(call).toBeTruthy();
+		expect(call[2].expirationTtl).toBe(30 * 24 * 60 * 60);
+		expect(call[2].metadata.reason).toBe("harassment");
+		// A single reporter never triggers a ban.
+		expect(putKeys().some((k) => k.startsWith("ban:"))).toBe(false);
+	});
+
+	it("rejects a self-report (case-insensitive)", async () => {
+		mockKV.list.mockResolvedValue({ keys: [] });
+		const res = await postReport({
+			reporterSummonerId: "same#JP1",
+			reportedSummonerId: "SAME#jp1",
+			reason: "spam",
+		});
+		expect(res.status).toBe(400);
+	});
+
+	it("rejects an invalid reason", async () => {
+		mockKV.list.mockResolvedValue({ keys: [] });
+		const res = await postReport({
+			reporterSummonerId: "a#JP1",
+			reportedSummonerId: "b#JP1",
+			reason: "not-a-reason",
+		});
+		expect(res.status).toBe(400);
+	});
+
+	it("requires both summoner IDs", async () => {
+		const res = await postReport({ reason: "spam" });
+		expect(res.status).toBe(400);
+	});
+
+	it("issues a temporary ban once enough DISTINCT reporters flag severe reasons", async () => {
+		const now = Date.now();
+		mockKV.list.mockResolvedValue({
+			keys: [
+				{
+					name: "report:x:s1:r1",
+					metadata: { r: "r1", reason: "harassment", t: now },
+				},
+				{
+					name: "report:x:s2:r2",
+					metadata: { r: "r2", reason: "hate", t: now },
+				},
+				{
+					name: "report:x:s3:r3",
+					metadata: { r: "r3", reason: "illegal", t: now },
+				},
+			],
+		});
+		const res = await postReport({
+			reporterSummonerId: "reporter3#JP1",
+			reportedSummonerId: "troll#JP1",
+			reason: "illegal",
+		});
+		expect(res.status).toBe(200);
+
+		// biome-ignore lint/suspicious/noExplicitAny: mock call tuples
+		const banCall = (mockKV.put.mock.calls as any[]).find((c) =>
+			String(c[0]).startsWith("ban:"),
+		);
+		expect(banCall).toBeTruthy();
+		expect(banCall[2].expirationTtl).toBe(24 * 60 * 60);
+	});
+
+	it("does not ban when many reports come from a single reporter", async () => {
+		const now = Date.now();
+		mockKV.list.mockResolvedValue({
+			keys: [
+				{
+					name: "report:x:s1:r1",
+					metadata: { r: "r1", reason: "harassment", t: now },
+				},
+				{
+					name: "report:x:s2:r1",
+					metadata: { r: "r1", reason: "harassment", t: now },
+				},
+				{
+					name: "report:x:s3:r1",
+					metadata: { r: "r1", reason: "harassment", t: now },
+				},
+			],
+		});
+		const res = await postReport({
+			reporterSummonerId: "r1#JP1",
+			reportedSummonerId: "troll#JP1",
+			reason: "harassment",
+		});
+		expect(res.status).toBe(200);
+		expect(putKeys().some((k) => k.startsWith("ban:"))).toBe(false);
+	});
+
+	it("blocks a banned user from joining", async () => {
+		mockKV.get.mockImplementation((key: string) =>
+			Promise.resolve(key.startsWith("ban:") ? '{"source":"auto"}' : null),
+		);
+		const res = await app.request(
+			"/api/sessions/room-1/join",
+			{
+				method: "POST",
+				body: JSON.stringify({ summonerId: "troll#JP1" }),
+				headers: { "Content-Type": "application/json" },
+			},
+			{ ...env, RIOT_VALIDATION_ENABLED: "false" },
+		);
+		expect(res.status).toBe(403);
+		expect(await res.text()).toContain("suspended");
 	});
 });

@@ -2,6 +2,7 @@ import CallEndIcon from "@mui/icons-material/CallEnd";
 import GraphicEqIcon from "@mui/icons-material/GraphicEq";
 import MicIcon from "@mui/icons-material/Mic";
 import MicOffIcon from "@mui/icons-material/MicOff";
+import OutlinedFlagIcon from "@mui/icons-material/OutlinedFlag";
 import PersonIcon from "@mui/icons-material/Person";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SyncProblemIcon from "@mui/icons-material/SyncProblem";
@@ -20,7 +21,11 @@ import {
 	ListItem,
 	ListItemAvatar,
 	ListItemText,
+	ListSubheader,
+	Menu,
+	MenuItem,
 	Slider,
+	Snackbar,
 	Stack,
 	Tooltip,
 	Typography,
@@ -53,6 +58,17 @@ const readJson = <T,>(key: string, fallback: T): T => {
 const loadVolumes = (): Record<string, number> => readJson(VOLUMES_KEY, {});
 
 const loadMuted = (): Record<string, boolean> => readJson(MUTED_KEY, {});
+
+// Report reasons (must match the server's accepted enum). Reporting a user also
+// locally mutes them from the reporter's perspective.
+const REPORT_REASONS = [
+	"harassment",
+	"hate",
+	"spam",
+	"inappropriate_name",
+	"illegal",
+	"other",
+] as const;
 
 // Keyframes reused by the connection indicators (defined once on the Card root).
 const connectionKeyframes = {
@@ -358,6 +374,45 @@ export const ActiveSessionView = ({
 		}
 		audioCtx?.resume().catch(() => {});
 	};
+	// Force-mute (used when reporting) — never un-mutes an already-muted user.
+	const muteFor = (sid: string) => {
+		if (muted[sid]) return;
+		const next = { ...muted, [sid]: true };
+		setMuted(next);
+		try {
+			localStorage.setItem(MUTED_KEY, JSON.stringify(next));
+		} catch {
+			/* ignore quota errors */
+		}
+		audioCtx?.resume().catch(() => {});
+	};
+
+	// Reporting: a small reason menu anchored to a participant's flag button.
+	const [reportTarget, setReportTarget] = useState<{
+		el: HTMLElement;
+		sid: string;
+	} | null>(null);
+	const [reportToast, setReportToast] = useState(false);
+	const submitReport = (sid: string, reason: string) => {
+		setReportTarget(null);
+		// Protect the reporter immediately: locally mute the reported user. This
+		// is the ordinary local mute, so it can be undone via the normal control.
+		muteFor(sid);
+		setReportToast(true);
+		// Record the report; failure must not disrupt the call.
+		void fetch(
+			`/api/sessions/${encodeURIComponent(session.sessionId)}/reports`,
+			{
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					reporterSummonerId: summonerId,
+					reportedSummonerId: sid,
+					reason,
+				}),
+			},
+		).catch((e) => console.error("[report] submit failed:", e));
+	};
 
 	// Local user's lifecycle. Falls back to the boolean for older callers/tests.
 	const state: ConnectionState =
@@ -608,6 +663,23 @@ export const ActiveSessionView = ({
 													: { noWrap: true, color: "warning.main" }
 											}
 										/>
+										<Tooltip title={t("report.action")}>
+											<IconButton
+												size="small"
+												edge="end"
+												onClick={(e) =>
+													setReportTarget({
+														el: e.currentTarget,
+														sid: summonerId,
+													})
+												}
+												aria-label={t("report.reportName", {
+													name: summonerId,
+												})}
+											>
+												<OutlinedFlagIcon fontSize="small" />
+											</IconButton>
+										</Tooltip>
 									</Box>
 									{/* Per-participant mute + receive volume (0%..300%, boost > 100%) */}
 									<Box
@@ -719,6 +791,35 @@ export const ActiveSessionView = ({
 						<CallEndIcon />
 					</IconButton>
 				</Stack>
+
+				{/* Report reason menu (anchored to a participant's flag button). */}
+				<Menu
+					anchorEl={reportTarget?.el ?? null}
+					open={Boolean(reportTarget)}
+					onClose={() => setReportTarget(null)}
+				>
+					<ListSubheader sx={{ bgcolor: "transparent", lineHeight: 2.5 }}>
+						{t("report.title")}
+					</ListSubheader>
+					{REPORT_REASONS.map((reason) => (
+						<MenuItem
+							key={reason}
+							onClick={() =>
+								reportTarget && submitReport(reportTarget.sid, reason)
+							}
+						>
+							{t(`report.reasons.${reason}`)}
+						</MenuItem>
+					))}
+				</Menu>
+
+				<Snackbar
+					open={reportToast}
+					autoHideDuration={3000}
+					onClose={() => setReportToast(false)}
+					message={t("report.submitted")}
+					anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+				/>
 			</CardContent>
 		</Card>
 	);
