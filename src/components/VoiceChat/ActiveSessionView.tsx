@@ -411,7 +411,14 @@ export const ActiveSessionView = ({
 					reason,
 				}),
 			},
-		).catch((e) => console.error("[report] submit failed:", e));
+		)
+			.then((res) => {
+				// fetch only rejects on network errors, so surface HTTP errors too.
+				if (!res.ok) {
+					console.error("[report] submit failed with status:", res.status);
+				}
+			})
+			.catch((e) => console.error("[report] submit failed:", e));
 	};
 
 	// Local user's lifecycle. Falls back to the boolean for older callers/tests.

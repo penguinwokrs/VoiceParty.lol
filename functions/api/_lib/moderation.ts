@@ -44,7 +44,11 @@ export async function evaluateReports(
 		const ageDays = m.t ? (now - m.t) / 86_400_000 : 0;
 		const decay = ageDays < 7 ? 1 : ageDays < 30 ? 0.5 : 0;
 		const weighted = severity * decay;
-		perReporter.set(m.r, Math.max(perReporter.get(m.r) ?? 0, weighted));
+		// A fully-decayed (expired) report contributes nothing and must not count
+		// its reporter toward the distinct-reporter total.
+		if (weighted > 0) {
+			perReporter.set(m.r, Math.max(perReporter.get(m.r) ?? 0, weighted));
+		}
 	}
 
 	let score = 0;

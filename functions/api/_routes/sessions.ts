@@ -315,6 +315,9 @@ app.post("/:id/reports", async (c) => {
 	} catch {
 		return c.text("Invalid JSON body", 400);
 	}
+	if (!body || typeof body !== "object") {
+		return c.text("Invalid JSON body", 400);
+	}
 
 	const reporter = (body.reporterSummonerId ?? "").trim();
 	const reported = (body.reportedSummonerId ?? "").trim();
@@ -365,11 +368,24 @@ app.post("/:id/reports", async (c) => {
 	);
 
 	// Phase 2/3: re-evaluate this user's reports and issue a temporary auto-ban
-	// if over threshold. Never let this fail the report response.
+	// if over threshold. Run it in the background (waitUntil) so the report
+	// response returns immediately; fall back to awaiting when there is no
+	// execution context (e.g. tests). Never let it fail the response.
+	const evaluate = () =>
+		maybeAutoBan(c.env, reportedHash, record.createdAt).catch((e) => {
+			console.error("[reports] auto-ban evaluation failed:", e);
+		});
+	// `c.executionCtx` throws when absent, so probe it defensively.
+	let execCtx: ExecutionContext | undefined;
 	try {
-		await maybeAutoBan(c.env, reportedHash, record.createdAt);
-	} catch (e) {
-		console.error("[reports] auto-ban evaluation failed:", e);
+		execCtx = c.executionCtx;
+	} catch {
+		execCtx = undefined;
+	}
+	if (execCtx) {
+		execCtx.waitUntil(evaluate());
+	} else {
+		await evaluate();
 	}
 
 	return c.json({ ok: true });
