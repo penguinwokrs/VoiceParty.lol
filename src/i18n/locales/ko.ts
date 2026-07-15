@@ -80,6 +80,8 @@ export const ko: TranslationResources = {
 		linkCopied: "링크를 복사했습니다",
 		shareText:
 			"🎮 VoiceParty.lol에서 음성 채팅하며 놀고 있어요! 이 링크로 같이 놀아요 👉",
+		safetyNote:
+			"🔒 음성은 녹음되지 않습니다. 상대를 음소거하거나 신고해 스스로를 보호할 수 있어요.",
 		noiseSuppression: "노이즈 억제",
 		noiseSuppressionOn: "노이즈 억제: 켜짐",
 		noiseSuppressionOff: "노이즈 억제: 꺼짐",

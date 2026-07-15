@@ -816,6 +816,18 @@ export const ActiveSessionView = ({
 						})}
 					</List>
 				</Box>
+				{/* Safety note: voice is never recorded, and any peer can be muted. */}
+				<Typography
+					variant="caption"
+					sx={{
+						display: "block",
+						textAlign: "center",
+						mt: 2,
+						color: "text.secondary",
+					}}
+				>
+					{t("session.safetyNote")}
+				</Typography>
 				<Stack direction="row" spacing={2} justifyContent="center" mt={3}>
 					<IconButton
 						color={isMicMuted ? "error" : "primary"}

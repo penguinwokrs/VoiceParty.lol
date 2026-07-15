@@ -78,6 +78,8 @@ export const ja = {
 		linkCopied: "リンクをコピーしました",
 		shareText:
 			"🎮 VoiceParty.lol でワイワイ通話しながら遊んでるよ！このリンクから合流してね👉",
+		safetyNote:
+			"🔒 音声は録音されません。気になる相手はミュートや通報で自衛できます。",
 		noiseSuppression: "ノイズ抑制",
 		noiseSuppressionOn: "ノイズ抑制: ON",
 		noiseSuppressionOff: "ノイズ抑制: OFF",
