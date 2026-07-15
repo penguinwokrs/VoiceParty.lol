@@ -327,8 +327,11 @@ export const ActiveSessionView = ({
 			sx={{
 				// Fixed width so the card is the SAME size in every state (it used
 				// to shrink to its content — e.g. narrower with no participants).
-				// Responsive: full width on screens narrower than 400px.
-				width: "min(400px, 100%)",
+				// An explicit width (not a %) holds even inside shrink-wrapping
+				// parents like Storybook's centered layout; maxWidth keeps it
+				// responsive on screens narrower than 400px.
+				width: 400,
+				maxWidth: "100%",
 				mx: "auto",
 				mt: 4,
 				position: "relative",
