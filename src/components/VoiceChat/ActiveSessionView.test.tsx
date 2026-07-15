@@ -1,7 +1,7 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { ActiveSessionView } from "./ActiveSessionView";
-import type { Session } from "./types";
+import type { ConnectionState, Session } from "./types";
 
 const session: Session = {
 	sessionId: "game-abc",
@@ -61,5 +61,53 @@ describe("ActiveSessionView participants", () => {
 		renderView([]);
 		expect(screen.getByText("Ashe#JP1")).toBeInTheDocument();
 		expect(screen.getByText("(You)")).toBeInTheDocument();
+	});
+});
+
+describe("ActiveSessionView connection state", () => {
+	const renderWithState = (
+		connectionState: ConnectionState,
+		onReconnect = noop,
+	) =>
+		render(
+			<ActiveSessionView
+				session={session}
+				summonerId="Ashe#JP1"
+				isConnected={connectionState === "connected"}
+				connectionState={connectionState}
+				isMicMuted={false}
+				loading={false}
+				error=""
+				onErrorClose={noop}
+				onToggleMic={noop}
+				onLeave={noop}
+				onReconnect={onReconnect}
+				peers={[{ id: "p1", customParticipantId: "Zed#JP1" }]}
+			/>,
+		);
+
+	it("shows the reconnecting phase and marks the roster as reconnecting", () => {
+		renderWithState("reconnecting");
+		// "Reconnecting" appears in the banner and on the remote peer's status.
+		expect(screen.getAllByText("Reconnecting").length).toBeGreaterThan(0);
+		// The local user is labelled as reconnecting too.
+		expect(screen.getByText(/\(You\) · Reconnecting/)).toBeInTheDocument();
+	});
+
+	it("shows a Reconnect button on terminal disconnect and calls onReconnect", () => {
+		const onReconnect = vi.fn();
+		renderWithState("disconnected", onReconnect);
+		const btn = screen.getByRole("button", { name: "Reconnect" });
+		fireEvent.click(btn);
+		expect(onReconnect).toHaveBeenCalledTimes(1);
+	});
+
+	it("mic toggle is disabled while not connected", () => {
+		renderWithState("reconnecting");
+		// Mic + leave buttons render; the mic button is disabled when unhealthy.
+		const disabled = screen
+			.getAllByRole("button")
+			.filter((b) => (b as HTMLButtonElement).disabled);
+		expect(disabled.length).toBeGreaterThan(0);
 	});
 });

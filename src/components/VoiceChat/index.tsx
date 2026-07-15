@@ -19,8 +19,16 @@ export const VoiceChat = () => {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 
-	const { join, leave, toggleMic, isMicMuted, isConnected, peers } =
-		useRealtime();
+	const {
+		join,
+		leave,
+		reconnect,
+		toggleMic,
+		isMicMuted,
+		isConnected,
+		connectionState,
+		peers,
+	} = useRealtime();
 
 	useEffect(() => {
 		if (summonerId) {
@@ -97,18 +105,31 @@ export const VoiceChat = () => {
 		navigate("/");
 	};
 
+	const handleReconnect = async () => {
+		setError("");
+		try {
+			await reconnect();
+		} catch {
+			// reconnect() re-throws on failure; surface it instead of leaving an
+			// unhandled rejection with no UI feedback.
+			setError(t("errors.reconnectFailed"));
+		}
+	};
+
 	if (currentSession) {
 		return (
 			<ActiveSessionView
 				session={currentSession}
 				summonerId={summonerId}
 				isConnected={isConnected}
+				connectionState={connectionState}
 				isMicMuted={isMicMuted}
 				loading={loading}
 				error={error}
 				onErrorClose={() => setError("")}
 				onToggleMic={toggleMic}
 				onLeave={handleLeave}
+				onReconnect={handleReconnect}
 				peers={peers}
 			/>
 		);
