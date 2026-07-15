@@ -1,12 +1,7 @@
-import {
-	Box,
-	Container,
-	CssBaseline,
-	ThemeProvider,
-	Typography,
-} from "@mui/material";
+import { CssBaseline, ThemeProvider } from "@mui/material";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { VoiceChat } from "./components/VoiceChat";
+import { LangLayout } from "./components/LangLayout";
+import { JoinPage } from "./pages/JoinPage";
 import { LandingPage } from "./pages/LandingPage";
 import { theme } from "./theme";
 
@@ -17,75 +12,19 @@ function App() {
 
 			<BrowserRouter>
 				<Routes>
-					<Route path="/" element={<LandingPage />} />
-					<Route
-						path="/join"
-						element={
-							<Container maxWidth="md" sx={{ textAlign: "center", py: 4 }}>
-								<Typography
-									variant="h2"
-									component="h1"
-									gutterBottom
-									sx={{ fontSize: "3.2rem" }}
-								>
-									Voice Party
-								</Typography>
-								<Typography
-									variant="subtitle1"
-									color="text.secondary"
-									paragraph
-								>
-									Cloudflare Realtime Voice Chat Demo
-								</Typography>
+					{/* Default language (English), served without a path prefix. */}
+					<Route element={<LangLayout />}>
+						<Route path="/" element={<LandingPage />} />
+						<Route path="/join" element={<JoinPage />} />
+						<Route path="/join/:sessionId" element={<JoinPage />} />
+					</Route>
 
-								<Box
-									sx={{
-										display: "flex",
-										flexDirection: "column",
-										gap: 4,
-										alignItems: "center",
-									}}
-								>
-									{/* Main Voice Chat Component */}
-									<VoiceChat />
-								</Box>
-							</Container>
-						}
-					/>
-					<Route
-						path="/join/:sessionId"
-						element={
-							<Container maxWidth="md" sx={{ textAlign: "center", py: 4 }}>
-								<Typography
-									variant="h2"
-									component="h1"
-									gutterBottom
-									sx={{ fontSize: "3.2rem" }}
-								>
-									Voice Party
-								</Typography>
-								<Typography
-									variant="subtitle1"
-									color="text.secondary"
-									paragraph
-								>
-									Cloudflare Realtime Voice Chat Demo
-								</Typography>
-
-								<Box
-									sx={{
-										display: "flex",
-										flexDirection: "column",
-										gap: 4,
-										alignItems: "center",
-									}}
-								>
-									{/* Main Voice Chat Component */}
-									<VoiceChat />
-								</Box>
-							</Container>
-						}
-					/>
+					{/* Prefixed languages: /ja, /ko (and their sub-routes). */}
+					<Route path=":lang" element={<LangLayout />}>
+						<Route index element={<LandingPage />} />
+						<Route path="join" element={<JoinPage />} />
+						<Route path="join/:sessionId" element={<JoinPage />} />
+					</Route>
 				</Routes>
 			</BrowserRouter>
 		</ThemeProvider>

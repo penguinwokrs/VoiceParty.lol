@@ -7,6 +7,7 @@ import {
 	TextField,
 	Typography,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { Button } from "../Button";
 
 type JoinSessionFormProps = {
@@ -30,11 +31,13 @@ export const JoinSessionForm = ({
 	onJoin,
 	disableSessionInput,
 }: JoinSessionFormProps) => {
+	const { t } = useTranslation();
+
 	return (
 		<Card sx={{ maxWidth: 400, mx: "auto", mt: 4 }}>
 			<CardContent>
 				<Typography variant="h5" component="h2" gutterBottom>
-					Voice Chat
+					{t("join.heading")}
 				</Typography>
 
 				{error && (
@@ -45,19 +48,19 @@ export const JoinSessionForm = ({
 
 				<Stack spacing={3}>
 					<TextField
-						label="Summoner ID"
+						label={t("join.summonerId")}
 						value={summonerId}
 						onChange={(e) => onSummonerIdChange(e.target.value)}
 						fullWidth
-						placeholder="Enter your name"
+						placeholder={t("join.summonerIdPlaceholder")}
 					/>
 
 					<TextField
-						label="Game ID"
+						label={t("join.gameId")}
 						value={sessionId}
 						onChange={(e) => onSessionIdChange(e.target.value)}
 						fullWidth
-						placeholder="Enter game ID to join"
+						placeholder={t("join.gameIdPlaceholder")}
 						disabled={disableSessionInput}
 					/>
 
@@ -70,7 +73,7 @@ export const JoinSessionForm = ({
 						{loading ? (
 							<CircularProgress size={24} color="inherit" />
 						) : (
-							"Join Game"
+							t("join.joinGame")
 						)}
 					</Button>
 				</Stack>

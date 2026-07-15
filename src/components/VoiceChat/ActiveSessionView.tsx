@@ -18,6 +18,7 @@ import {
 	Typography,
 } from "@mui/material";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import type { Session } from "./types";
 
 type ActiveSessionViewProps = {
@@ -118,6 +119,8 @@ export const ActiveSessionView = ({
 	onLeave,
 	peers = [], // Default to empty array
 }: ActiveSessionViewProps) => {
+	const { t } = useTranslation();
+
 	return (
 		<Card sx={{ maxWidth: 400, mx: "auto", mt: 4, position: "relative" }}>
 			{/* Render invisible audio elements for all remote peers */}
@@ -145,7 +148,7 @@ export const ActiveSessionView = ({
 			)}
 			<CardContent>
 				<Typography variant="h5" gutterBottom>
-					Session:{" "}
+					{t("session.label")}:{" "}
 					{session.sessionId.length > 12
 						? `${session.sessionId.slice(0, 8)}...`
 						: session.sessionId}
@@ -163,7 +166,7 @@ export const ActiveSessionView = ({
 						variant="caption"
 						color={isConnected ? "success.main" : "error.main"}
 					>
-						{isConnected ? "Voice Connected" : "Voice Disconnected"}
+						{isConnected ? t("session.connected") : t("session.disconnected")}
 					</Typography>
 				</Stack>
 
@@ -175,7 +178,7 @@ export const ActiveSessionView = ({
 
 				<Box sx={{ my: 2 }}>
 					<Typography variant="subtitle2" color="text.secondary">
-						Participants ({peers.length + 1}/5)
+						{t("session.participants", { n: peers.length + 1 })}
 					</Typography>
 					<List dense>
 						{/* Render Local User */}
@@ -192,7 +195,7 @@ export const ActiveSessionView = ({
 									<PersonIcon />
 								</Avatar>
 							</ListItemAvatar>
-							<ListItemText primary={summonerId} secondary="(You)" />
+							<ListItemText primary={summonerId} secondary={t("session.you")} />
 						</ListItem>
 
 						{/* Render Remote Peers */}
