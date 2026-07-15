@@ -19,6 +19,7 @@ locals {
     REALTIME_ORG_ID     = var.realtime_org_id
     REALTIME_API_KEY    = var.realtime_api_key
     REALTIME_KIT_APP_ID = var.realtime_kit_app_id
+    CLOUD_FLARE_API_KEY = var.cloud_flare_api_key
   }
 
   secret_env_vars = {
@@ -26,8 +27,14 @@ locals {
     if v != ""
   }
 
+  plain_env_raw = {
+    RIOT_VALIDATION_ENABLED = "false"
+    PNPM_VERSION            = var.pnpm_version
+  }
+
   plain_env_vars = {
-    RIOT_VALIDATION_ENABLED = { type = "plain_text", value = "false" }
+    for k, v in local.plain_env_raw : k => { type = "plain_text", value = v }
+    if v != ""
   }
 }
 
@@ -47,7 +54,7 @@ resource "cloudflare_pages_project" "voiceparty" {
       compatibility_date = "2024-04-01"
 
       kv_namespaces = {
-        VC_SESSIONS = cloudflare_workers_kv_namespace.sessions.id
+        VC_SESSIONS = { namespace_id = cloudflare_workers_kv_namespace.sessions.id }
       }
 
       env_vars = merge(local.plain_env_vars, local.secret_env_vars)
@@ -57,7 +64,7 @@ resource "cloudflare_pages_project" "voiceparty" {
       compatibility_date = "2024-04-01"
 
       kv_namespaces = {
-        VC_SESSIONS = cloudflare_workers_kv_namespace.sessions_preview.id
+        VC_SESSIONS = { namespace_id = cloudflare_workers_kv_namespace.sessions_preview.id }
       }
 
       env_vars = merge(local.plain_env_vars, local.secret_env_vars)

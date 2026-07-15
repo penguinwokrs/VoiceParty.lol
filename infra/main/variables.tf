@@ -58,3 +58,16 @@ variable "realtime_kit_app_id" {
   sensitive   = true
   default     = ""
 }
+
+variable "cloud_flare_api_key" {
+  description = "CLOUD_FLARE_API_KEY used by the app in production."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "pnpm_version" {
+  description = "PNPM_VERSION build var (currently set on the live project)."
+  type        = string
+  default     = ""
+}
