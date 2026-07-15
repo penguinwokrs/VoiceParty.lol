@@ -171,13 +171,17 @@ export const JoinSessionForm = ({
 					<TextField
 						autoFocus
 						fullWidth
-						type="number"
 						label={t("join.ageYearLabel")}
 						value={birthYear}
 						onChange={(e) => setBirthYear(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter" && birthYear) confirmAge();
+						}}
 						error={!!ageError}
 						helperText={ageError || undefined}
-						slotProps={{ htmlInput: { inputMode: "numeric" } }}
+						slotProps={{
+							htmlInput: { inputMode: "numeric", pattern: "[0-9]*" },
+						}}
 					/>
 				</DialogContent>
 				<DialogActions>
