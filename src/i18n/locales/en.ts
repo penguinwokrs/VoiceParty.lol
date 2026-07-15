@@ -74,6 +74,11 @@ export const en: TranslationResources = {
 		reconnecting: "Reconnecting",
 		reconnectingHint: "Waiting for the network to come back. Hang tight.",
 		reconnect: "Reconnect",
+		share: "Copy link",
+		shareOnX: "Share on X",
+		linkCopied: "Link copied",
+		shareText:
+			"🎮 Jumping into VoiceParty.lol for some crystal-clear voice chat — come play with me! 👉",
 		noiseSuppression: "Noise suppression",
 		noiseSuppressionOn: "Noise suppression: on",
 		noiseSuppressionOff: "Noise suppression: off",

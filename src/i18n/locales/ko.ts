@@ -75,6 +75,11 @@ export const ko: TranslationResources = {
 		reconnectingHint:
 			"네트워크 복구를 기다리고 있습니다. 잠시만 기다려 주세요.",
 		reconnect: "다시 연결",
+		share: "링크 복사",
+		shareOnX: "X에 공유",
+		linkCopied: "링크를 복사했습니다",
+		shareText:
+			"🎮 VoiceParty.lol에서 음성 채팅하며 놀고 있어요! 이 링크로 같이 놀아요 👉",
 		noiseSuppression: "노이즈 억제",
 		noiseSuppressionOn: "노이즈 억제: 켜짐",
 		noiseSuppressionOff: "노이즈 억제: 꺼짐",

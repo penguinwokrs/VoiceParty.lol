@@ -1,4 +1,5 @@
 import CallEndIcon from "@mui/icons-material/CallEnd";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import GraphicEqIcon from "@mui/icons-material/GraphicEq";
 import MicIcon from "@mui/icons-material/Mic";
 import MicOffIcon from "@mui/icons-material/MicOff";
@@ -69,6 +70,20 @@ const REPORT_REASONS = [
 	"illegal",
 	"other",
 ] as const;
+
+// Inline X (Twitter) logo — self-contained so it needs no brand-icon dependency.
+const XLogo = () => (
+	<svg
+		width="15"
+		height="15"
+		viewBox="0 0 24 24"
+		fill="currentColor"
+		aria-hidden
+	>
+		<title>X</title>
+		<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+	</svg>
+);
 
 // Keyframes reused by the connection indicators (defined once on the Card root).
 const connectionKeyframes = {
@@ -421,6 +436,31 @@ export const ActiveSessionView = ({
 			.catch((e) => console.error("[report] submit failed:", e));
 	};
 
+	// Sharing: invite friends to this room by link or a playful tweet.
+	const shareUrl =
+		typeof window !== "undefined"
+			? `${window.location.origin}/join/${encodeURIComponent(session.sessionId)}`
+			: "";
+	const [copiedToast, setCopiedToast] = useState(false);
+	const copyLink = () => {
+		// clipboard is undefined in insecure contexts / older browsers — guard so
+		// chaining .then() on undefined can't throw.
+		if (!navigator.clipboard) {
+			console.error("[share] clipboard API not available");
+			return;
+		}
+		navigator.clipboard
+			.writeText(shareUrl)
+			.then(() => setCopiedToast(true))
+			.catch((e) => console.error("[share] copy failed:", e));
+	};
+	const shareToX = () => {
+		const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+			t("session.shareText"),
+		)}&url=${encodeURIComponent(shareUrl)}`;
+		window.open(intent, "_blank", "noopener,noreferrer");
+	};
+
 	// Local user's lifecycle. Falls back to the boolean for older callers/tests.
 	const state: ConnectionState =
 		connectionState ?? (isConnected ? "connected" : "disconnected");
@@ -505,6 +545,26 @@ export const ActiveSessionView = ({
 						</Typography>
 					</Stack>
 				)}
+
+				{/* Invite friends: copy the room link or share a playful tweet. */}
+				<Stack direction="row" spacing={1} mb={2} flexWrap="wrap" useFlexGap>
+					<Button
+						size="small"
+						variant="outlined"
+						startIcon={<ContentCopyIcon />}
+						onClick={copyLink}
+					>
+						{t("session.share")}
+					</Button>
+					<Button
+						size="small"
+						variant="outlined"
+						startIcon={<XLogo />}
+						onClick={shareToX}
+					>
+						{t("session.shareOnX")}
+					</Button>
+				</Stack>
 
 				{/* Reconnection phase — prominent, animated */}
 				{state === "reconnecting" && (
@@ -825,6 +885,13 @@ export const ActiveSessionView = ({
 					autoHideDuration={3000}
 					onClose={() => setReportToast(false)}
 					message={t("report.submitted")}
+					anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+				/>
+				<Snackbar
+					open={copiedToast}
+					autoHideDuration={3000}
+					onClose={() => setCopiedToast(false)}
+					message={t("session.linkCopied")}
 					anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
 				/>
 			</CardContent>

@@ -73,6 +73,11 @@ export const ja = {
 		reconnectingHint:
 			"ネットワークの復帰を待っています。そのままお待ちください。",
 		reconnect: "再接続",
+		share: "リンクをコピー",
+		shareOnX: "X で共有",
+		linkCopied: "リンクをコピーしました",
+		shareText:
+			"🎮 VoiceParty.lol でワイワイ通話しながら遊んでるよ！このリンクから合流してね👉",
 		noiseSuppression: "ノイズ抑制",
 		noiseSuppressionOn: "ノイズ抑制: ON",
 		noiseSuppressionOff: "ノイズ抑制: OFF",
