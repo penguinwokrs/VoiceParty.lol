@@ -37,3 +37,6 @@ tsp-output/
 
 # Claude Code local working copies (share skills, not worktrees)
 .claude/worktrees/
+
+# Storybook build output
+storybook-static/
