@@ -374,15 +374,18 @@ export const ActiveSessionView = ({
 								/>
 							</ListItemAvatar>
 							<ListItemText
+								sx={{ minWidth: 0 }}
 								primary={summonerId}
 								secondary={
 									healthy
 										? t("session.you")
 										: `${t("session.you")} · ${t(`session.status.${state}`)}`
 								}
-								secondaryTypographyProps={
-									healthy ? undefined : { color: "warning.main" }
-								}
+								primaryTypographyProps={{ noWrap: true, title: summonerId }}
+								secondaryTypographyProps={{
+									noWrap: true,
+									...(healthy ? {} : { color: "warning.main" }),
+								}}
 							/>
 						</ListItem>
 
@@ -406,12 +409,19 @@ export const ActiveSessionView = ({
 										/>
 									</ListItemAvatar>
 									<ListItemText
+										sx={{ minWidth: 0 }}
 										primary={summonerId}
 										secondary={
 											healthy ? undefined : t(`session.status.${rosterState}`)
 										}
+										primaryTypographyProps={{
+											noWrap: true,
+											title: summonerId,
+										}}
 										secondaryTypographyProps={
-											healthy ? undefined : { color: "warning.main" }
+											healthy
+												? undefined
+												: { noWrap: true, color: "warning.main" }
 										}
 									/>
 								</ListItem>
