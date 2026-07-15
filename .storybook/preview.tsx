@@ -7,6 +7,7 @@ import "../src/theme/tokens.generated.css";
 
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import type { Decorator, Preview } from "@storybook/react-vite";
+import { useEffect } from "react";
 import i18n from "../src/i18n";
 import { theme } from "../src/theme";
 
@@ -27,14 +28,22 @@ export const globalTypes = {
 	},
 };
 
+// Sync the toolbar locale into i18n as a side effect (never during render).
+const LocaleSync = ({ locale }: { locale: string }) => {
+	useEffect(() => {
+		if (i18n.resolvedLanguage !== locale) {
+			void i18n.changeLanguage(locale);
+		}
+	}, [locale]);
+	return null;
+};
+
 const withProviders: Decorator = (Story, context) => {
 	const locale = context.globals.locale ?? "en";
-	if (i18n.resolvedLanguage !== locale) {
-		void i18n.changeLanguage(locale);
-	}
 	return (
 		<ThemeProvider theme={theme}>
 			<CssBaseline />
+			<LocaleSync locale={locale} />
 			<Story />
 		</ThemeProvider>
 	);
