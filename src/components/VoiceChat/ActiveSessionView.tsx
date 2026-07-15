@@ -74,19 +74,20 @@ const connectionKeyframes = {
 		"0%": { backgroundPosition: "200% 0" },
 		"100%": { backgroundPosition: "-200% 0" },
 	},
-	// Speaking indicator: a solid green ring (always visible) + a pulsing halo.
+	// Speaking indicator: a thick, vivid green ring + a constant soft glow +
+	// an expanding pulse halo, so it reads clearly even over the teal self avatar.
 	"@keyframes vpSpeak": {
 		"0%": {
 			boxShadow:
-				"0 0 0 2px rgba(46, 204, 113, 0.95), 0 0 0 2px rgba(46, 204, 113, 0.5)",
+				"0 0 0 3px rgba(46, 213, 115, 1), 0 0 12px 2px rgba(46, 213, 115, 0.75), 0 0 0 3px rgba(46, 213, 115, 0.6)",
 		},
 		"70%": {
 			boxShadow:
-				"0 0 0 2px rgba(46, 204, 113, 0.95), 0 0 0 9px rgba(46, 204, 113, 0)",
+				"0 0 0 3px rgba(46, 213, 115, 1), 0 0 12px 2px rgba(46, 213, 115, 0.75), 0 0 0 14px rgba(46, 213, 115, 0)",
 		},
 		"100%": {
 			boxShadow:
-				"0 0 0 2px rgba(46, 204, 113, 0.95), 0 0 0 9px rgba(46, 204, 113, 0)",
+				"0 0 0 3px rgba(46, 213, 115, 1), 0 0 12px 2px rgba(46, 213, 115, 0.75), 0 0 0 14px rgba(46, 213, 115, 0)",
 		},
 	},
 } as const;
@@ -163,8 +164,8 @@ const AvatarWithStatus = ({
 				filter: dimmed ? "grayscale(1)" : "none",
 				transition: "opacity 0.3s, filter 0.3s, box-shadow 0.2s",
 				...(speaking && {
-					boxShadow: "0 0 0 2px rgba(46, 204, 113, 0.9)",
-					animation: "vpSpeak 1.4s ease-out infinite",
+					boxShadow: "0 0 0 3px rgba(46, 213, 115, 1)",
+					animation: "vpSpeak 1.3s ease-out infinite",
 				}),
 			}}
 		>
