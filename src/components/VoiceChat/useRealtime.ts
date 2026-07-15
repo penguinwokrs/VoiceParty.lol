@@ -29,6 +29,16 @@ export const useRealtime = () => {
 	const noiseMiddlewareRef = useRef<AudioMiddleware | null>(null);
 	const noiseAppliedRef = useRef(false);
 
+	// Peer IDs currently speaking (from RealtimeKit's `activeSpeaker` event).
+	// The event only fires on speech, so each speaker is cleared after a short
+	// silence via a per-peer timer.
+	const [activeSpeakers, setActiveSpeakers] = useState<Set<string>>(
+		() => new Set(),
+	);
+	const speakingTimersRef = useRef<
+		Record<string, ReturnType<typeof setTimeout>>
+	>({});
+
 	// Mock state for development
 	const [isMock, setIsMock] = useState(false);
 	// biome-ignore lint/suspicious/noExplicitAny: Peer type
@@ -157,6 +167,28 @@ export const useRealtime = () => {
 			}
 		};
 
+		// biome-ignore lint/suspicious/noExplicitAny: SDK event payload
+		const handleActiveSpeaker = (payload: any) => {
+			const peerId: string | undefined = payload?.peerId;
+			if (!peerId) return;
+			setActiveSpeakers((prev) => {
+				if (prev.has(peerId)) return prev;
+				const next = new Set(prev);
+				next.add(peerId);
+				return next;
+			});
+			clearTimeout(speakingTimersRef.current[peerId]);
+			speakingTimersRef.current[peerId] = setTimeout(() => {
+				setActiveSpeakers((prev) => {
+					if (!prev.has(peerId)) return prev;
+					const next = new Set(prev);
+					next.delete(peerId);
+					return next;
+				});
+				delete speakingTimersRef.current[peerId];
+			}, 900);
+		};
+
 		// RealtimeKit event handling
 		// biome-ignore lint/suspicious/noExplicitAny: internal/legacy methods
 		const eventSource = client as any;
@@ -171,6 +203,15 @@ export const useRealtime = () => {
 			eventSource.on("self.updated", handleUpdate); // Keep for backwards compat if it exists
 			eventSource.on("connected", handleUpdate);
 			eventSource.on("disconnected", handleUpdate);
+
+			// Active speaker (who is talking). Emitted on `participants`; also try
+			// the client root for older/internal shapes.
+			eventSource.on("activeSpeaker", handleActiveSpeaker);
+			// biome-ignore lint/suspicious/noExplicitAny: participants events
+			const participants = (client as any).participants;
+			if (participants && typeof participants.on === "function") {
+				participants.on("activeSpeaker", handleActiveSpeaker);
+			}
 
 			// Listen for media track events which might indicate audio started
 			eventSource.on("websocket/new-consumer", handleUpdate);
@@ -200,6 +241,10 @@ export const useRealtime = () => {
 
 		return () => {
 			clearInterval(intervalId);
+			for (const id of Object.keys(speakingTimersRef.current)) {
+				clearTimeout(speakingTimersRef.current[id]);
+			}
+			speakingTimersRef.current = {};
 			if (typeof eventSource.off === "function") {
 				// Use explicit event names for cleanup
 				eventSource.off("peer.joined", handleUpdate);
@@ -208,6 +253,12 @@ export const useRealtime = () => {
 				eventSource.off("self.updated", handleUpdate);
 				eventSource.off("connected", handleUpdate);
 				eventSource.off("disconnected", handleUpdate);
+				eventSource.off("activeSpeaker", handleActiveSpeaker);
+				// biome-ignore lint/suspicious/noExplicitAny: participants events
+				const participants = (client as any).participants;
+				if (participants && typeof participants.off === "function") {
+					participants.off("activeSpeaker", handleActiveSpeaker);
+				}
 				eventSource.off("websocket/new-consumer", handleUpdate);
 				eventSource.off("websocket/consumer-resumed", handleUpdate);
 				eventSource.off("media/update-active", handleUpdate);
@@ -380,6 +431,10 @@ export const useRealtime = () => {
 		}
 	}, [client, isMock, updateMuteState]);
 
+	// biome-ignore lint/suspicious/noExplicitAny: SDK self typing
+	const selfPeerId: string | undefined = (client?.self as any)?.peerId;
+	const selfSpeaking = !!(selfPeerId && activeSpeakers.has(selfPeerId));
+
 	return {
 		join,
 		leave,
@@ -390,6 +445,8 @@ export const useRealtime = () => {
 		connectionState,
 		noiseSuppression,
 		toggleNoiseSuppression,
+		activeSpeakers,
+		selfSpeaking,
 		client,
 		peers,
 	};
