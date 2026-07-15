@@ -448,3 +448,179 @@ describe("Session Management", () => {
 		});
 	});
 });
+
+// Capacity is decided by who is actually CONNECTED (RealtimeKit's live
+// "active-session"), not the append-only KV `users` list. These tests pin that
+// behavior, including the graceful fallback when the live count is unavailable.
+describe("Capacity via live presence (RealtimeKit source of truth)", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: Mocking KV
+	const mockKV: any = { put: vi.fn(), get: vi.fn() };
+	const REAL_MEETING = "rk-meeting-1";
+	const liveEnv = {
+		RIOT_CLIENT_ID: "test",
+		RIOT_CLIENT_SECRET: "test",
+		REALTIME_ORG_ID: "test-org",
+		REALTIME_API_KEY: "test-key",
+		REALTIME_KIT_APP_ID: "test-app",
+		VC_SESSIONS: mockKV,
+		USE_MOCK_REALTIME: "false",
+		// Skip Riot validation so fetch only needs to serve RealtimeKit endpoints.
+		RIOT_VALIDATION_ENABLED: "false",
+	};
+
+	const originalFetch = global.fetch;
+	afterEach(() => {
+		global.fetch = originalFetch;
+		vi.clearAllMocks();
+	});
+
+	// Point the join at an existing real meeting with an empty KV roster, so the
+	// decision hinges entirely on the live active-session count.
+	const primeExistingMeeting = () => {
+		mockKV.get
+			.mockResolvedValueOnce(REAL_MEETING) // game:{id} -> meetingId
+			.mockResolvedValueOnce(
+				JSON.stringify({
+					sessionId: "room-x",
+					meetingId: REAL_MEETING,
+					users: [],
+					createdAt: 0,
+				}),
+			);
+	};
+
+	const join = (summonerId: string) =>
+		app.request(
+			"/api/sessions/room-x/join",
+			{
+				method: "POST",
+				body: JSON.stringify({ summonerId }),
+				headers: { "Content-Type": "application/json" },
+			},
+			liveEnv,
+		);
+
+	// biome-ignore lint/suspicious/noExplicitAny: fetch mock
+	const mockRealtime = (activeSession: (url: string) => any) => {
+		global.fetch = vi.fn((url: string | URL | Request) => {
+			const u = url.toString();
+			if (u.includes("/active-session")) return activeSession(u);
+			if (u.includes("/participants")) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({ success: true, data: { token: "rt-token" } }),
+				});
+			}
+			return Promise.reject(new Error(`Unknown URL: ${u}`));
+			// biome-ignore lint/suspicious/noExplicitAny: cast
+		}) as any;
+	};
+
+	it("rejects a new user when 5 are already connected (KV roster is empty)", async () => {
+		primeExistingMeeting();
+		mockRealtime(() =>
+			Promise.resolve({
+				ok: true,
+				json: async () => ({
+					success: true,
+					data: {
+						participants: Array.from({ length: 5 }, (_, i) => ({
+							id: `p${i}`,
+						})),
+					},
+				}),
+			}),
+		);
+
+		const res = await join("sixth#JP1");
+		expect(res.status).toBe(403);
+		expect(await res.text()).toContain("full");
+	});
+
+	it("admits a new user when no one is connected (active-session 404)", async () => {
+		primeExistingMeeting();
+		mockRealtime(() =>
+			Promise.resolve({ ok: false, status: 404, statusText: "Not Found" }),
+		);
+
+		const res = await join("first#JP1");
+		expect(res.status).toBe(200);
+		// biome-ignore lint/suspicious/noExplicitAny: assertion
+		const body = (await res.json()) as any;
+		expect(body.session.users).toHaveLength(1);
+	});
+
+	it("does not count participants who already left", async () => {
+		primeExistingMeeting();
+		mockRealtime(() =>
+			Promise.resolve({
+				ok: true,
+				json: async () => ({
+					success: true,
+					data: {
+						participants: [
+							{ id: "a" },
+							{ id: "b", left_at: "2026-01-01T00:00:00Z" },
+							{ id: "c", status: "LEFT" },
+						],
+					},
+				}),
+			}),
+		);
+
+		// Only 1 of the 3 is still connected, so a join is allowed.
+		const res = await join("joiner#JP1");
+		expect(res.status).toBe(200);
+	});
+
+	it("refreshes the TTL on both keys on every join, incl. an existing-user rejoin", async () => {
+		// Existing participant rejoins: the roster doesn't change, but BOTH the
+		// game: mapping and session: entry must be re-written with the TTL so an
+		// active room never expires.
+		mockKV.get.mockResolvedValueOnce(REAL_MEETING).mockResolvedValueOnce(
+			JSON.stringify({
+				sessionId: "room-x",
+				meetingId: REAL_MEETING,
+				users: [{ summonerId: "already#JP1", joinedAt: 0 }],
+				createdAt: 0,
+			}),
+		);
+		mockRealtime(() =>
+			Promise.resolve({ ok: false, status: 404, statusText: "Not Found" }),
+		);
+
+		const res = await join("already#JP1");
+		expect(res.status).toBe(200);
+
+		// biome-ignore lint/suspicious/noExplicitAny: mock call tuples
+		const puts = mockKV.put.mock.calls as any[];
+		const keys = puts.map((call) => call[0]);
+		expect(keys).toContain("game:room-x");
+		expect(keys).toContain(`session:${REAL_MEETING}`);
+		// Every write carries the 6h TTL.
+		for (const call of puts) {
+			expect(call[2]).toEqual({ expirationTtl: 6 * 60 * 60 });
+		}
+	});
+
+	it("falls back to the KV roster when the live count is unavailable", async () => {
+		// KV roster already has 5 users; live lookup errors (500) -> fall back to KV.
+		mockKV.get.mockResolvedValueOnce(REAL_MEETING).mockResolvedValueOnce(
+			JSON.stringify({
+				sessionId: "room-x",
+				meetingId: REAL_MEETING,
+				users: Array.from({ length: 5 }, (_, i) => ({
+					summonerId: `u${i}#JP1`,
+					joinedAt: 0,
+				})),
+				createdAt: 0,
+			}),
+		);
+		mockRealtime(() =>
+			Promise.resolve({ ok: false, status: 500, statusText: "Server Error" }),
+		);
+
+		const res = await join("sixth#JP1");
+		expect(res.status).toBe(403);
+	});
+});
