@@ -34,6 +34,15 @@
 - Home / landing (usage guide): https://voiceparty.lol/
 - Join a voice room: https://voiceparty.lol/join
 
+## Languages
+
+The UI defaults to English and is also available in Japanese and Korean via
+language-prefixed URLs:
+
+- English (default): https://voiceparty.lol/ and https://voiceparty.lol/join
+- 日本語 (Japanese): https://voiceparty.lol/ja and https://voiceparty.lol/ja/join
+- 한국어 (Korean): https://voiceparty.lol/ko and https://voiceparty.lol/ko/join
+
 ## Notes
 
 - Voice Party is an independent project and is not affiliated with, endorsed by,
