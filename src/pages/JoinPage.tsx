@@ -29,9 +29,10 @@ export const JoinPage = () => {
 			}}
 		>
 			<Eyebrow>{t("landing.eyebrow")}</Eyebrow>
+			{/* variant="h1" already renders an <h1> via Typography's variantMapping;
+			    styled(Typography) doesn't type the `component` override prop. */}
 			<BrandTitle
 				variant="h1"
-				component="h1"
 				sx={{ fontSize: { xs: "2.5rem", md: "3.5rem" } }}
 			>
 				{t("landing.title")}
