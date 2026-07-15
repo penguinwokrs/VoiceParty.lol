@@ -1,9 +1,11 @@
 import CallEndIcon from "@mui/icons-material/CallEnd";
+import GraphicEqIcon from "@mui/icons-material/GraphicEq";
 import MicIcon from "@mui/icons-material/Mic";
 import MicOffIcon from "@mui/icons-material/MicOff";
 import PersonIcon from "@mui/icons-material/Person";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SyncProblemIcon from "@mui/icons-material/SyncProblem";
+import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import {
 	Alert,
 	Avatar,
@@ -17,12 +19,29 @@ import {
 	ListItem,
 	ListItemAvatar,
 	ListItemText,
+	Slider,
 	Stack,
+	Tooltip,
 	Typography,
 } from "@mui/material";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ConnectionState, Session } from "./types";
+
+// Per-participant receive volume: 0%..300% (values > 100% boost via a Web Audio
+// GainNode, which a plain <audio>.volume can't do).
+const VOLUME_MIN = 0;
+const VOLUME_MAX = 300;
+const VOLUME_DEFAULT = 100;
+const VOLUMES_KEY = "vp_volumes";
+
+const loadVolumes = (): Record<string, number> => {
+	try {
+		return JSON.parse(localStorage.getItem(VOLUMES_KEY) || "{}");
+	} catch {
+		return {};
+	}
+};
 
 // Keyframes reused by the connection indicators (defined once on the Card root).
 const connectionKeyframes = {
@@ -58,6 +77,8 @@ type ActiveSessionViewProps = {
 	onToggleMic: () => void;
 	onLeave: () => void;
 	onReconnect?: () => void;
+	noiseSuppression?: boolean;
+	onToggleNoiseSuppression?: () => void;
 	peers?: Peer[];
 };
 
@@ -138,46 +159,66 @@ interface Peer {
 const peerSummonerId = (peer: Peer): string =>
 	peer.customParticipantId || peer.name || peer.summonerId || peer.id;
 
-// Helper component for remote audio
-const RemoteAudio = ({ peer }: { peer: Peer }) => {
+// Remote audio for one peer, played through a Web Audio GainNode so the
+// per-participant volume can go ABOVE 100% (boost) as well as below.
+//
+// The stream is also attached to a MUTED <audio> element: Chrome won't pull a
+// remote WebRTC track through a MediaStreamAudioSourceNode unless it is also
+// sinked to a media element, so the element keeps the track flowing while the
+// Web Audio graph does the actual (gain-controlled) playback.
+const PeerAudio = ({
+	peer,
+	audioContext,
+	volume,
+}: {
+	peer: Peer;
+	audioContext: AudioContext | null;
+	volume: number; // linear gain, 1 = 100%
+}) => {
 	const audioRef = useRef<HTMLAudioElement>(null);
+	const gainRef = useRef<GainNode | null>(null);
+	const volumeRef = useRef(volume);
+	volumeRef.current = volume;
 
+	const track = peer.audioTrack;
 	useEffect(() => {
-		const node = audioRef.current;
-		if (!node || !peer) return;
+		const el = audioRef.current;
+		if (!el || !audioContext) return;
+		const stream = track ? new MediaStream([track]) : (peer.stream ?? null);
+		if (!stream) return;
 
+		el.srcObject = stream;
+		el.muted = true; // avoid double audio; real output is the gain graph
+		el.play().catch(() => {});
+
+		let src: MediaStreamAudioSourceNode | null = null;
+		let gain: GainNode | null = null;
 		try {
-			// Participant (Peer) usually has audioTrack (MediaStreamTrack) but not 'stream' (MediaStream)
-			// We need to create a MediaStream from the track.
-
-			// Check for audioTrack directly
-			if (peer.audioTrack) {
-				console.log(
-					`[RemoteAudio] Attaching track ${peer.audioTrack.id} for peer ${peer.id}`,
-				);
-				// Create a new MediaStream with the track
-				const stream = new MediaStream([peer.audioTrack]);
-				node.srcObject = stream;
-				// Ensure playback
-				node
-					.play()
-					.catch((e) => console.error("[RemoteAudio] Playback failed:", e));
-			} else if (peer.stream) {
-				console.log(`[RemoteAudio] Attaching stream for peer ${peer.id}`);
-				// Fallback if 'stream' property exists
-				node.srcObject = peer.stream;
-				node
-					.play()
-					.catch((e) => console.error("[RemoteAudio] Playback failed:", e));
-			} else {
-				console.warn(
-					`[RemoteAudio] Peer ${peer.id} has no audio track or stream`,
-				);
-			}
+			src = audioContext.createMediaStreamSource(stream);
+			gain = audioContext.createGain();
+			gain.gain.value = volumeRef.current;
+			src.connect(gain).connect(audioContext.destination);
+			gainRef.current = gain;
 		} catch (e) {
-			console.error("Failed to attach stream", e);
+			console.error("[PeerAudio] Web Audio setup failed:", e);
 		}
-	}, [peer, peer.audioTrack, peer.stream]);
+		return () => {
+			try {
+				src?.disconnect();
+				gain?.disconnect();
+			} catch {
+				/* noop */
+			}
+			gainRef.current = null;
+		};
+		// track/context identity drives (re)wiring; volume is applied below
+	}, [track, audioContext, peer.stream]);
+
+	// Live volume updates without rebuilding the graph.
+	useEffect(() => {
+		if (gainRef.current)
+			gainRef.current.gain.value = Number.isFinite(volume) ? volume : 1;
+	}, [volume]);
 
 	return (
 		// biome-ignore lint/a11y/useMediaCaption: Audio for voice chat
@@ -203,9 +244,47 @@ export const ActiveSessionView = ({
 	onToggleMic,
 	onLeave,
 	onReconnect,
+	noiseSuppression = false,
+	onToggleNoiseSuppression,
 	peers = [], // Default to empty array
 }: ActiveSessionViewProps) => {
 	const { t } = useTranslation();
+
+	// One AudioContext per session, used for per-peer gain (volume + boost).
+	// Created in an effect (never during render — a discarded render would leak
+	// it) and held in state so peers re-render/wire up once it exists.
+	const [audioCtx, setAudioCtx] = useState<AudioContext | null>(null);
+	useEffect(() => {
+		if (
+			typeof window === "undefined" ||
+			typeof window.AudioContext === "undefined"
+		)
+			return;
+		const ctx = new AudioContext();
+		setAudioCtx(ctx);
+		// Autoplay policy: resume now (the join click was the user gesture).
+		ctx.resume().catch(() => {});
+		return () => {
+			ctx.close().catch(() => {});
+		};
+	}, []);
+
+	// Per-participant receive volume (percent), keyed by Summoner ID so a
+	// player's preferred level sticks across sessions.
+	const [volumes, setVolumes] = useState<Record<string, number>>(loadVolumes);
+	const setVolume = (sid: string, pct: number) => {
+		setVolumes((prev) => {
+			const next = { ...prev, [sid]: pct };
+			try {
+				localStorage.setItem(VOLUMES_KEY, JSON.stringify(next));
+			} catch {
+				/* ignore quota errors */
+			}
+			return next;
+		});
+		audioCtx?.resume().catch(() => {});
+	};
+	const volumeOf = (sid: string) => volumes[sid] ?? VOLUME_DEFAULT;
 
 	// Local user's lifecycle. Falls back to the boolean for older callers/tests.
 	const state: ConnectionState =
@@ -236,9 +315,14 @@ export const ActiveSessionView = ({
 				}),
 			}}
 		>
-			{/* Render invisible audio elements for all remote peers */}
+			{/* Invisible audio elements — one gain-controlled sink per remote peer */}
 			{peers.map((p) => (
-				<RemoteAudio key={p.id || p.peerId || "unknown"} peer={p} />
+				<PeerAudio
+					key={p.id || p.peerId || "unknown"}
+					peer={p}
+					audioContext={audioCtx}
+					volume={volumeOf(peerSummonerId(p)) / 100}
+				/>
 			))}
 
 			{loading && (
@@ -397,33 +481,87 @@ export const ActiveSessionView = ({
 							const meta = session.users.find(
 								(u) => u.summonerId === summonerId,
 							);
+							const vol = volumeOf(summonerId);
+							const boosted = vol > 100;
 							return (
-								<ListItem key={peer.id || peer.peerId}>
-									<ListItemAvatar>
-										<AvatarWithStatus
-											src={meta?.iconUrl}
-											alt={summonerId}
-											state={rosterState}
-											dimmed={!healthy}
-											bgcolor="grey.600"
-										/>
-									</ListItemAvatar>
-									<ListItemText
-										sx={{ minWidth: 0 }}
-										primary={summonerId}
-										secondary={
-											healthy ? undefined : t(`session.status.${rosterState}`)
-										}
-										primaryTypographyProps={{
-											noWrap: true,
-											title: summonerId,
+								<ListItem
+									key={peer.id || peer.peerId}
+									sx={{
+										flexDirection: "column",
+										alignItems: "stretch",
+										gap: 0.5,
+									}}
+								>
+									<Box
+										sx={{
+											display: "flex",
+											alignItems: "center",
+											width: "100%",
 										}}
-										secondaryTypographyProps={
-											healthy
-												? undefined
-												: { noWrap: true, color: "warning.main" }
-										}
-									/>
+									>
+										<ListItemAvatar>
+											<AvatarWithStatus
+												src={meta?.iconUrl}
+												alt={summonerId}
+												state={rosterState}
+												dimmed={!healthy}
+												bgcolor="grey.600"
+											/>
+										</ListItemAvatar>
+										<ListItemText
+											sx={{ minWidth: 0 }}
+											primary={summonerId}
+											secondary={
+												healthy ? undefined : t(`session.status.${rosterState}`)
+											}
+											primaryTypographyProps={{
+												noWrap: true,
+												title: summonerId,
+											}}
+											secondaryTypographyProps={
+												healthy
+													? undefined
+													: { noWrap: true, color: "warning.main" }
+											}
+										/>
+									</Box>
+									{/* Per-participant receive volume (0%..300%, boost > 100%) */}
+									<Box
+										sx={{
+											display: "flex",
+											alignItems: "center",
+											gap: 1,
+											pl: 7,
+											pr: 0.5,
+										}}
+									>
+										<VolumeUpIcon
+											fontSize="small"
+											sx={{ color: "text.secondary" }}
+										/>
+										<Slider
+											size="small"
+											aria-label={t("session.volume", { name: summonerId })}
+											min={VOLUME_MIN}
+											max={VOLUME_MAX}
+											step={5}
+											marks={[{ value: 100 }]}
+											value={vol}
+											onChange={(_, v) => setVolume(summonerId, v as number)}
+											sx={boosted ? { color: "warning.main" } : undefined}
+										/>
+										<Typography
+											variant="caption"
+											sx={{
+												minWidth: 40,
+												textAlign: "right",
+												fontVariantNumeric: "tabular-nums",
+												color: boosted ? "warning.main" : "text.secondary",
+											}}
+										>
+											{vol}%
+										</Typography>
+									</Box>
 								</ListItem>
 							);
 						})}
@@ -439,6 +577,29 @@ export const ActiveSessionView = ({
 					>
 						{isMicMuted ? <MicOffIcon /> : <MicIcon />}
 					</IconButton>
+					{onToggleNoiseSuppression && (
+						<Tooltip
+							title={
+								noiseSuppression
+									? t("session.noiseSuppressionOn")
+									: t("session.noiseSuppressionOff")
+							}
+						>
+							<span>
+								<IconButton
+									color={noiseSuppression ? "success" : "default"}
+									onClick={onToggleNoiseSuppression}
+									size="large"
+									sx={{ border: "1px solid currentColor" }}
+									disabled={!healthy}
+									aria-pressed={noiseSuppression}
+									aria-label={t("session.noiseSuppression")}
+								>
+									<GraphicEqIcon />
+								</IconButton>
+							</span>
+						</Tooltip>
+					)}
 					<IconButton
 						color="error"
 						onClick={onLeave}

@@ -27,6 +27,8 @@ export const VoiceChat = () => {
 		isMicMuted,
 		isConnected,
 		connectionState,
+		noiseSuppression,
+		toggleNoiseSuppression,
 		peers,
 	} = useRealtime();
 
@@ -130,6 +132,8 @@ export const VoiceChat = () => {
 				onToggleMic={toggleMic}
 				onLeave={handleLeave}
 				onReconnect={handleReconnect}
+				noiseSuppression={noiseSuppression}
+				onToggleNoiseSuppression={toggleNoiseSuppression}
 				peers={peers}
 			/>
 		);

@@ -1,6 +1,10 @@
+import type { AudioMiddleware } from "@cloudflare/realtimekit";
 import { useRealtimeKitClient } from "@cloudflare/realtimekit-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createNoiseSuppressionMiddleware } from "./noiseSuppression";
 import type { ConnectionState } from "./types";
+
+const NOISE_SUPPRESSION_KEY = "vp_noise_suppression";
 
 // RealtimeKit `self.roomState` values that mean the local user is no longer in
 // the meeting on purpose (vs. a transient network drop we should recover from).
@@ -16,6 +20,14 @@ export const useRealtime = () => {
 	const leftIntentionally = useRef(false);
 	// Derived: keep the old boolean around for existing callers/props.
 	const isConnected = connectionState === "connected";
+
+	// Local-mic RNNoise noise suppression. The preference is persisted; the
+	// middleware instance is reused so we can remove the exact same reference.
+	const [noiseSuppression, setNoiseSuppression] = useState(
+		() => localStorage.getItem(NOISE_SUPPRESSION_KEY) === "true",
+	);
+	const noiseMiddlewareRef = useRef<AudioMiddleware | null>(null);
+	const noiseAppliedRef = useRef(false);
 
 	// Mock state for development
 	const [isMock, setIsMock] = useState(false);
@@ -285,6 +297,53 @@ export const useRealtime = () => {
 		}
 	}, [client, isMock]);
 
+	// Add/remove the RNNoise middleware on the local participant.
+	const applyNoiseSuppression = useCallback(
+		async (enabled: boolean) => {
+			if (isMock || !client?.self) return;
+			// biome-ignore lint/suspicious/noExplicitAny: SDK self middleware API
+			const self = client.self as any;
+			if (enabled) {
+				if (noiseAppliedRef.current) return;
+				if (!noiseMiddlewareRef.current) {
+					noiseMiddlewareRef.current = createNoiseSuppressionMiddleware();
+				}
+				await self.addAudioMiddleware(noiseMiddlewareRef.current);
+				noiseAppliedRef.current = true;
+			} else if (noiseMiddlewareRef.current && noiseAppliedRef.current) {
+				await self.removeAudioMiddleware(noiseMiddlewareRef.current);
+				noiseAppliedRef.current = false;
+			}
+		},
+		[client, isMock],
+	);
+
+	const toggleNoiseSuppression = useCallback(async () => {
+		const next = !noiseSuppression;
+		try {
+			// Apply first; only commit the UI/persisted state if it actually took
+			// effect (the worklet/WASM can fail to load), so they can't drift.
+			await applyNoiseSuppression(next);
+			setNoiseSuppression(next);
+			localStorage.setItem(NOISE_SUPPRESSION_KEY, String(next));
+		} catch (e) {
+			console.error("[useRealtime] noise suppression toggle failed:", e);
+		}
+	}, [noiseSuppression, applyNoiseSuppression]);
+
+	// (Re)apply the preference once connected — including after a reconnect,
+	// where the audio track (and its middleware chain) is rebuilt.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: only re-apply on connect edge
+	useEffect(() => {
+		if (connectionState !== "connected") {
+			noiseAppliedRef.current = false;
+			return;
+		}
+		if (noiseSuppression) {
+			applyNoiseSuppression(true).catch(() => {});
+		}
+	}, [connectionState]);
+
 	const toggleMic = useCallback(async () => {
 		if (isMock) {
 			setIsMicMuted((prev) => !prev);
@@ -329,6 +388,8 @@ export const useRealtime = () => {
 		isMicMuted,
 		isConnected,
 		connectionState,
+		noiseSuppression,
+		toggleNoiseSuppression,
 		client,
 		peers,
 	};

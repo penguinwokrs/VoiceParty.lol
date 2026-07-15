@@ -30,6 +30,7 @@
 		"@fontsource/roboto": "^5.2.9",
 		"@mui/icons-material": "^6.1.10",
 		"@mui/material": "^6.1.10",
+		"@sapphi-red/web-noise-suppressor": "^0.3.5",
 		"axios": "^1.13.2",
 		"hono": "^4.11.1",
 		"i18next": "^26.3.6",

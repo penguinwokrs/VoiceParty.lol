@@ -74,6 +74,10 @@ export const en: TranslationResources = {
 		reconnecting: "Reconnecting",
 		reconnectingHint: "Waiting for the network to come back. Hang tight.",
 		reconnect: "Reconnect",
+		noiseSuppression: "Noise suppression",
+		noiseSuppressionOn: "Noise suppression: on",
+		noiseSuppressionOff: "Noise suppression: off",
+		volume: "{{name}} volume",
 		participants: "Participants ({{n}}/5)",
 		you: "(You)",
 		status: {
