@@ -38,6 +38,11 @@ const connectionKeyframes = {
 		"33%": { content: '".."' },
 		"66%": { content: '"..."' },
 	},
+	// Horizontal shimmer for the reconnecting progress bar.
+	"@keyframes vpSweep": {
+		"0%": { backgroundPosition: "200% 0" },
+		"100%": { backgroundPosition: "-200% 0" },
+	},
 } as const;
 
 type ActiveSessionViewProps = {
@@ -281,6 +286,7 @@ export const ActiveSessionView = ({
 						}
 						sx={{
 							mb: 2,
+							overflow: "hidden",
 							"& .MuiAlert-message": { width: "100%" },
 							"&::after": {
 								content: '""',
@@ -291,8 +297,8 @@ export const ActiveSessionView = ({
 								width: "100%",
 								background: (theme) =>
 									`linear-gradient(90deg, transparent, ${theme.palette.warning.main}, transparent)`,
-								animation: "vpSpin 1.4s linear infinite",
-								transformOrigin: "center",
+								backgroundSize: "200% 100%",
+								animation: "vpSweep 1.4s linear infinite",
 							},
 						}}
 					>
