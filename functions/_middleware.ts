@@ -78,11 +78,29 @@ const setText = (value: string) => ({
 });
 
 export const onRequest: PagesFunction = async (context) => {
+	const url = new URL(context.request.url);
+
+	// The default language (English) is served without a prefix. Redirect an
+	// explicit "/en" prefix to the clean path at the edge (301) so there is a
+	// single canonical URL per page (avoids duplicate content).
+	const segments = url.pathname.split("/");
+	if (segments[1] === DEFAULT_LANG) {
+		segments.splice(1, 1);
+		const cleanPath = segments.join("/") || "/";
+		return Response.redirect(url.origin + cleanPath + url.search, 301);
+	}
+
 	const res = await context.next();
+
+	// Never run HTMLRewriter on bodyless / redirect responses (304, other 3xx):
+	// there is nothing to rewrite and it can violate the response contract.
+	if (res.status === 304 || (res.status >= 300 && res.status < 400)) {
+		return res;
+	}
+
 	const contentType = res.headers.get("content-type") ?? "";
 	if (!contentType.includes("text/html")) return res;
 
-	const url = new URL(context.request.url);
 	const lang = langFromPath(url.pathname);
 	const meta = META[lang];
 	const basePath = stripLang(url.pathname);

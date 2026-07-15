@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Navigate, Outlet, useParams } from "react-router-dom";
+import { Navigate, Outlet, useLocation, useParams } from "react-router-dom";
 import type { LanguageCode } from "../i18n";
 import { defaultLanguage, isLanguageCode } from "../i18n/paths";
 import { seoMeta } from "../i18n/seo-meta";
@@ -21,6 +21,7 @@ const setMetaDescription = (content: string) => {
 export const LangLayout = () => {
 	const { lang: langParam } = useParams();
 	const { i18n } = useTranslation();
+	const location = useLocation();
 
 	const lang: LanguageCode | null =
 		langParam === undefined
@@ -40,6 +41,14 @@ export const LangLayout = () => {
 	}, [lang, i18n]);
 
 	if (lang === null) {
+		// An explicit "/en" prefix (the default language) → strip it and keep the
+		// sub-path (e.g. "/en/join" → "/join"). Any other unknown segment → home.
+		// (On Cloudflare the edge middleware 301-redirects "/en" before this runs;
+		// this keeps local dev and direct client navigation consistent.)
+		if (langParam === defaultLanguage) {
+			const cleanPath = location.pathname.replace(/^\/en(\/|$)/, "/");
+			return <Navigate to={cleanPath} replace />;
+		}
 		return <Navigate to="/" replace />;
 	}
 
