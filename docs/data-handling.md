@@ -40,7 +40,7 @@ flowchart LR
 |---|---|---|
 | ルーム→ミーティング対応 | `game:{sessionId}` | 6 時間（join で更新） |
 | セッション | `session:{meetingId}` | 6 時間（join で更新） |
-| 通報 | `report:{reported}:{session}:{reporter}` | 30 日 |
+| 通報 | `report:{reportedHash}:{sessionId}:{reporterHash}` | 30 日 |
 | BAN | `ban:{reportedHash}` | 24 時間 |
 
 音声・生の Riot ID は保存しない。放置されたルームは TTL により自然消滅する。
