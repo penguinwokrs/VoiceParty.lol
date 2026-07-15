@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { callRealtimeKit } from "../_lib/realtime";
+import { callRealtimeKit, getActiveParticipantCount } from "../_lib/realtime";
 import {
 	getAccountByRiotId,
 	getProfileIconUrl,
@@ -8,6 +8,14 @@ import {
 import type { Bindings, Session } from "../_types";
 
 const app = new Hono<{ Bindings: Bindings }>();
+
+// Max concurrent participants per room.
+const MAX_USERS = 5;
+
+// Auto-expire KV entries so abandoned rooms clean themselves up (nobody removes
+// users on tab close). Refreshed on every join, so active rooms never expire.
+const SESSION_TTL_SECONDS = 6 * 60 * 60; // 6 hours
+const KV_TTL = { expirationTtl: SESSION_TTL_SECONDS };
 
 app.post("/", async (c) => {
 	const sessionId = crypto.randomUUID();
@@ -46,16 +54,18 @@ app.post("/", async (c) => {
 
 	// Save mapping: game:{gameId} -> meetingId
 	if (meetingId) {
-		await c.env.VC_SESSIONS.put(`game:${sessionId}`, meetingId);
+		await c.env.VC_SESSIONS.put(`game:${sessionId}`, meetingId, KV_TTL);
 		await c.env.VC_SESSIONS.put(
 			`session:${meetingId}`,
 			JSON.stringify(session),
+			KV_TTL,
 		);
 	} else {
 		// Should not happen with current logic, but safe fallback
 		await c.env.VC_SESSIONS.put(
 			`session:${sessionId}`,
 			JSON.stringify(session),
+			KV_TTL,
 		);
 	}
 
@@ -178,16 +188,29 @@ app.post("/:id/join", async (c) => {
 		};
 
 		// Save mapping
-		await c.env.VC_SESSIONS.put(`game:${sessionId}`, meetingId);
+		await c.env.VC_SESSIONS.put(`game:${sessionId}`, meetingId, KV_TTL);
 	}
 
 	// Check if user already exists
 	const existingUser = session.users.find((u) => u.summonerId === summonerId);
 
 	if (!existingUser) {
-		// Only check capacity for NEW users
-		if (session.users.length >= 5) {
-			return c.text("Session is full (max 5 users)", 403);
+		// Capacity is based on who is ACTUALLY connected (RealtimeKit is the source
+		// of truth for presence), not our append-only KV `users` list which never
+		// prunes people who closed their tab. Fall back to the KV roster only when
+		// the live count is unavailable, so we never wrongly reject a join.
+		let occupancy = session.users.length;
+		if (
+			!useMock &&
+			session.meetingId &&
+			!session.meetingId.startsWith("mock-")
+		) {
+			const live = await getActiveParticipantCount(session.meetingId, c.env);
+			if (live !== null) occupancy = live;
+		}
+
+		if (occupancy >= MAX_USERS) {
+			return c.text(`Session is full (max ${MAX_USERS} users)`, 403);
 		}
 
 		session.users.push({
@@ -198,6 +221,7 @@ app.post("/:id/join", async (c) => {
 		await c.env.VC_SESSIONS.put(
 			`session:${session.meetingId}`, // Save to session:meetingId
 			JSON.stringify(session),
+			KV_TTL,
 		);
 	}
 
