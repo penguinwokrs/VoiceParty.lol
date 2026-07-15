@@ -79,6 +79,8 @@ export const en: TranslationResources = {
 		linkCopied: "Link copied",
 		shareText:
 			"🎮 Jumping into VoiceParty.lol for some crystal-clear voice chat — come play with me! 👉",
+		safetyNote:
+			"🔒 Voice is never recorded. You can mute or report anyone to protect yourself.",
 		noiseSuppression: "Noise suppression",
 		noiseSuppressionOn: "Noise suppression: on",
 		noiseSuppressionOff: "Noise suppression: off",
