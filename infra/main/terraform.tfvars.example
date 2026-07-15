@@ -1,7 +1,0 @@
-# Copy to terraform.tfvars (gitignored) for LOCAL runs, if you need to override
-# the defaults. Terraform no longer manages app secrets/env vars — those live in
-# wrangler.toml [vars] and `wrangler pages secret put` (see the add-env-var
-# skill), so there is normally nothing to put here.
-
-# account_id has a default in variables.tf; override only if needed.
-# account_id = "ded3682ef149b18dedb1e82650b1cda3"
