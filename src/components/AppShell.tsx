@@ -13,16 +13,19 @@ const PageWrapper = styled.div`
     radial-gradient(900px 520px at 50% -10%, var(--color-bg-gradientTop) 0%, transparent 60%),
     linear-gradient(180deg, var(--color-bg-gradientTop) 0%, var(--color-bg-base) 55%);
 
-  /* Subtle hextech grid, faded toward the edges */
+  /* Subtle hextech grid, faded toward the edges. Decorative only, so it never
+     intercepts pointer events, and the fade uses a fixed-size mask anchored a
+     fixed distance from the top so it looks the same on short and tall pages. */
   &::before {
     content: "";
     position: absolute;
     inset: 0;
+    pointer-events: none;
     background-image:
       linear-gradient(var(--color-border-subtle) 1px, transparent 1px),
       linear-gradient(90deg, var(--color-border-subtle) 1px, transparent 1px);
     background-size: 48px 48px;
-    mask-image: radial-gradient(circle at 50% 20%, rgba(0, 0, 0, 0.6), transparent 72%);
+    mask-image: radial-gradient(900px 560px at 50% 280px, rgba(0, 0, 0, 0.6), transparent 72%);
     opacity: 0.5;
     z-index: 0;
   }
