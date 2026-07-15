@@ -6,7 +6,7 @@ pages_build_output_dir = "dist"
 [[kv_namespaces]]
 binding = "VC_SESSIONS"
 id = "74421f4d32f648e4b6ad64a9ef5498ee"
-preview_id = "voiceparty-kv-preview"
+preview_id = "bfac51e6cf5e4e4388609f68c70f8c5d"
 
 # Temporary: Riot API validation is disabled while awaiting RSO production
 # approval (~1 month lead time). The RSO/validation code is kept intact.
