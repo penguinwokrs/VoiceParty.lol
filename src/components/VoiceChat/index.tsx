@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { ActiveSessionView } from "./ActiveSessionView";
 import { JoinSessionForm } from "./JoinSessionForm";
@@ -6,6 +7,7 @@ import type { JoinResponse, Session } from "./types";
 import { useRealtime } from "./useRealtime";
 
 export const VoiceChat = () => {
+	const { t } = useTranslation();
 	const { sessionId: routeSessionId } = useParams();
 	const navigate = useNavigate();
 	const [sessionId, setSessionId] = useState(routeSessionId || "");
@@ -39,7 +41,7 @@ export const VoiceChat = () => {
 
 	const joinSession = async (targetSessionId: string) => {
 		if (!targetSessionId || !summonerId) {
-			setError("Session ID and Summoner ID are required");
+			setError(t("errors.idsRequired"));
 			return;
 		}
 
@@ -63,7 +65,7 @@ export const VoiceChat = () => {
 
 			if (!res.ok) {
 				const text = await res.text();
-				throw new Error(text || "Failed to join session");
+				throw new Error(text || t("errors.joinFailed"));
 			}
 
 			const data: JoinResponse = await res.json();
@@ -76,9 +78,7 @@ export const VoiceChat = () => {
 				} catch (rtErr) {
 					console.error("Realtime connection failed:", rtErr);
 					// We don't block the UI, but show warning
-					setError(
-						"Joined session but voice connection failed (check console/creds)",
-					);
+					setError(t("errors.voiceConnectionFailed"));
 				}
 			}
 		} catch (err) {

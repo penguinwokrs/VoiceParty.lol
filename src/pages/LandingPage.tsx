@@ -1,8 +1,10 @@
 import styled from "@emotion/styled";
 import { Container, Typography } from "@mui/material";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/Button";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 
 // Colors/spacing come from design tokens exposed as CSS variables
 // (src/theme/tokens.generated.css, generated from design/tokens.json).
@@ -28,6 +30,18 @@ const PageWrapper = styled.div`
     mask-image: radial-gradient(circle at 50% 20%, rgba(0, 0, 0, 0.6), transparent 72%);
     opacity: 0.5;
     z-index: 0;
+  }
+`;
+
+const TopBar = styled.div`
+  position: absolute;
+  top: 1.25rem;
+  right: 1.5rem;
+  z-index: 2;
+
+  @media (max-width: 600px) {
+    top: 0.85rem;
+    right: 0.85rem;
   }
 `;
 
@@ -311,10 +325,11 @@ const FinalCta = styled.div`
   text-align: center;
 `;
 
+type FeatureKey = "noInstall" | "clearVoice" | "invite" | "lowLatency";
+
 type Feature = {
+	key: FeatureKey;
 	icon: ReactNode;
-	title: string;
-	body: string;
 };
 
 const MicIcon = (
@@ -394,102 +409,70 @@ const BoltIcon = (
 );
 
 const features: Feature[] = [
-	{
-		icon: BrowserIcon,
-		title: "インストール不要",
-		body: "ブラウザだけでOK。アプリのダウンロードもアカウント登録も必要ありません。開いてすぐに話せます。",
-	},
-	{
-		icon: MicIcon,
-		title: "クリアな音声",
-		body: "低ノイズ・高音質のリアルタイム音声。ワンタップでミュートの切り替えができます。",
-	},
-	{
-		icon: LinkIcon,
-		title: "リンクで即招待",
-		body: "ゲームIDのURLを味方に共有するだけ。ワンクリックで同じボイスチャットに集まれます。",
-	},
-	{
-		icon: BoltIcon,
-		title: "低遅延・軽量",
-		body: "Cloudflare Realtime を利用し、世界中どこからでも遅延の少ない通話を実現します。",
-	},
+	{ key: "noInstall", icon: BrowserIcon },
+	{ key: "clearVoice", icon: MicIcon },
+	{ key: "invite", icon: LinkIcon },
+	{ key: "lowLatency", icon: BoltIcon },
 ];
 
-type Step = {
-	title: string;
-	body: string;
-};
-
-const steps: Step[] = [
-	{
-		title: "サモナー名とゲームIDを入力",
-		body: "「参加」を押して、あなたのサモナー名と合言葉になるゲームIDを入力します。IDは味方と揃えれば何でもOKです。",
-	},
-	{
-		title: "ボイスチャットに接続",
-		body: "「Join Game」を押すとマイクが有効になり、同じゲームIDの仲間と音声でつながります。",
-	},
-	{
-		title: "URLを味方に共有",
-		body: "ブラウザのURLをそのまま味方に送るだけ。受け取った人はリンクを開くと同じ部屋に参加できます。",
-	},
-	{
-		title: "作戦を立てて勝利へ",
-		body: "クリアな音声で連携し、リフトを制圧しましょう。退出はいつでもワンクリックです。",
-	},
-];
+const stepKeys = ["enter", "connect", "share", "win"] as const;
 
 export const LandingPage = () => {
 	const navigate = useNavigate();
+	const { t } = useTranslation();
 
 	return (
 		<PageWrapper>
+			<TopBar>
+				<LanguageSwitcher />
+			</TopBar>
+
 			<Hero>
 				<Content maxWidth="md">
-					<Eyebrow>Real-time voice</Eyebrow>
+					<Eyebrow>{t("landing.eyebrow")}</Eyebrow>
 
 					<Title
 						variant="h1"
 						sx={{ fontSize: { xs: "2.75rem", md: "4.75rem" } }}
 					>
-						Voice Party
+						{t("landing.title")}
 					</Title>
 
 					<Divider />
 
-					<Subtitle variant="h6">
-						Gather your allies, coordinate your plays, and dominate the rift
-						with crystal-clear voice — right in your browser.
-					</Subtitle>
+					<Subtitle variant="h6">{t("landing.subtitle")}</Subtitle>
 
 					<PrimaryButton onClick={() => navigate("/join")} variant="contained">
-						参加 (Join)
+						{t("landing.cta")}
 					</PrimaryButton>
 				</Content>
 
 				<ScrollHint>
-					使い方
+					{t("landing.scrollHint")}
 					<span className="chevron" />
 				</ScrollHint>
 			</Hero>
 
 			<Section>
 				<Container maxWidth="lg">
-					<SectionEyebrow>Why Voice Party</SectionEyebrow>
+					<SectionEyebrow>{t("landing.features.eyebrow")}</SectionEyebrow>
 					<SectionHeading
 						variant="h3"
 						sx={{ fontSize: { xs: "1.9rem", md: "2.6rem" } }}
 					>
-						特長
+						{t("landing.features.heading")}
 					</SectionHeading>
 
 					<FeatureGrid>
 						{features.map((f) => (
-							<FeatureCard key={f.title}>
+							<FeatureCard key={f.key}>
 								<IconBadge>{f.icon}</IconBadge>
-								<FeatureTitle variant="h6">{f.title}</FeatureTitle>
-								<FeatureBody>{f.body}</FeatureBody>
+								<FeatureTitle variant="h6">
+									{t(`landing.features.items.${f.key}.title`)}
+								</FeatureTitle>
+								<FeatureBody>
+									{t(`landing.features.items.${f.key}.body`)}
+								</FeatureBody>
 							</FeatureCard>
 						))}
 					</FeatureGrid>
@@ -498,21 +481,23 @@ export const LandingPage = () => {
 
 			<Section style={{ paddingTop: 0 }}>
 				<Container maxWidth="md">
-					<SectionEyebrow>How it works</SectionEyebrow>
+					<SectionEyebrow>{t("landing.steps.eyebrow")}</SectionEyebrow>
 					<SectionHeading
 						variant="h3"
 						sx={{ fontSize: { xs: "1.9rem", md: "2.6rem" } }}
 					>
-						使い方はかんたん 4 ステップ
+						{t("landing.steps.heading")}
 					</SectionHeading>
 
 					<StepList>
-						{steps.map((s, i) => (
-							<StepRow key={s.title}>
+						{stepKeys.map((key, i) => (
+							<StepRow key={key}>
 								<StepNumber>{i + 1}</StepNumber>
 								<div>
-									<StepTitle variant="h6">{s.title}</StepTitle>
-									<StepBody>{s.body}</StepBody>
+									<StepTitle variant="h6">
+										{t(`landing.steps.items.${key}.title`)}
+									</StepTitle>
+									<StepBody>{t(`landing.steps.items.${key}.body`)}</StepBody>
 								</div>
 							</StepRow>
 						))}
@@ -530,20 +515,19 @@ export const LandingPage = () => {
 								letterSpacing: "0.04em",
 							}}
 						>
-							さあ、始めよう
+							{t("landing.finalCta")}
 						</Typography>
 						<PrimaryButton
 							onClick={() => navigate("/join")}
 							variant="contained"
 						>
-							参加 (Join)
+							{t("landing.cta")}
 						</PrimaryButton>
 						<Typography
 							variant="body2"
 							sx={{ color: "var(--color-text-muted)", mt: 4 }}
 						>
-							© {new Date().getFullYear()} Voice Party. Not affiliated with Riot
-							Games.
+							{t("landing.footer", { year: new Date().getFullYear() })}
 						</Typography>
 					</FinalCta>
 				</Container>
