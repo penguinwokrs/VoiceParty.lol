@@ -443,8 +443,14 @@ export const ActiveSessionView = ({
 			: "";
 	const [copiedToast, setCopiedToast] = useState(false);
 	const copyLink = () => {
+		// clipboard is undefined in insecure contexts / older browsers — guard so
+		// chaining .then() on undefined can't throw.
+		if (!navigator.clipboard) {
+			console.error("[share] clipboard API not available");
+			return;
+		}
 		navigator.clipboard
-			?.writeText(shareUrl)
+			.writeText(shareUrl)
 			.then(() => setCopiedToast(true))
 			.catch((e) => console.error("[share] copy failed:", e));
 	};
