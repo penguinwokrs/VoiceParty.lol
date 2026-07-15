@@ -87,6 +87,7 @@ export const ja = {
 		joinFailed: "セッションへの参加に失敗しました",
 		voiceConnectionFailed:
 			"セッションには参加しましたが、音声接続に失敗しました（コンソール／認証情報を確認してください）",
+		reconnectFailed: "再接続に失敗しました。もう一度お試しください。",
 	},
 	language: {
 		label: "言語",

@@ -89,6 +89,7 @@ export const ko: TranslationResources = {
 		joinFailed: "세션 참가에 실패했습니다",
 		voiceConnectionFailed:
 			"세션에는 참가했지만 음성 연결에 실패했습니다 (콘솔/인증 정보를 확인하세요)",
+		reconnectFailed: "다시 연결하지 못했습니다. 다시 시도해 주세요.",
 	},
 	language: {
 		label: "언어",

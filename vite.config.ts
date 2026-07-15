@@ -26,8 +26,12 @@ export default defineConfig({
 		// Ignore Claude Code local git worktrees — they have their own
 		// node_modules and would be discovered as duplicate/broken test suites.
 		exclude: [
+			// Keep Vitest's default excludes...
 			"**/node_modules/**",
 			"**/dist/**",
+			"**/.git/**",
+			"**/.cache/**",
+			// ...plus this project's local-only trees.
 			"**/.claude/**",
 			"**/.wrangler/**",
 		],

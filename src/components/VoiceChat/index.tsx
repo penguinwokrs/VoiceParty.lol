@@ -105,6 +105,17 @@ export const VoiceChat = () => {
 		navigate("/");
 	};
 
+	const handleReconnect = async () => {
+		setError("");
+		try {
+			await reconnect();
+		} catch {
+			// reconnect() re-throws on failure; surface it instead of leaving an
+			// unhandled rejection with no UI feedback.
+			setError(t("errors.reconnectFailed"));
+		}
+	};
+
 	if (currentSession) {
 		return (
 			<ActiveSessionView
@@ -118,7 +129,7 @@ export const VoiceChat = () => {
 				onErrorClose={() => setError("")}
 				onToggleMic={toggleMic}
 				onLeave={handleLeave}
-				onReconnect={reconnect}
+				onReconnect={handleReconnect}
 				peers={peers}
 			/>
 		);

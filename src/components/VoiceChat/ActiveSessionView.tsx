@@ -224,11 +224,15 @@ export const ActiveSessionView = ({
 				position: "relative",
 				transition: "box-shadow 0.3s",
 				...connectionKeyframes,
+				// Keep the Card's elevation shadow and add a colored ring on top
+				// (composed box-shadows both respect the border radius).
 				...(state === "reconnecting" && {
-					boxShadow: (theme) => `0 0 0 2px ${theme.palette.warning.main}`,
+					boxShadow: (theme) =>
+						`${theme.shadows[1]}, 0 0 0 2px ${theme.palette.warning.main}`,
 				}),
 				...(state === "disconnected" && {
-					boxShadow: (theme) => `0 0 0 2px ${theme.palette.error.main}`,
+					boxShadow: (theme) =>
+						`${theme.shadows[1]}, 0 0 0 2px ${theme.palette.error.main}`,
 				}),
 			}}
 		>
@@ -286,6 +290,7 @@ export const ActiveSessionView = ({
 						}
 						sx={{
 							mb: 2,
+							position: "relative",
 							overflow: "hidden",
 							"& .MuiAlert-message": { width: "100%" },
 							"&::after": {

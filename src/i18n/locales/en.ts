@@ -88,6 +88,7 @@ export const en: TranslationResources = {
 		joinFailed: "Failed to join session",
 		voiceConnectionFailed:
 			"Joined session but voice connection failed (check console/creds)",
+		reconnectFailed: "Reconnect failed. Please try again.",
 	},
 	language: {
 		label: "Language",

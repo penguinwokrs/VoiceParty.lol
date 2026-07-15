@@ -66,9 +66,12 @@ export const useRealtime = () => {
 			return;
 		}
 		// init / connecting / waitlisted → keep the "connecting" phase, but never
-		// downgrade an already-connected session to "connecting".
+		// downgrade an already-connected OR still-reconnecting session back to
+		// "connecting" (that would flicker the UI mid-recovery).
 		setConnectionState((prev) =>
-			prev === "connected" ? "reconnecting" : "connecting",
+			prev === "connected" || prev === "reconnecting"
+				? "reconnecting"
+				: "connecting",
 		);
 	}, [client]);
 
