@@ -670,9 +670,8 @@ describe("Reports & auto-ban (moderation)", () => {
 			env,
 		);
 
-	// biome-ignore lint/suspicious/noExplicitAny: mock call tuples
-	const putKeys = () =>
-		(mockKV.put.mock.calls as any[]).map((c) => String(c[0]));
+	const putKeys = (): string[] =>
+		mockKV.put.mock.calls.map((c: unknown[]) => String(c[0]));
 
 	it("records a report under a report: key with TTL and metadata", async () => {
 		mockKV.list.mockResolvedValue({ keys: [] });
@@ -683,8 +682,7 @@ describe("Reports & auto-ban (moderation)", () => {
 		});
 		expect(res.status).toBe(200);
 
-		// biome-ignore lint/suspicious/noExplicitAny: mock call tuples
-		const call = (mockKV.put.mock.calls as any[]).find((c) =>
+		const call = mockKV.put.mock.calls.find((c: unknown[]) =>
 			String(c[0]).startsWith("report:"),
 		);
 		expect(call).toBeTruthy();
@@ -744,8 +742,7 @@ describe("Reports & auto-ban (moderation)", () => {
 		});
 		expect(res.status).toBe(200);
 
-		// biome-ignore lint/suspicious/noExplicitAny: mock call tuples
-		const banCall = (mockKV.put.mock.calls as any[]).find((c) =>
+		const banCall = mockKV.put.mock.calls.find((c: unknown[]) =>
 			String(c[0]).startsWith("ban:"),
 		);
 		expect(banCall).toBeTruthy();
