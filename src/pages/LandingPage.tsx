@@ -4,46 +4,15 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/Button";
-import { LanguageSwitcher } from "../components/LanguageSwitcher";
+import {
+	BrandDivider,
+	BrandSubtitle,
+	BrandTitle,
+	Eyebrow,
+} from "../components/brand";
 
 // Colors/spacing come from design tokens exposed as CSS variables
 // (src/theme/tokens.generated.css, generated from design/tokens.json).
-
-const PageWrapper = styled.div`
-  min-height: 100vh;
-  position: relative;
-  overflow: hidden;
-  color: var(--color-text-primary);
-  background:
-    radial-gradient(900px 520px at 50% -10%, var(--color-bg-gradientTop) 0%, transparent 60%),
-    linear-gradient(180deg, var(--color-bg-gradientTop) 0%, var(--color-bg-base) 55%);
-
-  /* Subtle hextech grid, faded toward the edges */
-  &::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(var(--color-border-subtle) 1px, transparent 1px),
-      linear-gradient(90deg, var(--color-border-subtle) 1px, transparent 1px);
-    background-size: 48px 48px;
-    mask-image: radial-gradient(circle at 50% 20%, rgba(0, 0, 0, 0.6), transparent 72%);
-    opacity: 0.5;
-    z-index: 0;
-  }
-`;
-
-const TopBar = styled.div`
-  position: absolute;
-  top: 1.25rem;
-  right: 1.5rem;
-  z-index: 2;
-
-  @media (max-width: 600px) {
-    top: 0.85rem;
-    right: 0.85rem;
-  }
-`;
 
 const Hero = styled.section`
   position: relative;
@@ -78,38 +47,6 @@ const Content = styled(Container)`
   flex-direction: column;
   align-items: center;
   gap: 1.5rem;
-`;
-
-const Eyebrow = styled.span`
-  color: var(--color-brand-teal);
-  font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: 0.35em;
-  text-transform: uppercase;
-  padding-left: 0.35em;
-`;
-
-const Title = styled(Typography)`
-  font-family: var(--font-family-display);
-  font-weight: 900;
-  color: var(--color-brand-gold);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  line-height: 1.02;
-  text-shadow: 0 2px 24px rgba(200, 170, 110, 0.25);
-`;
-
-const Subtitle = styled(Typography)`
-  color: var(--color-text-secondary);
-  max-width: 560px;
-  font-weight: 400;
-  line-height: 1.6;
-`;
-
-const Divider = styled.div`
-  height: 1px;
-  width: 120px;
-  background: linear-gradient(90deg, transparent, var(--color-brand-gold), transparent);
 `;
 
 const PrimaryButton = styled(Button)`
@@ -422,25 +359,21 @@ export const LandingPage = () => {
 	const { t } = useTranslation();
 
 	return (
-		<PageWrapper>
-			<TopBar>
-				<LanguageSwitcher />
-			</TopBar>
-
+		<>
 			<Hero>
 				<Content maxWidth="md">
 					<Eyebrow>{t("landing.eyebrow")}</Eyebrow>
 
-					<Title
+					<BrandTitle
 						variant="h1"
 						sx={{ fontSize: { xs: "2.75rem", md: "4.75rem" } }}
 					>
 						{t("landing.title")}
-					</Title>
+					</BrandTitle>
 
-					<Divider />
+					<BrandDivider />
 
-					<Subtitle variant="h6">{t("landing.subtitle")}</Subtitle>
+					<BrandSubtitle variant="h6">{t("landing.subtitle")}</BrandSubtitle>
 
 					<PrimaryButton onClick={() => navigate("/join")} variant="contained">
 						{t("landing.cta")}
@@ -504,7 +437,7 @@ export const LandingPage = () => {
 					</StepList>
 
 					<FinalCta>
-						<Divider />
+						<BrandDivider />
 						<Typography
 							variant="h5"
 							sx={{
@@ -532,6 +465,6 @@ export const LandingPage = () => {
 					</FinalCta>
 				</Container>
 			</Section>
-		</PageWrapper>
+		</>
 	);
 };

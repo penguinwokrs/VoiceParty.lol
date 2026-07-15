@@ -1,43 +1,45 @@
-import { Box, Container, Typography } from "@mui/material";
+import { Container } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import { LanguageSwitcher } from "../components/LanguageSwitcher";
+import {
+	BrandDivider,
+	BrandSubtitle,
+	BrandTitle,
+	Eyebrow,
+} from "../components/brand";
 import { VoiceChat } from "../components/VoiceChat";
 
 export const JoinPage = () => {
 	const { t } = useTranslation();
 
+	// The page frame (branded background + top-bar language switcher) is provided
+	// by AppShell via LangLayout, so this page only renders its own content.
 	return (
 		<Container
 			maxWidth="md"
-			sx={{ textAlign: "center", py: 4, position: "relative" }}
+			sx={{
+				position: "relative",
+				zIndex: 1,
+				textAlign: "center",
+				pt: { xs: 8, md: 10 },
+				pb: 6,
+				display: "flex",
+				flexDirection: "column",
+				alignItems: "center",
+				gap: 2.5,
+			}}
 		>
-			<Box sx={{ position: "absolute", top: 16, right: 16 }}>
-				<LanguageSwitcher />
-			</Box>
-
-			<Typography
-				variant="h2"
+			<Eyebrow>{t("landing.eyebrow")}</Eyebrow>
+			<BrandTitle
+				variant="h1"
 				component="h1"
-				gutterBottom
-				sx={{ fontSize: "3.2rem" }}
+				sx={{ fontSize: { xs: "2.5rem", md: "3.5rem" } }}
 			>
 				{t("landing.title")}
-			</Typography>
-			<Typography variant="subtitle1" color="text.secondary" paragraph>
-				{t("app.subtitle")}
-			</Typography>
+			</BrandTitle>
+			<BrandDivider />
+			<BrandSubtitle variant="h6">{t("app.subtitle")}</BrandSubtitle>
 
-			<Box
-				sx={{
-					display: "flex",
-					flexDirection: "column",
-					gap: 4,
-					alignItems: "center",
-				}}
-			>
-				{/* Main Voice Chat Component */}
-				<VoiceChat />
-			</Box>
+			<VoiceChat />
 		</Container>
 	);
 };
