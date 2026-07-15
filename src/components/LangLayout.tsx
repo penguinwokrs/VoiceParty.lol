@@ -4,6 +4,7 @@ import { Navigate, Outlet, useLocation, useParams } from "react-router-dom";
 import type { LanguageCode } from "../i18n";
 import { defaultLanguage, isLanguageCode } from "../i18n/paths";
 import { seoMeta } from "../i18n/seo-meta";
+import { AppShell } from "./AppShell";
 
 const setMetaDescription = (content: string) => {
 	let el = document.querySelector<HTMLMetaElement>('meta[name="description"]');
@@ -52,5 +53,9 @@ export const LangLayout = () => {
 		return <Navigate to="/" replace />;
 	}
 
-	return <Outlet />;
+	return (
+		<AppShell>
+			<Outlet />
+		</AppShell>
+	);
 };
