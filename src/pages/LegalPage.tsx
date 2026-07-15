@@ -48,25 +48,28 @@ export const LegalPage = ({
 				</Typography>
 				<Typography sx={{ whiteSpace: "pre-line" }}>{intro}</Typography>
 				<Divider sx={{ borderColor: "var(--color-border-subtle)" }} />
-				{sections.map((s) => (
-					<Box key={s.heading}>
-						<Typography
-							variant="h6"
-							component="h2"
-							sx={{ fontWeight: 700, mb: 1 }}
-						>
-							{s.heading}
-						</Typography>
-						<Typography
-							sx={{
-								whiteSpace: "pre-line",
-								color: "var(--color-text-secondary)",
-							}}
-						>
-							{s.body}
-						</Typography>
-					</Box>
-				))}
+				{/* Guard: t(..., returnObjects) can return a string if the key is
+				    missing or still loading — never crash the page on that. */}
+				{Array.isArray(sections) &&
+					sections.map((s) => (
+						<Box key={s.heading}>
+							<Typography
+								variant="h6"
+								component="h2"
+								sx={{ fontWeight: 700, mb: 1 }}
+							>
+								{s.heading}
+							</Typography>
+							<Typography
+								sx={{
+									whiteSpace: "pre-line",
+									color: "var(--color-text-secondary)",
+								}}
+							>
+								{s.body}
+							</Typography>
+						</Box>
+					))}
 				<Divider sx={{ borderColor: "var(--color-border-subtle)" }} />
 				<Stack direction="row" spacing={2.5} flexWrap="wrap">
 					<Link component={RouterLink} to={localizePath("/", lang)}>
