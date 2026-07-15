@@ -320,10 +320,12 @@ export const useRealtime = () => {
 
 	const toggleNoiseSuppression = useCallback(async () => {
 		const next = !noiseSuppression;
-		setNoiseSuppression(next);
-		localStorage.setItem(NOISE_SUPPRESSION_KEY, String(next));
 		try {
+			// Apply first; only commit the UI/persisted state if it actually took
+			// effect (the worklet/WASM can fail to load), so they can't drift.
 			await applyNoiseSuppression(next);
+			setNoiseSuppression(next);
+			localStorage.setItem(NOISE_SUPPRESSION_KEY, String(next));
 		} catch (e) {
 			console.error("[useRealtime] noise suppression toggle failed:", e);
 		}

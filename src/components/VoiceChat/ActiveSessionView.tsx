@@ -251,20 +251,21 @@ export const ActiveSessionView = ({
 	const { t } = useTranslation();
 
 	// One AudioContext per session, used for per-peer gain (volume + boost).
-	const audioCtxRef = useRef<AudioContext | null>(null);
-	if (
-		!audioCtxRef.current &&
-		typeof window !== "undefined" &&
-		typeof window.AudioContext !== "undefined"
-	) {
-		audioCtxRef.current = new AudioContext();
-	}
+	// Created in an effect (never during render — a discarded render would leak
+	// it) and held in state so peers re-render/wire up once it exists.
+	const [audioCtx, setAudioCtx] = useState<AudioContext | null>(null);
 	useEffect(() => {
-		const ctx = audioCtxRef.current;
-		// Autoplay policy: resume once we're mounted (join click was the gesture).
-		ctx?.resume?.().catch(() => {});
+		if (
+			typeof window === "undefined" ||
+			typeof window.AudioContext === "undefined"
+		)
+			return;
+		const ctx = new AudioContext();
+		setAudioCtx(ctx);
+		// Autoplay policy: resume now (the join click was the user gesture).
+		ctx.resume().catch(() => {});
 		return () => {
-			ctx?.close?.().catch(() => {});
+			ctx.close().catch(() => {});
 		};
 	}, []);
 
@@ -281,7 +282,7 @@ export const ActiveSessionView = ({
 			}
 			return next;
 		});
-		audioCtxRef.current?.resume?.().catch(() => {});
+		audioCtx?.resume().catch(() => {});
 	};
 	const volumeOf = (sid: string) => volumes[sid] ?? VOLUME_DEFAULT;
 
@@ -319,7 +320,7 @@ export const ActiveSessionView = ({
 				<PeerAudio
 					key={p.id || p.peerId || "unknown"}
 					peer={p}
-					audioContext={audioCtxRef.current}
+					audioContext={audioCtx}
 					volume={volumeOf(peerSummonerId(p)) / 100}
 				/>
 			))}
