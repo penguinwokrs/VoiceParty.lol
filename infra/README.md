@@ -68,16 +68,18 @@ tofu apply -var account_id=ded3682ef149b18dedb1e82650b1cda3
 # 2. Create the R2 S3 token (dashboard). The account ID is already hardcoded in
 #    infra/main/versions.tf backend endpoint.
 
-# 3. Init main, then IMPORT the existing live resources (no recreation).
+# 3. Init main. Existing live resources are imported declaratively via the
+#    import blocks in imports.tf on the first apply (no shell step needed).
 cd ../main
 export CLOUDFLARE_API_TOKEN=<provision-token>
 export AWS_ACCESS_KEY_ID=<r2-access-key-id>
 export AWS_SECRET_ACCESS_KEY=<r2-secret-access-key>
+# Required secrets must be supplied (no defaults) or apply errors instead of
+# dropping them — put them in terraform.tfvars (gitignored) or TF_VAR_* env.
 tofu init
-./import.sh
 
-# 4. Reconcile until the plan is clean/intended, then apply.
-tofu plan     # confirm env_vars match live
+# 4. Reconcile until the plan is clean/intended, then apply (imports + changes).
+tofu plan
 tofu apply
 ```
 

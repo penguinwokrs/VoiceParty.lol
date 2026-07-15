@@ -15,15 +15,45 @@ variable "account_id" {
 #
 # Declared here but their VALUES are never committed. Supplied at runtime as
 # TF_VAR_* env vars from the GitHub Environment (CI) or your shell (local).
+#
+# REQUIRED secrets have NO default on purpose: env_vars filters out empty
+# values, so a missing secret would otherwise be silently DELETED from the live
+# Pages project on apply. With no default, tofu errors out ("No value for
+# required variable") instead — fail-safe rather than destructive.
 # ---------------------------------------------------------------------------
 
 variable "riot_game_api_key" {
-  description = "Riot Games API key (RIOT_GAME_API_KEY)."
+  description = "Riot Games API key (RIOT_GAME_API_KEY). Required — set on the live project."
   type        = string
   sensitive   = true
-  default     = ""
 }
 
+variable "realtime_org_id" {
+  description = "Cloudflare Realtime org ID (REALTIME_ORG_ID). Required — set on the live project."
+  type        = string
+  sensitive   = true
+}
+
+variable "realtime_api_key" {
+  description = "Cloudflare Realtime API key (REALTIME_API_KEY). Required — set on the live project."
+  type        = string
+  sensitive   = true
+}
+
+variable "realtime_kit_app_id" {
+  description = "RealtimeKit app ID (REALTIME_KIT_APP_ID). Required — set on the live project."
+  type        = string
+  sensitive   = true
+}
+
+variable "cloud_flare_api_key" {
+  description = "CLOUD_FLARE_API_KEY used by the app in production. Required — set on the live project."
+  type        = string
+  sensitive   = true
+}
+
+# Optional secrets: genuinely absent on the live project today (RSO validation
+# disabled), so an empty default is correct — they stay omitted, not deleted.
 variable "riot_client_id" {
   description = "Riot Sign-On client ID (RIOT_CLIENT_ID). Empty while RSO validation is disabled."
   type        = string
@@ -38,36 +68,15 @@ variable "riot_client_secret" {
   default     = ""
 }
 
-variable "realtime_org_id" {
-  description = "Cloudflare Realtime org ID (REALTIME_ORG_ID)."
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "realtime_api_key" {
-  description = "Cloudflare Realtime API key (REALTIME_API_KEY)."
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "realtime_kit_app_id" {
-  description = "RealtimeKit app ID (REALTIME_KIT_APP_ID)."
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "cloud_flare_api_key" {
-  description = "CLOUD_FLARE_API_KEY used by the app in production."
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
+# Non-secret env vars.
 variable "pnpm_version" {
-  description = "PNPM_VERSION build var (currently set on the live project)."
+  description = "PNPM_VERSION build var. Defaults to the live value so it is never accidentally dropped."
   type        = string
-  default     = ""
+  default     = "10.24.0"
+}
+
+variable "riot_validation_enabled" {
+  description = "RIOT_VALIDATION_ENABLED flag. Set to \"true\" once RSO production approval is granted."
+  type        = string
+  default     = "false"
 }

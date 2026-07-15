@@ -28,7 +28,7 @@ locals {
   }
 
   plain_env_raw = {
-    RIOT_VALIDATION_ENABLED = "false"
+    RIOT_VALIDATION_ENABLED = var.riot_validation_enabled
     PNPM_VERSION            = var.pnpm_version
   }
 
