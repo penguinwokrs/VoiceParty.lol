@@ -22,7 +22,11 @@ concurrency:
 jobs:
   plan:
     name: Plan
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    # Uses the same gated environment so the high-privilege token stays scoped
+    # to infra-production (PR plans require a one-click approval).
+    environment: infra-production
     defaults:
       run:
         working-directory: infra/main
@@ -45,10 +49,11 @@ jobs:
           TF_VAR_realtime_org_id: ${{ secrets.REALTIME_ORG_ID }}
           TF_VAR_realtime_api_key: ${{ secrets.REALTIME_API_KEY }}
           TF_VAR_realtime_kit_app_id: ${{ secrets.REALTIME_KIT_APP_ID }}
+          TF_VAR_cloud_flare_api_key: ${{ secrets.CLOUD_FLARE_API_KEY }}
+          TF_VAR_pnpm_version: ${{ secrets.PNPM_VERSION }}
 
   apply:
     name: Apply
-    needs: plan
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     # Require reviewers on this Environment in repo Settings → Environments.
@@ -75,3 +80,5 @@ jobs:
           TF_VAR_realtime_org_id: ${{ secrets.REALTIME_ORG_ID }}
           TF_VAR_realtime_api_key: ${{ secrets.REALTIME_API_KEY }}
           TF_VAR_realtime_kit_app_id: ${{ secrets.REALTIME_KIT_APP_ID }}
+          TF_VAR_cloud_flare_api_key: ${{ secrets.CLOUD_FLARE_API_KEY }}
+          TF_VAR_pnpm_version: ${{ secrets.PNPM_VERSION }}
