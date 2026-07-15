@@ -50,7 +50,6 @@ jobs:
           TF_VAR_realtime_api_key: ${{ secrets.REALTIME_API_KEY }}
           TF_VAR_realtime_kit_app_id: ${{ secrets.REALTIME_KIT_APP_ID }}
           TF_VAR_cloud_flare_api_key: ${{ secrets.CLOUD_FLARE_API_KEY }}
-          TF_VAR_pnpm_version: ${{ secrets.PNPM_VERSION }}
 
   apply:
     name: Apply
@@ -81,4 +80,3 @@ jobs:
           TF_VAR_realtime_api_key: ${{ secrets.REALTIME_API_KEY }}
           TF_VAR_realtime_kit_app_id: ${{ secrets.REALTIME_KIT_APP_ID }}
           TF_VAR_cloud_flare_api_key: ${{ secrets.CLOUD_FLARE_API_KEY }}
-          TF_VAR_pnpm_version: ${{ secrets.PNPM_VERSION }}

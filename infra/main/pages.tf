@@ -27,9 +27,12 @@ locals {
     if v != ""
   }
 
+  # Plain (non-secret) vars. Keep this in sync with wrangler.toml [vars] —
+  # `wrangler pages deploy` overwrites the project's plain vars to match
+  # wrangler.toml on every production deploy, so any plain var TF sets that is
+  # absent from wrangler.toml would be dropped on the next deploy.
   plain_env_raw = {
     RIOT_VALIDATION_ENABLED = var.riot_validation_enabled
-    PNPM_VERSION            = var.pnpm_version
   }
 
   plain_env_vars = {

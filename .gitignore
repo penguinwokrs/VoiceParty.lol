@@ -35,6 +35,9 @@ dist-ssr
 .wrangler/
 tsp-output/
 
+# Claude Code local working copies (share skills, not worktrees)
+.claude/worktrees/
+
 # Terraform / OpenTofu (state can contain secrets — never commit)
 **/.terraform/
 *.tfstate

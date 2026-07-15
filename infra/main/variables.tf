@@ -69,12 +69,11 @@ variable "riot_client_secret" {
 }
 
 # Non-secret env vars.
-variable "pnpm_version" {
-  description = "PNPM_VERSION build var. Defaults to the live value so it is never accidentally dropped."
-  type        = string
-  default     = "10.24.0"
-}
-
+# NOTE: PNPM_VERSION is intentionally NOT managed here. It only mattered to
+# Cloudflare's build system, which we no longer use (builds run in GitHub
+# Actions and deploy via `wrangler pages deploy`). Plain vars are owned by
+# wrangler.toml [vars]; managing PNPM_VERSION in TF just churned against every
+# production deploy.
 variable "riot_validation_enabled" {
   description = "RIOT_VALIDATION_ENABLED flag. Set to \"true\" once RSO production approval is granted."
   type        = string
