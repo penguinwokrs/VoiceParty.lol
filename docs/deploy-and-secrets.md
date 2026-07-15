@@ -15,7 +15,7 @@ Cloudflare's **Git integration** builds and deploys on push to `main`
   ```bash
   export CLOUDFLARE_ACCOUNT_ID=ded3682ef149b18dedb1e82650b1cda3
   export CLOUDFLARE_API_TOKEN=<token with Cloudflare Pages: Edit>
-  pnpm deploy            # = pnpm build && wrangler pages deploy dist
+  pnpm run deploy        # = pnpm build && wrangler pages deploy dist
   ```
   Don't run manual deploys *and* keep Git auto-deploy fighting over the same
   project config — pick one. Git integration is the default.

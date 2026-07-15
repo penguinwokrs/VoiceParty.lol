@@ -48,13 +48,14 @@ npx wrangler pages secret put MY_API_KEY --project-name voiceparty
 
 Then trigger a redeploy so the live deployment picks it up (a secret set after a
 deploy only reaches Functions on the next deployment) — push any commit, or
-`pnpm deploy`. Read it in the app via `context.env.MY_API_KEY`.
+`pnpm run deploy`. Read it in the app via `context.env.MY_API_KEY`.
 
 Notes:
 - Preview env: add `--environment preview`.
 - List names: `npx wrangler pages secret list --project-name voiceparty`.
 - **Cloudflare never returns secret values** — keep the source of truth in a
-  password manager / secrets vault (see docs/), not just on Cloudflare.
+  password manager / secrets vault (see docs/deploy-and-secrets.md), not just
+  on Cloudflare.
 
 ---
 
