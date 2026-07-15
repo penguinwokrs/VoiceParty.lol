@@ -186,9 +186,6 @@ app.post("/:id/join", async (c) => {
 			users: [],
 			createdAt: Date.now(),
 		};
-
-		// Save mapping
-		await c.env.VC_SESSIONS.put(`game:${sessionId}`, meetingId, KV_TTL);
 	}
 
 	// Check if user already exists
@@ -218,8 +215,16 @@ app.post("/:id/join", async (c) => {
 			joinedAt: Date.now(),
 			iconUrl: validIconUrl,
 		});
+	}
+
+	// Persist the session and refresh the TTL on BOTH keys, unconditionally — so
+	// an active room never expires, even when an existing participant rejoins
+	// (which doesn't mutate the roster above) or when the mapping was created
+	// hours ago. Both keys share the same lifetime this way.
+	if (session.meetingId) {
+		await c.env.VC_SESSIONS.put(`game:${sessionId}`, session.meetingId, KV_TTL);
 		await c.env.VC_SESSIONS.put(
-			`session:${session.meetingId}`, // Save to session:meetingId
+			`session:${session.meetingId}`,
 			JSON.stringify(session),
 			KV_TTL,
 		);

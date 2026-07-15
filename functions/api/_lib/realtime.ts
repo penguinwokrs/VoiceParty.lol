@@ -67,7 +67,7 @@ export async function getActiveParticipantCount(
 		if (Array.isArray(list)) {
 			return list.filter(
 				// biome-ignore lint/suspicious/noExplicitAny: untyped participant
-				(p: any) => !p?.left_at && p?.status !== "LEFT",
+				(p: any) => p && !p.left_at && p.status !== "LEFT",
 			).length;
 		}
 

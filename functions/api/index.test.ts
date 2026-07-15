@@ -573,6 +573,36 @@ describe("Capacity via live presence (RealtimeKit source of truth)", () => {
 		expect(res.status).toBe(200);
 	});
 
+	it("refreshes the TTL on both keys on every join, incl. an existing-user rejoin", async () => {
+		// Existing participant rejoins: the roster doesn't change, but BOTH the
+		// game: mapping and session: entry must be re-written with the TTL so an
+		// active room never expires.
+		mockKV.get.mockResolvedValueOnce(REAL_MEETING).mockResolvedValueOnce(
+			JSON.stringify({
+				sessionId: "room-x",
+				meetingId: REAL_MEETING,
+				users: [{ summonerId: "already#JP1", joinedAt: 0 }],
+				createdAt: 0,
+			}),
+		);
+		mockRealtime(() =>
+			Promise.resolve({ ok: false, status: 404, statusText: "Not Found" }),
+		);
+
+		const res = await join("already#JP1");
+		expect(res.status).toBe(200);
+
+		// biome-ignore lint/suspicious/noExplicitAny: mock call tuples
+		const puts = mockKV.put.mock.calls as any[];
+		const keys = puts.map((call) => call[0]);
+		expect(keys).toContain("game:room-x");
+		expect(keys).toContain(`session:${REAL_MEETING}`);
+		// Every write carries the 6h TTL.
+		for (const call of puts) {
+			expect(call[2]).toEqual({ expirationTtl: 6 * 60 * 60 });
+		}
+	});
+
 	it("falls back to the KV roster when the live count is unavailable", async () => {
 		// KV roster already has 5 users; live lookup errors (500) -> fall back to KV.
 		mockKV.get.mockResolvedValueOnce(REAL_MEETING).mockResolvedValueOnce(
