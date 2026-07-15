@@ -325,7 +325,10 @@ export const ActiveSessionView = ({
 	return (
 		<Card
 			sx={{
-				maxWidth: 400,
+				// Fixed width so the card is the SAME size in every state (it used
+				// to shrink to its content — e.g. narrower with no participants).
+				// Responsive: full width on screens narrower than 400px.
+				width: "min(400px, 100%)",
 				mx: "auto",
 				mt: 4,
 				position: "relative",
