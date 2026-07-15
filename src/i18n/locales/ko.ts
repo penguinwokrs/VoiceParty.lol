@@ -69,9 +69,20 @@ export const ko: TranslationResources = {
 	session: {
 		label: "세션",
 		connected: "음성 연결됨",
-		disconnected: "음성 연결 안 됨",
+		connecting: "연결 중",
+		disconnected: "연결이 끊겼습니다",
+		reconnecting: "다시 연결하는 중",
+		reconnectingHint:
+			"네트워크 복구를 기다리고 있습니다. 잠시만 기다려 주세요.",
+		reconnect: "다시 연결",
 		participants: "참가자 ({{n}}/5)",
 		you: "(나)",
+		status: {
+			connecting: "연결 중",
+			connected: "연결됨",
+			reconnecting: "재연결 중",
+			disconnected: "연결 끊김",
+		},
 	},
 	errors: {
 		idsRequired: "소환사 이름과 게임 ID를 입력하세요",

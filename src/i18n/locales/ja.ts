@@ -67,9 +67,20 @@ export const ja = {
 	session: {
 		label: "セッション",
 		connected: "音声接続中",
-		disconnected: "音声未接続",
+		connecting: "接続中",
+		disconnected: "接続が切断されました",
+		reconnecting: "再接続しています",
+		reconnectingHint:
+			"ネットワークの復帰を待っています。そのままお待ちください。",
+		reconnect: "再接続",
 		participants: "参加者 ({{n}}/5)",
 		you: "(あなた)",
+		status: {
+			connecting: "接続中",
+			connected: "接続済み",
+			reconnecting: "再接続中",
+			disconnected: "切断",
+		},
 	},
 	errors: {
 		idsRequired: "サモナー名とゲームIDを入力してください",

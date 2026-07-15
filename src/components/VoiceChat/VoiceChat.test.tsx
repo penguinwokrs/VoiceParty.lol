@@ -8,10 +8,13 @@ vi.mock("./useRealtime", () => ({
 	useRealtime: () => ({
 		join: vi.fn().mockResolvedValue(undefined),
 		leave: vi.fn(),
+		reconnect: vi.fn(),
 		toggleMic: vi.fn(),
 		isMicMuted: false,
-		isConnected: false,
+		isConnected: true,
+		connectionState: "connected",
 		client: {},
+		peers: [],
 	}),
 }));
 

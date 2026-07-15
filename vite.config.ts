@@ -23,5 +23,13 @@ export default defineConfig({
 		globals: true,
 		environment: "jsdom",
 		setupFiles: "./src/setupTests.ts",
+		// Ignore Claude Code local git worktrees — they have their own
+		// node_modules and would be discovered as duplicate/broken test suites.
+		exclude: [
+			"**/node_modules/**",
+			"**/dist/**",
+			"**/.claude/**",
+			"**/.wrangler/**",
+		],
 	},
 });

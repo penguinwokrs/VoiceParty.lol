@@ -1,10 +1,21 @@
 import { useRealtimeKitClient } from "@cloudflare/realtimekit-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { ConnectionState } from "./types";
+
+// RealtimeKit `self.roomState` values that mean the local user is no longer in
+// the meeting on purpose (vs. a transient network drop we should recover from).
+const TERMINAL_ROOM_STATES = new Set(["left", "kicked", "ended", "rejected"]);
 
 export const useRealtime = () => {
 	const [client, initClient] = useRealtimeKitClient();
-	const [isConnected, setIsConnected] = useState(false);
+	const [connectionState, setConnectionState] =
+		useState<ConnectionState>("connecting");
 	const [isMicMuted, setIsMicMuted] = useState(false);
+	// True once the user (or a host) intentionally ended the session, so we stop
+	// trying to reconnect.
+	const leftIntentionally = useRef(false);
+	// Derived: keep the old boolean around for existing callers/props.
+	const isConnected = connectionState === "connected";
 
 	// Mock state for development
 	const [isMock, setIsMock] = useState(false);
@@ -27,16 +38,50 @@ export const useRealtime = () => {
 		}
 	}, [client]);
 
+	// Map the SDK's room state onto our connection lifecycle. RealtimeKit
+	// auto-reconnects a dropped socket (exponential backoff, ~50 attempts), so a
+	// `disconnected` room state while we did not leave on purpose means
+	// "reconnecting"; a terminal state (left/kicked/ended) means "disconnected".
+	const syncConnection = useCallback(() => {
+		if (!client) return;
+		// biome-ignore lint/suspicious/noExplicitAny: SDK self typing
+		const self = client.self as any;
+		const roomState: string | undefined = self?.roomState;
+		const roomJoined: boolean | undefined = self?.roomJoined;
+
+		if (roomJoined || roomState === "joined") {
+			setConnectionState("connected");
+			return;
+		}
+		if (roomState && TERMINAL_ROOM_STATES.has(roomState)) {
+			setConnectionState("disconnected");
+			return;
+		}
+		if (roomState === "disconnected") {
+			// Unexpected drop — the SDK is retrying. If the user asked to leave,
+			// treat it as terminal instead.
+			setConnectionState(
+				leftIntentionally.current ? "disconnected" : "reconnecting",
+			);
+			return;
+		}
+		// init / connecting / waitlisted → keep the "connecting" phase, but never
+		// downgrade an already-connected session to "connecting".
+		setConnectionState((prev) =>
+			prev === "connected" ? "reconnecting" : "connecting",
+		);
+	}, [client]);
+
 	useEffect(() => {
 		if (isMock) return;
 
 		if (!client) {
-			setIsConnected(false);
+			setConnectionState("connecting");
 			return;
 		}
 
 		// Initial states
-		setIsConnected(!!client.peerId);
+		syncConnection();
 
 		// Initial mute check
 		updateMuteState();
@@ -69,11 +114,32 @@ export const useRealtime = () => {
 		const handleUpdate = (...args: unknown[]) => {
 			console.log("[useRealtime] handleUpdate triggered:", args);
 			updateMuteState();
-			setIsConnected(!!client.peerId);
+			syncConnection();
 			// Add a small delay to allow internal state to update before reading participants
 			setTimeout(() => {
 				updatePeers();
 			}, 100);
+		};
+
+		// Explicit connection-lifecycle handlers.
+		const handleRoomJoined = () => {
+			leftIntentionally.current = false;
+			setConnectionState("connected");
+		};
+		// biome-ignore lint/suspicious/noExplicitAny: SDK event payload
+		const handleRoomLeft = (payload: any) => {
+			const state: string | undefined = payload?.state;
+			console.log("[useRealtime] roomLeft:", state);
+			if (
+				!leftIntentionally.current &&
+				(state === "disconnected" || state === "failed")
+			) {
+				// Lost the connection: surface a reconnecting phase, then let the SDK
+				// (and syncConnection polling) drive recovery.
+				setConnectionState("reconnecting");
+			} else {
+				setConnectionState("disconnected");
+			}
 		};
 
 		// RealtimeKit event handling
@@ -102,13 +168,20 @@ export const useRealtime = () => {
 				const s = client.self as any;
 				s.on("audioUpdate", handleUpdate);
 				s.on("videoUpdate", handleUpdate);
+				s.on("roomJoined", handleRoomJoined);
+				s.on("roomLeft", handleRoomLeft);
 			}
 		} else if (typeof eventSource.addListener === "function") {
 			eventSource.addListener("*", handleUpdate);
 		}
 
-		// Backup: Poll for peer updates periodically to ensure consistency
-		const intervalId = setInterval(updatePeers, 2000);
+		// Backup: Poll for peer + connection updates periodically. Polling matters
+		// during reconnection because the SDK may recover the socket without
+		// emitting an event we listen to.
+		const intervalId = setInterval(() => {
+			updatePeers();
+			syncConnection();
+		}, 2000);
 
 		return () => {
 			clearInterval(intervalId);
@@ -129,19 +202,23 @@ export const useRealtime = () => {
 					const s = client.self as any;
 					s.off("audioUpdate", handleUpdate);
 					s.off("videoUpdate", handleUpdate);
+					s.off("roomJoined", handleRoomJoined);
+					s.off("roomLeft", handleRoomLeft);
 				}
 			} else if (typeof eventSource.removeListener === "function") {
 				eventSource.removeListener("*", handleUpdate);
 			}
 		};
-	}, [client, isMock, updateMuteState]);
+	}, [client, isMock, updateMuteState, syncConnection]);
 
 	const join = useCallback(
 		async (token: string, appId?: string) => {
+			leftIntentionally.current = false;
+			setConnectionState("connecting");
 			if (token === "mock-token") {
 				console.log("[Mock Mode] Simulating voice connection");
 				setIsMock(true);
-				setIsConnected(true);
+				setConnectionState("connected");
 				setIsMicMuted(false);
 				return;
 			}
@@ -172,14 +249,36 @@ export const useRealtime = () => {
 	);
 
 	const leave = useCallback(async () => {
+		leftIntentionally.current = true;
 		if (isMock) {
 			console.log("[Mock Mode] Leaving session");
-			setIsConnected(false);
+			setConnectionState("disconnected");
 			setIsMock(false);
 			return;
 		}
 		if (client) {
 			await client.leave();
+		}
+		setConnectionState("disconnected");
+	}, [client, isMock]);
+
+	// Manual reconnect: re-join the current meeting with the existing client.
+	// The SDK reconnects sockets automatically; this is the escape hatch for a
+	// terminal "disconnected" state (e.g. retries exhausted).
+	const reconnect = useCallback(async () => {
+		if (isMock) {
+			setConnectionState("connected");
+			return;
+		}
+		if (!client) return;
+		leftIntentionally.current = false;
+		setConnectionState("reconnecting");
+		try {
+			await client.join();
+		} catch (e) {
+			console.error("[useRealtime] reconnect failed:", e);
+			setConnectionState("disconnected");
+			throw e;
 		}
 	}, [client, isMock]);
 
@@ -222,9 +321,11 @@ export const useRealtime = () => {
 	return {
 		join,
 		leave,
+		reconnect,
 		toggleMic,
 		isMicMuted,
 		isConnected,
+		connectionState,
 		client,
 		peers,
 	};

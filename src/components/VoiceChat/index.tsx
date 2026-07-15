@@ -19,8 +19,16 @@ export const VoiceChat = () => {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 
-	const { join, leave, toggleMic, isMicMuted, isConnected, peers } =
-		useRealtime();
+	const {
+		join,
+		leave,
+		reconnect,
+		toggleMic,
+		isMicMuted,
+		isConnected,
+		connectionState,
+		peers,
+	} = useRealtime();
 
 	useEffect(() => {
 		if (summonerId) {
@@ -103,12 +111,14 @@ export const VoiceChat = () => {
 				session={currentSession}
 				summonerId={summonerId}
 				isConnected={isConnected}
+				connectionState={connectionState}
 				isMicMuted={isMicMuted}
 				loading={loading}
 				error={error}
 				onErrorClose={() => setError("")}
 				onToggleMic={toggleMic}
 				onLeave={handleLeave}
+				onReconnect={reconnect}
 				peers={peers}
 			/>
 		);

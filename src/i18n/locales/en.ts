@@ -69,9 +69,19 @@ export const en: TranslationResources = {
 	session: {
 		label: "Session",
 		connected: "Voice Connected",
-		disconnected: "Voice Disconnected",
+		connecting: "Connecting",
+		disconnected: "Connection lost",
+		reconnecting: "Reconnecting",
+		reconnectingHint: "Waiting for the network to come back. Hang tight.",
+		reconnect: "Reconnect",
 		participants: "Participants ({{n}}/5)",
 		you: "(You)",
+		status: {
+			connecting: "Connecting",
+			connected: "Connected",
+			reconnecting: "Reconnecting",
+			disconnected: "Disconnected",
+		},
 	},
 	errors: {
 		idsRequired: "Summoner name and game ID are required",
