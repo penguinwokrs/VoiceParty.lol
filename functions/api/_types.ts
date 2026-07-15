@@ -10,6 +10,9 @@ export type Bindings = {
 	REALTIME_API_KEY: string;
 	REALTIME_KIT_APP_ID: string;
 	USE_MOCK_REALTIME: string;
+	// Optional HMAC salt for pseudonymizing Summoner IDs in moderation/analytics
+	// stores. Falls back to an app-default when unset.
+	REPORT_SALT?: string;
 };
 
 export type User = {

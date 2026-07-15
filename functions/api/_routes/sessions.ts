@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import { hashId } from "../_lib/hash";
+import { isBanned, maybeAutoBan } from "../_lib/moderation";
 import { callRealtimeKit, getActiveParticipantCount } from "../_lib/realtime";
 import {
 	getAccountByRiotId,
@@ -16,6 +18,20 @@ const MAX_USERS = 5;
 // users on tab close). Refreshed on every join, so active rooms never expire.
 const SESSION_TTL_SECONDS = 6 * 60 * 60; // 6 hours
 const KV_TTL = { expirationTtl: SESSION_TTL_SECONDS };
+
+// User reports (moderation). Kept longer than a session so counts can accrue
+// toward the future auto-ban signal (Phase 2/3). Stored under a per-reported
+// prefix so reports for one person can be listed/counted.
+const REPORT_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
+const REPORT_REASONS = new Set([
+	"harassment",
+	"hate",
+	"spam",
+	"inappropriate_name",
+	"illegal",
+	"other",
+]);
+const MAX_NOTE_LENGTH = 280;
 
 app.post("/", async (c) => {
 	const sessionId = crypto.randomUUID();
@@ -85,6 +101,14 @@ app.post("/:id/join", async (c) => {
 
 	if (summonerId.length > 32) {
 		return c.text("Summoner ID is too long (max 32 chars)", 400);
+	}
+
+	// Phase 3: reject users under an active moderation ban before doing any work.
+	if (await isBanned(c.env, await hashId(summonerId, c.env))) {
+		return c.text(
+			"This account is temporarily suspended due to user reports.",
+			403,
+		);
 	}
 
 	// Validate Summoner ID via Riot API
@@ -272,6 +296,99 @@ app.post("/:id/join", async (c) => {
 					}
 				: undefined,
 	});
+});
+
+// Report a participant. Phase 1: record the report (pseudonymized) and let the
+// client locally mute the reported user. The stored records are the foundation
+// for the future aggregation + auto-ban signal (Phase 2/3).
+app.post("/:id/reports", async (c) => {
+	const sessionId = c.req.param("id");
+
+	let body: {
+		reporterSummonerId?: string;
+		reportedSummonerId?: string;
+		reason?: string;
+		note?: string;
+	};
+	try {
+		body = await c.req.json();
+	} catch {
+		return c.text("Invalid JSON body", 400);
+	}
+	if (!body || typeof body !== "object") {
+		return c.text("Invalid JSON body", 400);
+	}
+
+	const reporter = (body.reporterSummonerId ?? "").trim();
+	const reported = (body.reportedSummonerId ?? "").trim();
+	const reason = body.reason ?? "";
+	const note =
+		typeof body.note === "string"
+			? body.note.slice(0, MAX_NOTE_LENGTH)
+			: undefined;
+
+	if (!reporter || !reported) {
+		return c.text("reporter and reported Summoner IDs are required", 400);
+	}
+	if (reporter.length > 32 || reported.length > 32) {
+		return c.text("Summoner ID is too long (max 32 chars)", 400);
+	}
+	if (reporter.toLowerCase() === reported.toLowerCase()) {
+		return c.text("You cannot report yourself", 400);
+	}
+	if (!REPORT_REASONS.has(reason)) {
+		return c.text("Invalid report reason", 400);
+	}
+
+	const [reporterHash, reportedHash] = await Promise.all([
+		hashId(reporter, c.env),
+		hashId(reported, c.env),
+	]);
+
+	const record = {
+		createdAt: Date.now(),
+		sessionId,
+		reason,
+		...(note ? { note } : {}),
+		reporterHash,
+		reportedHash,
+	};
+
+	// One report per (reported, session, reporter): the key dedupes repeats, so
+	// a single reporter can't inflate the count for one person in one session.
+	// The metadata lets the aggregator read reporter/reason/time from a single
+	// list() call without fetching each value.
+	await c.env.VC_SESSIONS.put(
+		`report:${reportedHash}:${sessionId}:${reporterHash}`,
+		JSON.stringify(record),
+		{
+			expirationTtl: REPORT_TTL_SECONDS,
+			metadata: { r: reporterHash, reason, t: record.createdAt },
+		},
+	);
+
+	// Phase 2/3: re-evaluate this user's reports and issue a temporary auto-ban
+	// if over threshold. Run it in the background (waitUntil) so the report
+	// response returns immediately; fall back to awaiting when there is no
+	// execution context (e.g. tests). Never let it fail the response.
+	const evaluate = () =>
+		maybeAutoBan(c.env, reportedHash, record.createdAt).catch((e) => {
+			console.error("[reports] auto-ban evaluation failed:", e);
+		});
+	// `c.executionCtx` throws when absent, so probe it defensively.
+	let execCtx: ExecutionContext | undefined;
+	try {
+		execCtx = c.executionCtx;
+	} catch {
+		execCtx = undefined;
+	}
+	if (execCtx) {
+		execCtx.waitUntil(evaluate());
+	} else {
+		await evaluate();
+	}
+
+	return c.json({ ok: true });
 });
 
 export default app;

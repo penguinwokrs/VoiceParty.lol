@@ -103,6 +103,20 @@ export const ko: TranslationResources = {
 	language: {
 		label: "언어",
 	},
+	report: {
+		action: "신고",
+		title: "신고 사유",
+		reportName: "{{name}} 신고",
+		submitted: "신고하고 음소거했습니다",
+		reasons: {
+			harassment: "괴롭힘・민폐 행위",
+			hate: "혐오・차별",
+			spam: "스팸",
+			inappropriate_name: "부적절한 이름",
+			illegal: "위법・치트",
+			other: "기타",
+		},
+	},
 	legal: {
 		disclaimer:
 			"VoiceParty.lol isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
