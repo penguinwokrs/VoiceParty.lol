@@ -34,3 +34,12 @@ dist-ssr
 .dev.vars.*
 .wrangler/
 tsp-output/
+
+# Terraform / OpenTofu (state can contain secrets — never commit)
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log

@@ -1,0 +1,77 @@
+name: Infra
+
+# Provisioning pipeline (Terraform/OpenTofu). Runs the HIGH-privilege token and
+# is gated behind the "infra-production" GitHub Environment, which should
+# require manual approval. plan on PRs, apply only on merge to main.
+on:
+  pull_request:
+    paths:
+      - 'infra/**'
+      - '.github/workflows/infra.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/infra.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: infra-main
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/main
+    steps:
+      - uses: actions/checkout@v4
+      - uses: opentofu/setup-opentofu@v1
+      - run: tofu init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      - run: tofu plan -no-color
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PROVISION_TOKEN }}
+          TF_VAR_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TF_VAR_riot_game_api_key: ${{ secrets.RIOT_GAME_API_KEY }}
+          TF_VAR_riot_client_id: ${{ secrets.RIOT_CLIENT_ID }}
+          TF_VAR_riot_client_secret: ${{ secrets.RIOT_CLIENT_SECRET }}
+          TF_VAR_realtime_org_id: ${{ secrets.REALTIME_ORG_ID }}
+          TF_VAR_realtime_api_key: ${{ secrets.REALTIME_API_KEY }}
+          TF_VAR_realtime_kit_app_id: ${{ secrets.REALTIME_KIT_APP_ID }}
+
+  apply:
+    name: Apply
+    needs: plan
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    # Require reviewers on this Environment in repo Settings → Environments.
+    environment: infra-production
+    defaults:
+      run:
+        working-directory: infra/main
+    steps:
+      - uses: actions/checkout@v4
+      - uses: opentofu/setup-opentofu@v1
+      - run: tofu init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      - run: tofu apply -auto-approve -no-color
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PROVISION_TOKEN }}
+          TF_VAR_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TF_VAR_riot_game_api_key: ${{ secrets.RIOT_GAME_API_KEY }}
+          TF_VAR_riot_client_id: ${{ secrets.RIOT_CLIENT_ID }}
+          TF_VAR_riot_client_secret: ${{ secrets.RIOT_CLIENT_SECRET }}
+          TF_VAR_realtime_org_id: ${{ secrets.REALTIME_ORG_ID }}
+          TF_VAR_realtime_api_key: ${{ secrets.REALTIME_API_KEY }}
+          TF_VAR_realtime_kit_app_id: ${{ secrets.REALTIME_KIT_APP_ID }}
