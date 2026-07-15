@@ -75,6 +75,10 @@ export const ko: TranslationResources = {
 		reconnectingHint:
 			"네트워크 복구를 기다리고 있습니다. 잠시만 기다려 주세요.",
 		reconnect: "다시 연결",
+		noiseSuppression: "노이즈 억제",
+		noiseSuppressionOn: "노이즈 억제: 켜짐",
+		noiseSuppressionOff: "노이즈 억제: 꺼짐",
+		volume: "{{name}} 볼륨",
 		participants: "참가자 ({{n}}/5)",
 		you: "(나)",
 		status: {

@@ -13,6 +13,8 @@ vi.mock("./useRealtime", () => ({
 		isMicMuted: false,
 		isConnected: true,
 		connectionState: "connected",
+		noiseSuppression: false,
+		toggleNoiseSuppression: vi.fn(),
 		client: {},
 		peers: [],
 	}),

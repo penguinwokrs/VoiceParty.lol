@@ -73,6 +73,10 @@ export const ja = {
 		reconnectingHint:
 			"ネットワークの復帰を待っています。そのままお待ちください。",
 		reconnect: "再接続",
+		noiseSuppression: "ノイズ抑制",
+		noiseSuppressionOn: "ノイズ抑制: ON",
+		noiseSuppressionOff: "ノイズ抑制: OFF",
+		volume: "{{name}} の受信音量",
 		participants: "参加者 ({{n}}/5)",
 		you: "(あなた)",
 		status: {
