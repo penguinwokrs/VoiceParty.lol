@@ -1,0 +1,40 @@
+# Voice Party
+
+> Voice Party is a free, browser-based real-time voice chat for gaming teams.
+> There is nothing to install and no account to create: enter a name and a
+> shared game ID, join, and talk with your team over crystal-clear voice.
+> Invite others simply by sharing the page URL. The interface is available in
+> English, Japanese (日本語), and Korean (한국어).
+
+## What it is
+
+- A real-time, peer voice-chat web app that runs entirely in a modern browser.
+- Free to use, with no download and no sign-up.
+- Designed for coordinating with a small team (up to 5 participants per room).
+
+## How it works
+
+1. Open the app and enter your name plus a game ID (a shared passphrase — any
+   value works as long as everyone uses the same one).
+2. Join the game to enable your microphone and connect to everyone on the same
+   game ID.
+3. Share the browser URL with teammates; opening the link joins the same room.
+4. Talk and coordinate with clear voice, and leave anytime with one click.
+
+## Key features
+
+- No install and no account required — open and talk instantly.
+- Clear, low-noise real-time voice with one-tap mute.
+- Invite by link: share the game ID URL to gather your team.
+- Low latency from anywhere, backed by a globally distributed network.
+- Multilingual UI: English, 日本語, 한국어.
+
+## Pages
+
+- Home / landing (usage guide): https://voiceparty.lol/
+- Join a voice room: https://voiceparty.lol/join
+
+## Notes
+
+- Voice Party is an independent project and is not affiliated with, endorsed by,
+  or sponsored by Riot Games.
