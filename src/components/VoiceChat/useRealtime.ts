@@ -6,6 +6,10 @@ import type { ConnectionState } from "./types";
 
 const NOISE_SUPPRESSION_KEY = "vp_noise_suppression";
 
+// How long a peer stays marked "speaking" after their last activeSpeaker event.
+// The SDK only fires on speech, so this hangover smooths out brief pauses.
+const SPEAKING_HANGOVER_MS = 900;
+
 // RealtimeKit `self.roomState` values that mean the local user is no longer in
 // the meeting on purpose (vs. a transient network drop we should recover from).
 const TERMINAL_ROOM_STATES = new Set(["left", "kicked", "ended", "rejected"]);
@@ -196,7 +200,7 @@ export const useRealtime = () => {
 					return next;
 				});
 				delete speakingTimersRef.current[peerId];
-			}, 900);
+			}, SPEAKING_HANGOVER_MS);
 		};
 
 		// RealtimeKit event handling

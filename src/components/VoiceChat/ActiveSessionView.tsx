@@ -75,19 +75,12 @@ const connectionKeyframes = {
 	},
 	// Speaking indicator: a thick, vivid green ring + a constant soft glow +
 	// an expanding pulse halo, so it reads clearly even over the teal self avatar.
-	"@keyframes vpSpeak": {
-		"0%": {
-			boxShadow:
-				"0 0 0 3px rgba(46, 213, 115, 1), 0 0 12px 2px rgba(46, 213, 115, 0.75), 0 0 0 3px rgba(46, 213, 115, 0.6)",
-		},
-		"70%": {
-			boxShadow:
-				"0 0 0 3px rgba(46, 213, 115, 1), 0 0 12px 2px rgba(46, 213, 115, 0.75), 0 0 0 14px rgba(46, 213, 115, 0)",
-		},
-		"100%": {
-			boxShadow:
-				"0 0 0 3px rgba(46, 213, 115, 1), 0 0 12px 2px rgba(46, 213, 115, 0.75), 0 0 0 14px rgba(46, 213, 115, 0)",
-		},
+	// The solid ring + glow are a static box-shadow; only this halo animates, via
+	// GPU-composited transform/opacity (no per-frame repaint) on an ::after ring.
+	"@keyframes vpSpeakPulse": {
+		"0%": { transform: "scale(1)", opacity: 0.7 },
+		"70%": { transform: "scale(1.45)", opacity: 0 },
+		"100%": { transform: "scale(1.45)", opacity: 0 },
 	},
 } as const;
 
@@ -153,7 +146,25 @@ const AvatarWithStatus = ({
 	bgcolor: string;
 	speaking?: boolean;
 }) => (
-	<Box sx={{ position: "relative", display: "inline-flex" }}>
+	<Box
+		sx={{
+			position: "relative",
+			display: "inline-flex",
+			// Expanding halo ring (GPU-composited transform/opacity). Sits over the
+			// avatar bounds; the wrapper doesn't clip, so it can grow past the edge.
+			...(speaking && {
+				"&::after": {
+					content: '""',
+					position: "absolute",
+					inset: 0,
+					borderRadius: "50%",
+					border: "2px solid rgba(46, 213, 115, 0.9)",
+					animation: "vpSpeakPulse 1.3s ease-out infinite",
+					pointerEvents: "none",
+				},
+			}),
+		}}
+	>
 		<Avatar
 			src={src}
 			alt={alt}
@@ -162,9 +173,10 @@ const AvatarWithStatus = ({
 				opacity: dimmed ? 0.45 : 1,
 				filter: dimmed ? "grayscale(1)" : "none",
 				transition: "opacity 0.3s, filter 0.3s, box-shadow 0.2s",
+				// Solid ring + soft glow, set once (static box-shadow → no repaint).
 				...(speaking && {
-					boxShadow: "0 0 0 3px rgba(46, 213, 115, 1)",
-					animation: "vpSpeak 1.3s ease-out infinite",
+					boxShadow:
+						"0 0 0 3px rgba(46, 213, 115, 1), 0 0 12px 2px rgba(46, 213, 115, 0.75)",
 				}),
 			}}
 		>
