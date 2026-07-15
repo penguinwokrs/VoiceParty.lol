@@ -2,10 +2,13 @@ import type { Bindings } from "../_types";
 
 // Severity weight per report reason. Harassment/hate/illegal count heavily;
 // spam/name/other are lighter signals.
+// child_safety is handled out-of-band (never stored under report:), so it is
+// intentionally absent here.
 const SEVERITY: Record<string, number> = {
 	harassment: 3,
 	hate: 3,
 	illegal: 3,
+	cheating: 1,
 	spam: 2,
 	inappropriate_name: 1,
 	other: 1,

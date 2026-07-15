@@ -64,7 +64,10 @@ describe("VoiceChat", () => {
 	});
 
 	it("simulates joining a session", async () => {
-		vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
+		// Age already confirmed so Join proceeds without the age gate.
+		vi.spyOn(Storage.prototype, "getItem").mockImplementation((k) =>
+			k === "vp_age_ok" ? "true" : null,
+		);
 		// Mock fetch
 		global.fetch = vi.fn().mockResolvedValue({
 			ok: true,
@@ -105,5 +108,43 @@ describe("VoiceChat", () => {
 
 		expect(screen.getByText("test-user")).toBeInTheDocument();
 		expect(screen.getByText("(You)")).toBeInTheDocument();
+	});
+
+	it("age gate blocks users under 13 and lets 13+ through", async () => {
+		vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
+		const setItem = vi
+			.spyOn(Storage.prototype, "setItem")
+			.mockImplementation(() => {});
+
+		render(
+			<MemoryRouter initialEntries={["/join/s1"]}>
+				<Routes>
+					<Route path="/join/:sessionId" element={<VoiceChat />} />
+				</Routes>
+			</MemoryRouter>,
+		);
+		fireEvent.change(screen.getByLabelText("Summoner ID"), {
+			target: { value: "u" },
+		});
+		fireEvent.change(screen.getByLabelText("Game ID"), {
+			target: { value: "s1" },
+		});
+		fireEvent.click(screen.getByText("Join Game"));
+
+		// Age dialog appears; an under-13 birth year is rejected.
+		const yearInput = await screen.findByLabelText("Year of birth");
+		const thisYear = new Date().getFullYear();
+		fireEvent.change(yearInput, { target: { value: String(thisYear - 5) } });
+		fireEvent.click(screen.getByText("Confirm and continue"));
+		// The error is shown (body + helper both mention the age) and age is NOT stored.
+		expect(
+			screen.getAllByText(/at least 13 years old/i).length,
+		).toBeGreaterThan(1);
+		expect(setItem).not.toHaveBeenCalledWith("vp_age_ok", "true");
+
+		// A 13+ birth year is accepted and persisted.
+		fireEvent.change(yearInput, { target: { value: String(thisYear - 20) } });
+		fireEvent.click(screen.getByText("Confirm and continue"));
+		expect(setItem).toHaveBeenCalledWith("vp_age_ok", "true");
 	});
 });

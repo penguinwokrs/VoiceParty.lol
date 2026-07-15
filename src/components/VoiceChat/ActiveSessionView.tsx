@@ -65,9 +65,11 @@ const loadMuted = (): Record<string, boolean> => readJson(MUTED_KEY, {});
 const REPORT_REASONS = [
 	"harassment",
 	"hate",
+	"child_safety",
+	"illegal",
+	"cheating",
 	"spam",
 	"inappropriate_name",
-	"illegal",
 	"other",
 ] as const;
 
