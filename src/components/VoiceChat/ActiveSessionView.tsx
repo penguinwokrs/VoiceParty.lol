@@ -156,7 +156,9 @@ const AvatarWithStatus = ({
 				"&::after": {
 					content: '""',
 					position: "absolute",
-					inset: 0,
+					// Start at the outer edge of the avatar's static 3px ring (avatars
+					// are border-box, so inset:0 would sit inside it and clip the icon).
+					inset: "-3px",
 					borderRadius: "50%",
 					border: "2px solid rgba(46, 213, 115, 0.9)",
 					animation: "vpSpeakPulse 1.3s ease-out infinite",
