@@ -138,8 +138,6 @@ export const en: TranslationResources = {
 		disclaimer:
 			"VoiceParty.lol isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
 		updated: "Last updated: July 16, 2026",
-		draftNote:
-			"This document is a draft and will be finalized before publication.",
 		nav: {
 			home: "Home",
 			privacy: "Privacy Policy",
