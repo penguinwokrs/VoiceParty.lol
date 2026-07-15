@@ -3,12 +3,35 @@ import {
 	Card,
 	CardContent,
 	CircularProgress,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogTitle,
+	Link,
 	Stack,
 	TextField,
 	Typography,
 } from "@mui/material";
-import { useTranslation } from "react-i18next";
+import { useState } from "react";
+import { Trans, useTranslation } from "react-i18next";
+import { Link as RouterLink } from "react-router-dom";
+import type { LanguageCode } from "../../i18n";
+import { localizePath } from "../../i18n/paths";
 import { Button } from "../Button";
+
+// Minimum age to use the Service (see Terms/Privacy). Enforced with a neutral
+// birth-year gate rather than a yes/no prompt.
+const MIN_AGE = 13;
+const AGE_OK_KEY = "vp_age_ok";
+
+const isAgeConfirmed = (): boolean => {
+	if (typeof window === "undefined") return false;
+	try {
+		return localStorage.getItem(AGE_OK_KEY) === "true";
+	} catch {
+		return false;
+	}
+};
 
 type JoinSessionFormProps = {
 	summonerId: string;
@@ -31,7 +54,43 @@ export const JoinSessionForm = ({
 	onJoin,
 	disableSessionInput,
 }: JoinSessionFormProps) => {
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
+	const lang = (i18n.resolvedLanguage ?? "en") as LanguageCode;
+
+	// Age gate: shown once (persisted) before the first join.
+	const [ageOpen, setAgeOpen] = useState(false);
+	const [birthYear, setBirthYear] = useState("");
+	const [ageError, setAgeError] = useState("");
+
+	const handleJoinClick = () => {
+		if (isAgeConfirmed()) {
+			onJoin();
+		} else {
+			setAgeError("");
+			setBirthYear("");
+			setAgeOpen(true);
+		}
+	};
+
+	const confirmAge = () => {
+		const year = Number(birthYear);
+		const now = new Date().getFullYear();
+		if (!Number.isInteger(year) || year < 1900 || year > now) {
+			setAgeError(t("join.ageInvalid"));
+			return;
+		}
+		if (now - year < MIN_AGE) {
+			setAgeError(t("join.ageTooYoung"));
+			return;
+		}
+		try {
+			localStorage.setItem(AGE_OK_KEY, "true");
+		} catch {
+			/* ignore storage errors */
+		}
+		setAgeOpen(false);
+		onJoin();
+	};
 
 	return (
 		<Card sx={{ maxWidth: 400, mx: "auto", mt: 4 }}>
@@ -67,7 +126,7 @@ export const JoinSessionForm = ({
 					<Button
 						fullWidth
 						variant="contained"
-						onClick={onJoin}
+						onClick={handleJoinClick}
 						disabled={loading || !summonerId || !sessionId}
 					>
 						{loading ? (
@@ -76,8 +135,65 @@ export const JoinSessionForm = ({
 							t("join.joinGame")
 						)}
 					</Button>
+
+					{/* Consent notice: joining accepts the Terms and Privacy Policy. */}
+					<Typography
+						variant="caption"
+						sx={{ color: "var(--color-text-muted)", textAlign: "center" }}
+					>
+						<Trans
+							i18nKey="join.consent"
+							components={{
+								terms: (
+									<Link
+										component={RouterLink}
+										to={localizePath("/terms", lang)}
+									/>
+								),
+								privacy: (
+									<Link
+										component={RouterLink}
+										to={localizePath("/privacy", lang)}
+									/>
+								),
+							}}
+						/>
+					</Typography>
 				</Stack>
 			</CardContent>
+
+			<Dialog open={ageOpen} onClose={() => setAgeOpen(false)}>
+				<DialogTitle>{t("join.ageTitle")}</DialogTitle>
+				<DialogContent>
+					<Typography variant="body2" sx={{ mb: 2 }}>
+						{t("join.ageBody")}
+					</Typography>
+					<TextField
+						autoFocus
+						fullWidth
+						label={t("join.ageYearLabel")}
+						value={birthYear}
+						onChange={(e) => setBirthYear(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter" && birthYear) confirmAge();
+						}}
+						error={!!ageError}
+						helperText={ageError || undefined}
+						slotProps={{
+							htmlInput: { inputMode: "numeric", pattern: "[0-9]*" },
+						}}
+					/>
+				</DialogContent>
+				<DialogActions>
+					<Button
+						variant="contained"
+						onClick={confirmAge}
+						disabled={!birthYear}
+					>
+						{t("join.ageConfirm")}
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</Card>
 	);
 };

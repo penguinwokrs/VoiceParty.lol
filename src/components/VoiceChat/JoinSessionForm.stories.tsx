@@ -1,10 +1,19 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { MemoryRouter } from "react-router-dom";
 import { fn } from "storybook/test";
 import { JoinSessionForm } from "./JoinSessionForm";
 
 const meta = {
 	title: "VoiceChat/JoinSessionForm",
 	component: JoinSessionForm,
+	// The consent notice links to /terms and /privacy, so a Router is required.
+	decorators: [
+		(Story) => (
+			<MemoryRouter>
+				<Story />
+			</MemoryRouter>
+		),
+	],
 	parameters: { layout: "centered" },
 	args: {
 		summonerId: "",

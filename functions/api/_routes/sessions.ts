@@ -26,11 +26,17 @@ const REPORT_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
 const REPORT_REASONS = new Set([
 	"harassment",
 	"hate",
+	"child_safety",
+	"illegal",
+	"cheating",
 	"spam",
 	"inappropriate_name",
-	"illegal",
 	"other",
 ]);
+// Reports flagging child safety are preserved for review and never fed into the
+// automatic score (which could be weaponized for such a severe category).
+const CHILD_SAFETY_REASON = "child_safety";
+const CHILD_SAFETY_TTL_SECONDS = 365 * 24 * 60 * 60; // 1 year, for review/evidence
 const MAX_NOTE_LENGTH = 280;
 
 app.post("/", async (c) => {
@@ -354,10 +360,21 @@ app.post("/:id/reports", async (c) => {
 		reportedHash,
 	};
 
-	// One report per (reported, session, reporter): the key dedupes repeats, so
-	// a single reporter can't inflate the count for one person in one session.
-	// The metadata lets the aggregator read reporter/reason/time from a single
-	// list() call without fetching each value.
+	// Child-safety reports are handled out-of-band: preserved for a year for
+	// human review/evidence, and NOT fed into the automatic score (a single
+	// reporter must be able to escalate, and the category is too severe to let a
+	// score-based auto-ban be weaponized). All other reasons follow the normal
+	// path: one report per (reported, session, reporter), deduped by key, with
+	// reporter/reason/time in metadata so the aggregator reads them in one list().
+	if (reason === CHILD_SAFETY_REASON) {
+		await c.env.VC_SESSIONS.put(
+			`csae:${reportedHash}:${sessionId}:${reporterHash}`,
+			JSON.stringify(record),
+			{ expirationTtl: CHILD_SAFETY_TTL_SECONDS },
+		);
+		return c.json({ ok: true });
+	}
+
 	await c.env.VC_SESSIONS.put(
 		`report:${reportedHash}:${sessionId}:${reporterHash}`,
 		JSON.stringify(record),
