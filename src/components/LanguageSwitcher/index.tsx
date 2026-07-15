@@ -1,6 +1,8 @@
 import styled from "@emotion/styled";
 import { useTranslation } from "react-i18next";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supportedLanguages } from "../../i18n";
+import { langFromPath, localizePath } from "../../i18n/paths";
 
 const Switcher = styled.div`
   display: inline-flex;
@@ -39,8 +41,11 @@ const LangButton = styled.button<{ active: boolean }>`
 `;
 
 export const LanguageSwitcher = () => {
-	const { i18n, t } = useTranslation();
-	const current = i18n.resolvedLanguage ?? i18n.language;
+	const { t } = useTranslation();
+	const location = useLocation();
+	const navigate = useNavigate();
+	// The URL is the source of truth for the active language.
+	const current = langFromPath(location.pathname);
 
 	return (
 		<Switcher role="group" aria-label={t("language.label")}>
@@ -50,7 +55,7 @@ export const LanguageSwitcher = () => {
 					type="button"
 					active={current === lang.code}
 					aria-pressed={current === lang.code}
-					onClick={() => i18n.changeLanguage(lang.code)}
+					onClick={() => navigate(localizePath(location.pathname, lang.code))}
 				>
 					{lang.label}
 				</LangButton>

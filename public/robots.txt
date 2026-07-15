@@ -1,0 +1,8 @@
+# https://voiceparty.lol robots policy
+User-agent: *
+Allow: /
+
+# AI / LLM crawlers are welcome to read the site summary.
+# See /llms.txt for a structured overview.
+
+Sitemap: https://voiceparty.lol/sitemap.xml

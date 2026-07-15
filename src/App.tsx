@@ -1,5 +1,6 @@
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { LangLayout } from "./components/LangLayout";
 import { JoinPage } from "./pages/JoinPage";
 import { LandingPage } from "./pages/LandingPage";
 import { theme } from "./theme";
@@ -11,9 +12,19 @@ function App() {
 
 			<BrowserRouter>
 				<Routes>
-					<Route path="/" element={<LandingPage />} />
-					<Route path="/join" element={<JoinPage />} />
-					<Route path="/join/:sessionId" element={<JoinPage />} />
+					{/* Default language (English), served without a path prefix. */}
+					<Route element={<LangLayout />}>
+						<Route path="/" element={<LandingPage />} />
+						<Route path="/join" element={<JoinPage />} />
+						<Route path="/join/:sessionId" element={<JoinPage />} />
+					</Route>
+
+					{/* Prefixed languages: /ja, /ko (and their sub-routes). */}
+					<Route path=":lang" element={<LangLayout />}>
+						<Route index element={<LandingPage />} />
+						<Route path="join" element={<JoinPage />} />
+						<Route path="join/:sessionId" element={<JoinPage />} />
+					</Route>
 				</Routes>
 			</BrowserRouter>
 		</ThemeProvider>
