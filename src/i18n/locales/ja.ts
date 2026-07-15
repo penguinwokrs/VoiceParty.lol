@@ -77,6 +77,11 @@ export const ja = {
 		noiseSuppressionOn: "ノイズ抑制: ON",
 		noiseSuppressionOff: "ノイズ抑制: OFF",
 		volume: "{{name}} の受信音量",
+		mute: "ミュート",
+		unmute: "ミュート解除",
+		muted: "ミュート中",
+		muteName: "{{name}} をミュート",
+		unmuteName: "{{name}} のミュートを解除",
 		participants: "参加者 ({{n}}/5)",
 		you: "(あなた)",
 		status: {

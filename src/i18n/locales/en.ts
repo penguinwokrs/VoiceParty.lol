@@ -78,6 +78,11 @@ export const en: TranslationResources = {
 		noiseSuppressionOn: "Noise suppression: on",
 		noiseSuppressionOff: "Noise suppression: off",
 		volume: "{{name}} volume",
+		mute: "Mute",
+		unmute: "Unmute",
+		muted: "Muted",
+		muteName: "Mute {{name}}",
+		unmuteName: "Unmute {{name}}",
 		participants: "Participants ({{n}}/5)",
 		you: "(You)",
 		status: {

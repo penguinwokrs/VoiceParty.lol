@@ -79,6 +79,11 @@ export const ko: TranslationResources = {
 		noiseSuppressionOn: "노이즈 억제: 켜짐",
 		noiseSuppressionOff: "노이즈 억제: 꺼짐",
 		volume: "{{name}} 볼륨",
+		mute: "음소거",
+		unmute: "음소거 해제",
+		muted: "음소거됨",
+		muteName: "{{name}} 음소거",
+		unmuteName: "{{name}} 음소거 해제",
 		participants: "참가자 ({{n}}/5)",
 		you: "(나)",
 		status: {

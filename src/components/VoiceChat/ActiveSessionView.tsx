@@ -5,6 +5,7 @@ import MicOffIcon from "@mui/icons-material/MicOff";
 import PersonIcon from "@mui/icons-material/Person";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SyncProblemIcon from "@mui/icons-material/SyncProblem";
+import VolumeOffIcon from "@mui/icons-material/VolumeOff";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import {
 	Alert,
@@ -34,14 +35,24 @@ const VOLUME_MIN = 0;
 const VOLUME_MAX = 300;
 const VOLUME_DEFAULT = 100;
 const VOLUMES_KEY = "vp_volumes";
+// Locally muting a specific participant (gain forced to 0), independent of and
+// remembered separately from their volume level.
+const MUTED_KEY = "vp_muted";
 
-const loadVolumes = (): Record<string, number> => {
+// Guarded localStorage read: `localStorage` is undefined under SSR and can throw
+// a SecurityError in sandboxed/embedded contexts (e.g. the Storybook iframe).
+const readJson = <T,>(key: string, fallback: T): T => {
+	if (typeof window === "undefined") return fallback;
 	try {
-		return JSON.parse(localStorage.getItem(VOLUMES_KEY) || "{}");
+		return JSON.parse(localStorage.getItem(key) || "null") ?? fallback;
 	} catch {
-		return {};
+		return fallback;
 	}
 };
+
+const loadVolumes = (): Record<string, number> => readJson(VOLUMES_KEY, {});
+
+const loadMuted = (): Record<string, boolean> => readJson(MUTED_KEY, {});
 
 // Keyframes reused by the connection indicators (defined once on the Card root).
 const connectionKeyframes = {
@@ -272,19 +283,33 @@ export const ActiveSessionView = ({
 	// Per-participant receive volume (percent), keyed by Summoner ID so a
 	// player's preferred level sticks across sessions.
 	const [volumes, setVolumes] = useState<Record<string, number>>(loadVolumes);
+	// Compute the next value and persist it directly in the handler — the state
+	// updater must stay pure (React may invoke it twice under StrictMode/concurrent).
 	const setVolume = (sid: string, pct: number) => {
-		setVolumes((prev) => {
-			const next = { ...prev, [sid]: pct };
-			try {
-				localStorage.setItem(VOLUMES_KEY, JSON.stringify(next));
-			} catch {
-				/* ignore quota errors */
-			}
-			return next;
-		});
+		const next = { ...volumes, [sid]: pct };
+		setVolumes(next);
+		try {
+			localStorage.setItem(VOLUMES_KEY, JSON.stringify(next));
+		} catch {
+			/* ignore quota errors */
+		}
 		audioCtx?.resume().catch(() => {});
 	};
 	const volumeOf = (sid: string) => volumes[sid] ?? VOLUME_DEFAULT;
+
+	// Per-participant local mute (independent from the volume level).
+	const [muted, setMuted] = useState<Record<string, boolean>>(loadMuted);
+	const isMuted = (sid: string) => muted[sid] ?? false;
+	const toggleMute = (sid: string) => {
+		const next = { ...muted, [sid]: !muted[sid] };
+		setMuted(next);
+		try {
+			localStorage.setItem(MUTED_KEY, JSON.stringify(next));
+		} catch {
+			/* ignore quota errors */
+		}
+		audioCtx?.resume().catch(() => {});
+	};
 
 	// Local user's lifecycle. Falls back to the boolean for older callers/tests.
 	const state: ConnectionState =
@@ -297,7 +322,13 @@ export const ActiveSessionView = ({
 	return (
 		<Card
 			sx={{
-				maxWidth: 400,
+				// Fixed width so the card is the SAME size in every state (it used
+				// to shrink to its content — e.g. narrower with no participants).
+				// An explicit width (not a %) holds even inside shrink-wrapping
+				// parents like Storybook's centered layout; maxWidth keeps it
+				// responsive on screens narrower than 400px.
+				width: 400,
+				maxWidth: "100%",
 				mx: "auto",
 				mt: 4,
 				position: "relative",
@@ -321,7 +352,9 @@ export const ActiveSessionView = ({
 					key={p.id || p.peerId || "unknown"}
 					peer={p}
 					audioContext={audioCtx}
-					volume={volumeOf(peerSummonerId(p)) / 100}
+					volume={
+						isMuted(peerSummonerId(p)) ? 0 : volumeOf(peerSummonerId(p)) / 100
+					}
 				/>
 			))}
 
@@ -483,6 +516,7 @@ export const ActiveSessionView = ({
 							);
 							const vol = volumeOf(summonerId);
 							const boosted = vol > 100;
+							const mutedNow = isMuted(summonerId);
 							return (
 								<ListItem
 									key={peer.id || peer.peerId}
@@ -525,20 +559,37 @@ export const ActiveSessionView = ({
 											}
 										/>
 									</Box>
-									{/* Per-participant receive volume (0%..300%, boost > 100%) */}
+									{/* Per-participant mute + receive volume (0%..300%, boost > 100%) */}
 									<Box
 										sx={{
 											display: "flex",
 											alignItems: "center",
 											gap: 1,
-											pl: 7,
+											pl: 5,
 											pr: 0.5,
 										}}
 									>
-										<VolumeUpIcon
-											fontSize="small"
-											sx={{ color: "text.secondary" }}
-										/>
+										<Tooltip
+											title={mutedNow ? t("session.unmute") : t("session.mute")}
+										>
+											<IconButton
+												size="small"
+												onClick={() => toggleMute(summonerId)}
+												color={mutedNow ? "error" : "default"}
+												aria-label={
+													mutedNow
+														? t("session.unmuteName", { name: summonerId })
+														: t("session.muteName", { name: summonerId })
+												}
+												aria-pressed={mutedNow}
+											>
+												{mutedNow ? (
+													<VolumeOffIcon fontSize="small" />
+												) : (
+													<VolumeUpIcon fontSize="small" />
+												)}
+											</IconButton>
+										</Tooltip>
 										<Slider
 											size="small"
 											aria-label={t("session.volume", { name: summonerId })}
@@ -547,19 +598,28 @@ export const ActiveSessionView = ({
 											step={5}
 											marks={[{ value: 100 }]}
 											value={vol}
+											disabled={mutedNow}
 											onChange={(_, v) => setVolume(summonerId, v as number)}
-											sx={boosted ? { color: "warning.main" } : undefined}
+											sx={
+												!mutedNow && boosted
+													? { color: "warning.main" }
+													: undefined
+											}
 										/>
 										<Typography
 											variant="caption"
 											sx={{
-												minWidth: 40,
+												minWidth: 46,
 												textAlign: "right",
 												fontVariantNumeric: "tabular-nums",
-												color: boosted ? "warning.main" : "text.secondary",
+												color: mutedNow
+													? "error.main"
+													: boosted
+														? "warning.main"
+														: "text.secondary",
 											}}
 										>
-											{vol}%
+											{mutedNow ? t("session.muted") : `${vol}%`}
 										</Typography>
 									</Box>
 								</ListItem>
