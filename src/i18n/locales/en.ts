@@ -173,7 +173,7 @@ export const en: TranslationResources = {
 	legal: {
 		disclaimer:
 			"VoiceCrew isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
-		updated: "Last updated: July 16, 2026",
+		updated: "Last updated: July 18, 2026",
 		nav: {
 			home: "Home",
 			privacy: "Privacy Policy",
@@ -186,7 +186,7 @@ export const en: TranslationResources = {
 			sections: [
 				{
 					heading: "1. Information we collect and why",
-					body: "The Service handles the following:\n・Riot ID / summoner name: to identify and display you (entered by you, or obtained via future Riot Sign-On).\n・Profile icon: for display (public Data Dragon data).\n・IP address / country and region: for delivery and abuse prevention (via Cloudflare).\n・Session data: to manage voice rooms.\n・Report / ban data: to keep the Service safe, prevent abuse, and moderate (reporter/reported identifiers are HMAC-hashed).\n・On-device storage (localStorage): for functional settings such as volume, mute, and noise suppression.",
+					body: 'The Service handles the following:\n・Riot ID / summoner name: to identify and display you (entered by you, or obtained via future Riot Sign-On).\n・Profile icon: for display (public Data Dragon data).\n・IP address / country and region: for delivery and abuse prevention (via Cloudflare).\n・Session data: to manage voice rooms.\n・Report / ban data: to keep the Service safe, prevent abuse, moderate, and — when a measure is appealed — to look up the record it was based on and respond. The Riot IDs of both the reporting user and the reported user are recorded in the clear (the original string, not hashed) and stored with no expiry. The report reason, the session identifier, and the time of the report are stored alongside them. Note that the Service obtains Riot IDs by self-declaration and has no mechanism to confirm that an entered Riot ID belongs to the person entering it.\n・Reports citing "child safety" or "illegal activity" may contain special-category data, such as the fact that the reporting user or a third party suffered harm from a crime. The Service may collect such information without consent only where it is particularly necessary for the protection of the life, body, or property of a person, or for the sound development of children, and obtaining consent is difficult.\n・On-device storage (localStorage): for functional settings such as volume, mute, and noise suppression.',
 				},
 				{
 					heading: "2. Handling of voice",
@@ -202,7 +202,7 @@ export const en: TranslationResources = {
 				},
 				{
 					heading: "5. Disclosure and processors",
-					body: "The Service entrusts information handling to the following providers to deliver its features:\n・Cloudflare, Inc. (hosting, delivery, analytics)\n・RealtimeKit / Cloudflare (voice infrastructure)\nWe also send the information needed to validate your Riot ID to Riot Games, Inc. (Riot handles it under its own policy). Third-party advertising / affiliate providers act as independent controllers. Except as required by law, we do not provide personal information to third parties without consent.",
+					body: "The Service entrusts information handling to the following providers to deliver its features:\n・Cloudflare, Inc. (hosting, delivery, analytics)\n・RealtimeKit / Cloudflare (voice infrastructure)\nWhere the Service validates your Riot ID, it sends the information needed for validation to Riot Games, Inc. (Riot handles it under its own policy). Report data is not included in that transmission.\nThird-party advertising / affiliate providers act as independent controllers. Except as required by law, we do not provide personal information to third parties without consent.",
 				},
 				{
 					heading: "6. International transfer",
@@ -210,23 +210,23 @@ export const en: TranslationResources = {
 				},
 				{
 					heading: "7. Retention",
-					body: "Room-mapping and session data expire automatically after 6 hours by default. Report data expires after 30 days and ban records after 24 hours. Voice is not stored. Analytics are retained in hashed, aggregated form.",
+					body: "Room-mapping and session data expire automatically after 6 hours by default, and ban records after 24 hours. Voice is not stored.\nReport data does not expire. The Service retains the Riot IDs of the reporting and reported users, the report reason, the session identifier, and the time of the report, with no time limit, for the following purposes:\n・To review the basis for a decision and respond when a measure is appealed.\n・For staff to review concentrations of reports against one user and other patterns of violations. Note that automated measures do not take into account reports older than 30 days.\n・To respond to inquiries from law-enforcement authorities, court orders, and other lawful requests.\n・To preserve records of reports involving child safety in case of later inquiry or investigation.\nIn other words, the record of who reported whom persists, with both Riot IDs in the clear, until the Service deletes it. See Section 11 for how deletion requests are handled.",
 				},
 				{
 					heading: "8. Security measures",
-					body: "The Service applies safeguards including HMAC hashing of identifiers, short automatic expiry (TTL), encryption in transit, access controls, and oversight of processors. These measures apply where information is handled abroad (primarily the United States).",
+					body: "The Service applies safeguards including encryption in transit, access controls, oversight of processors, and short automatic expiry (TTL) for session and similar data. These measures apply where information is handled abroad (primarily the United States).\nReport data is an exception: as described in Sections 1 and 7, Riot IDs are stored in the clear. Because neither hashing nor automatic expiry protects report data, the Service limits access to the database that stores it to the minimum personnel needed for their work and restricts data export. Even so, if that data were breached, the Riot IDs of the reporting and reported users would be directly readable by whoever obtained it.",
 				},
 				{
-					heading: "9. About hashing",
-					body: "The hashing used for moderation and analytics is a security measure and does not constitute the creation of anonymized or pseudonymized information under applicable law. Hashed data is still treated as personal information.",
+					heading: "9. Special provisions for report data",
+					body: "The Service stores the Riot IDs of reporting and reported users in the clear, unhashed, with no time limit. This is for the following purposes:\n・When a ban or similar measure is appealed, to look up the report records the measure was based on and respond with reasons.\n・To preserve records of reports involving child safety in case of later inquiry or investigation.\n・To respond to inquiries from law-enforcement authorities and other lawful requests.\nA Riot ID is not a legal name, but it is information that persistently identifies a user. The record of who reported whom is retained, with both users' Riot IDs, for an indefinite period. As a result, the level of protection for report data is lower than it was when the data was hashed. Use of the report feature is subject to this handling.",
 				},
 				{
 					heading: "10. Legal bases (GDPR)",
-					body: "For users in the EEA and the UK, the legal bases for processing are:\n・Service provision (Riot ID, session): performance of a contract (GDPR Art. 6(1)(b)).\n・Abuse prevention and safety (IP, report/ban): legitimate interests (Art. 6(1)(f)).\n・Advertising / measurement cookies: your consent (Art. 6(1)(a)).",
+					body: "For users in the EEA and the UK, the legal bases for processing are:\n・Service provision (Riot ID, session): performance of a contract (GDPR Art. 6(1)(b)).\n・Abuse prevention and safety (IP, ban): legitimate interests (Art. 6(1)(f)).\n・Retention of report data: legitimate interests in keeping our users safe, in responding to appeals against measures, and in establishing, exercising, or defending legal claims (Art. 6(1)(f)).\n・Responding to lawful disclosure requests and law-enforcement inquiries: compliance with a legal obligation (Art. 6(1)(c)).\n・Advertising / measurement cookies: your consent (Art. 6(1)(a)).\nYou may object, on grounds relating to your particular situation, to processing based on legitimate interests (GDPR Art. 21(1)). Where you object, the Service will stop the processing unless it can demonstrate compelling legitimate grounds to continue.\nInformation about a reported user is obtained not from that user but from the reporting user. The categories of that information, the purposes of its use, its retention period, and users' rights are as set out in this policy (GDPR Art. 14). The Service does not disclose information identifying a reporting user to the reported user, because doing so would undermine the purposes of safety and abuse prevention (Art. 14(5)(b)).",
 				},
 				{
 					heading: "11. Your rights",
-					body: 'You may request access, correction, deletion, or suspension of use of your personal information. Users in the EEA and the UK have the rights of access, rectification, erasure, restriction of processing, data portability, objection to processing (including to direct marketing), and withdrawal of consent, and may lodge a complaint with their local supervisory authority. California users have the rights to know, delete, correct, and opt out of the "sale/sharing" of personal information, and the Service does not discriminate for exercising these rights. The request method, identity-verification method, fee (generally none), and response time follow the guidance provided by the contact point.',
+					body: 'You may request access, correction, deletion, or suspension of use of your personal information. Users in the EEA and the UK have the rights of access, rectification, erasure, restriction of processing, data portability, objection to processing (including to direct marketing), and withdrawal of consent, and may lodge a complaint with their local supervisory authority. California users have the rights to know, delete, correct, and opt out of the "sale/sharing" of personal information, and the Service does not discriminate for exercising these rights. The request method, identity-verification method, fee (generally none), and response time follow the guidance provided by the contact point.\nReport data is handled as follows:\n・Where a reported user requests erasure or suspension of use, the Service assesses whether the request is well-founded against the requirements set by law, and complies without delay where it is. However, where the record remains necessary for responding to an appeal against a measure or otherwise for the establishment, exercise, or defense of legal claims, or where retention is required by law, the Service may continue to retain it to the extent necessary (Act on the Protection of Personal Information Art. 35; GDPR Art. 17(3)(e)). In that case we will give reasons for declining and explain how to lodge a complaint with a supervisory authority.\n・A request for erasure from a reporting user is handled in the same way. A reporting user\'s Riot ID may be retained to the extent necessary to substantiate a decision in response to an appeal by the reported user.\n・For deletion requests from California users, the Service may decline to the extent an exception set by law applies (including detecting security incidents and protecting against malicious, deceptive, fraudulent, or illegal activity).\nThe Service periodically reviews whether continued retention of report data is necessary and deletes report data it judges to be no longer needed for the purposes above.',
 				},
 				{
 					heading: "12. Minors",
@@ -257,11 +257,11 @@ export const en: TranslationResources = {
 				},
 				{
 					heading: "3. Identifiers",
-					body: "You must enter your Riot ID / summoner name accurately and must not impersonate others. You are responsible for managing shared URLs (game IDs).",
+					body: "You must enter your Riot ID / summoner name accurately and must not impersonate others. You are responsible for managing shared URLs (room IDs).\nIf you use the report feature, the Riot IDs of both you and the user you report, together with the other report information, are recorded and retained in accordance with the Privacy Policy. False reports and reports made to harass are prohibited conduct under Section 4. See Sections 1, 7, and 9 of the Privacy Policy for details.",
 				},
 				{
 					heading: "4. Prohibited conduct",
-					body: "You must not:\n・Harass, threaten, or bully others\n・Engage in discriminatory or abusive speech or hate speech\n・Transmit illegal content or facilitate crime\n・Sexually contact or exploit a minor, or otherwise endanger the safety of children\n・Expose others' personal information (doxxing)\n・Impersonate others or send spam\n・Reverse-engineer, gain unauthorized access to, or disrupt the Service or its infrastructure\n・Infringe the rights of others",
+					body: "You must not:\n・Harass, threaten, or bully others\n・Engage in discriminatory or abusive speech or hate speech\n・Transmit illegal content or facilitate crime\n・Sexually contact or exploit a minor, or otherwise endanger the safety of children\n・Expose others' personal information (doxxing)\n・Impersonate others or send spam\n・Submit false reports, or use the report feature to harass or for other improper purposes\n・Reverse-engineer, gain unauthorized access to, or disrupt the Service or its infrastructure\n・Infringe the rights of others",
 				},
 				{
 					heading: "5. Voice calls and self-protection",
@@ -269,7 +269,7 @@ export const en: TranslationResources = {
 				},
 				{
 					heading: "6. Operator measures",
-					body: "If you breach these Terms (in particular Section 4), or if the operator reasonably determines a breach is suspected based on reports or otherwise, the operator may, without prior notice, mute you, remove you from a session, deny your connection for a period (ban), or take other necessary measures. The nature and duration of measures and the method of appeal follow the moderation policy.",
+					body: "If you breach these Terms (in particular Section 4), or if the operator reasonably determines a breach is suspected based on reports or otherwise, the operator may, without prior notice, mute you, remove you from a session, deny your connection for a period (ban), or take other necessary measures. The nature and duration of measures and the method of appeal are provided through the contact point in Section 18.\nRetention of the report records underlying such a decision is governed by the Privacy Policy. Nothing in this Section or the preceding paragraph limits the rights you have under data-protection law to request disclosure, correction, suspension of use, or the like.",
 				},
 				{
 					heading: "7. Advertising and affiliates",

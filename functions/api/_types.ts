@@ -1,5 +1,7 @@
 export type Bindings = {
 	VC_SESSIONS: KVNamespace;
+	// Permanent report store. Bans stay in KV (they are transient, 24h).
+	VC_DB: D1Database;
 	RIOT_CLIENT_ID: string;
 	RIOT_CLIENT_SECRET: string;
 	RIOT_GAME_API_KEY: string;
@@ -10,9 +12,13 @@ export type Bindings = {
 	REALTIME_API_KEY: string;
 	REALTIME_KIT_APP_ID: string;
 	USE_MOCK_REALTIME: string;
-	// Optional HMAC salt for pseudonymizing Summoner IDs in moderation/analytics
-	// stores. Falls back to an app-default when unset.
-	REPORT_SALT?: string;
+};
+
+/** One row of the permanent report store, as read by the auto-ban aggregator. */
+export type ReportRecord = {
+	reporter_riot_id: string;
+	reason: string;
+	created_at: number;
 };
 
 export type User = {

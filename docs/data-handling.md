@@ -2,7 +2,7 @@
 
 本サービスが取り扱うデータ、その流れ、保持期間、委託先を整理する。プライバシーポリシー（`/privacy`）の裏付け資料。
 
-- 最終更新日: 2026-07-16
+- 最終更新日: 2026-07-18
 - 関連 issue: #38 ／ 対応ポリシー: `/privacy`
 
 ## 1. データ・インベントリ
@@ -14,7 +14,7 @@
 | 音声 | 利用者のマイク | リアルタイム通話 | **保存しない**（P2P/SFU 伝送のみ） | RealtimeKit/Cloudflare |
 | IP・国/地域 | Cloudflare | 配信・不正防止 | Cloudflare のログ方針に従う | Cloudflare |
 | セッションデータ | 本サービス（KV） | 通話ルーム管理 | **6 時間 TTL**（join で更新） | Cloudflare KV |
-| 通報データ | 利用者の通報操作 | 安全確保・モデレーション | **30 日 TTL**、ハッシュ化 | Cloudflare KV |
+| 通報データ | 利用者の通報操作 | 安全確保・モデレーション・異議申立対応 | **無期限**（自動失効なし）、Riot ID は平文 | Cloudflare D1 |
 | BAN | 自動判定 | 悪質利用の抑止 | **24 時間 TTL**（一時） | Cloudflare KV |
 | アナリティクス（将来） | サーバイベント | 利用状況把握 | 集計・ハッシュ化 | Cloudflare（Analytics Engine/D1） |
 | 機能設定 | 端末 localStorage | 音量/ミュート/ノイズ抑制 | 端末内（サーバ送信なし） | — |
@@ -25,29 +25,30 @@
 flowchart LR
   U[利用者ブラウザ] -->|join / report| PF[Pages Functions (Hono)]
   U -->|音声 WebRTC| RK[RealtimeKit / Cloudflare]
-  PF -->|セッション/通報/BAN| KV[(Cloudflare KV)]
+  PF -->|セッション/BAN| KV[(Cloudflare KV)]
+  PF -->|通報| D1[(Cloudflare D1)]
   PF -->|Riot ID 検証| RIOT[Riot Games API]
   PF -->|アイコン| DD[Data Dragon CDN]
   PF -.->|将来: 指標| AE[(Analytics Engine / D1)]
 ```
 
 - 音声は RealtimeKit を経由する WebRTC でリアルタイム伝送され、**本サービスでは録音・保存しない**。
-- Riot ID・通報者/被通報者は分析・モデレーションストアでは **HMAC ハッシュ**として扱い、生の識別子を保存しない。
+- 通報データ（通報者/被通報者の Riot ID を含む）は D1 に**平文・無期限**で保存する。ハッシュ化は廃止した（2026-07-17 の決定。詳細は `docs/moderation.md`）。
 
 ## 3. 保持期間の要約
 
-| 種別 | KV キー | TTL |
+| 種別 | ストア / キー | TTL |
 |---|---|---|
-| ルーム→ミーティング対応 | `game:{sessionId}` | 6 時間（join で更新） |
-| セッション | `session:{meetingId}` | 6 時間（join で更新） |
-| 通報 | `report:{reportedHash}:{sessionId}:{reporterHash}` | 30 日 |
-| BAN | `ban:{reportedHash}` | 24 時間 |
+| ルーム→ミーティング対応 | KV `game:{sessionId}` | 6 時間（join で更新） |
+| セッション | KV `session:{meetingId}` | 6 時間（join で更新） |
+| 通報 | D1 `reports` テーブル（`(reported, session, reporter)` で一意） | **なし（無期限）** |
+| BAN | KV `ban:{正規化 Riot ID}` | 24 時間 |
 
-音声・生の Riot ID は保存しない。放置されたルームは TTL により自然消滅する。
+音声は保存しない。放置されたルーム（KV）は TTL により自然消滅する。**通報データは自動失効しない** — Riot ID を平文で含んだまま、運用上の消去まで残る。
 
 ## 4. 委託先・処理者
 
-- **Cloudflare, Inc.** — ホスティング・配信・KV・（将来）アナリティクス。
+- **Cloudflare, Inc.** — ホスティング・配信・KV・D1・（将来）アナリティクス。
 - **RealtimeKit / Cloudflare** — 音声通話基盤（participant-minutes 課金）。
 - **Riot Games, Inc.** — Riot ID 検証 API。
 - **広告・アフィリエイト事業者**（導入時） — 第三者配信。
@@ -56,4 +57,4 @@ flowchart LR
 
 ## 5. 利用者の権利
 
-開示・訂正・削除・利用停止（GDPR/CCPA を含む）の請求は、問い合わせ窓口（設置は #38）で受け付ける。ハッシュ化・短期 TTL により、多くのデータは請求前に自然失効する。
+開示・訂正・削除・利用停止（GDPR/CCPA を含む）の請求は、問い合わせ窓口（設置は #38）で受け付ける。セッション/BAN は短期 TTL で自然失効するが、**通報データは無期限保存のため自然失効しない**。通報データの消去は運用上の対応（D1 からの手動削除）でのみ行われるため、消去請求フローの整備（#38）が実質的な唯一の消去手段になる。ポリシー第 11 条の「定期的な見直し」を実運用に落とすこと。

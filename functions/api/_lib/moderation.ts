@@ -1,9 +1,11 @@
 import type { Bindings } from "../_types";
+import { listReportsAgainst, normalizeRiotId } from "./reports";
 
 // Severity weight per report reason. Harassment/hate/illegal count heavily;
 // spam/name/other are lighter signals.
-// child_safety is handled out-of-band (never stored under report:), so it is
-// intentionally absent here.
+// child_safety is deliberately absent: it is handled out-of-band and must never
+// feed the automatic score (a single reporter must be able to escalate, and the
+// category is too severe to let a score-based auto-ban be weaponized).
 const SEVERITY: Record<string, number> = {
 	harassment: 3,
 	hate: 3,
@@ -13,6 +15,7 @@ const SEVERITY: Record<string, number> = {
 	inappropriate_name: 1,
 	other: 1,
 };
+const CHILD_SAFETY_REASON = "child_safety";
 
 // Auto-ban policy (Phase 3). A ban requires enough DISTINCT reporters so a
 // single (or handful of) malicious reporter(s) cannot cause one, and starts
@@ -21,36 +24,36 @@ const MIN_DISTINCT_REPORTERS = 3;
 const BAN_SCORE_THRESHOLD = 7;
 const AUTO_BAN_SECONDS = 24 * 60 * 60; // 24h temporary suspension
 
-type ReportMeta = { r?: string; reason?: string; t?: number };
-
 /**
  * Aggregate the reports stored for one reported user into a risk signal.
  * Distinct reporters is the primary metric (a single reporter, however many
  * times, contributes their single most-severe, recency-decayed weight).
+ *
+ * Reports are now retained permanently, so the recency decay below — not a
+ * store TTL — is what keeps old reports from accumulating into a ban forever.
+ * Anything older than 30 days contributes nothing, which is the behaviour the
+ * previous 30-day KV TTL produced.
  */
 export async function evaluateReports(
 	env: Bindings,
-	reportedHash: string,
+	reported: string,
 	now: number,
 ): Promise<{ distinctReporters: number; score: number }> {
-	const { keys } = await env.VC_SESSIONS.list({
-		prefix: `report:${reportedHash}:`,
-		limit: 1000,
-	});
+	const rows = await listReportsAgainst(env, reported);
 
 	// Per reporter, keep only their strongest (severity × recency) contribution.
 	const perReporter = new Map<string, number>();
-	for (const k of keys) {
-		const m = (k.metadata ?? undefined) as ReportMeta | undefined;
-		if (!m?.r) continue;
-		const severity = SEVERITY[m.reason ?? "other"] ?? 1;
-		const ageDays = m.t ? (now - m.t) / 86_400_000 : 0;
+	for (const row of rows) {
+		if (row.reason === CHILD_SAFETY_REASON) continue;
+		const severity = SEVERITY[row.reason] ?? 1;
+		const ageDays = row.created_at ? (now - row.created_at) / 86_400_000 : 0;
 		const decay = ageDays < 7 ? 1 : ageDays < 30 ? 0.5 : 0;
 		const weighted = severity * decay;
-		// A fully-decayed (expired) report contributes nothing and must not count
-		// its reporter toward the distinct-reporter total.
+		// A fully-decayed report contributes nothing and must not count its
+		// reporter toward the distinct-reporter total.
 		if (weighted > 0) {
-			perReporter.set(m.r, Math.max(perReporter.get(m.r) ?? 0, weighted));
+			const key = row.reporter_riot_id;
+			perReporter.set(key, Math.max(perReporter.get(key) ?? 0, weighted));
 		}
 	}
 
@@ -65,12 +68,12 @@ export async function evaluateReports(
  */
 export async function maybeAutoBan(
 	env: Bindings,
-	reportedHash: string,
+	reported: string,
 	now: number,
 ): Promise<boolean> {
 	const { distinctReporters, score } = await evaluateReports(
 		env,
-		reportedHash,
+		reported,
 		now,
 	);
 	if (
@@ -78,7 +81,7 @@ export async function maybeAutoBan(
 		score >= BAN_SCORE_THRESHOLD
 	) {
 		await env.VC_SESSIONS.put(
-			`ban:${reportedHash}`,
+			`ban:${normalizeRiotId(reported)}`,
 			JSON.stringify({
 				createdAt: now,
 				source: "auto",
@@ -92,7 +95,10 @@ export async function maybeAutoBan(
 	return false;
 }
 
-/** True while the given (hashed) identity is under an active ban. */
-export async function isBanned(env: Bindings, hash: string): Promise<boolean> {
-	return (await env.VC_SESSIONS.get(`ban:${hash}`)) !== null;
+/** True while the given identity is under an active ban. */
+export async function isBanned(
+	env: Bindings,
+	riotId: string,
+): Promise<boolean> {
+	return (await env.VC_SESSIONS.get(`ban:${normalizeRiotId(riotId)}`)) !== null;
 }

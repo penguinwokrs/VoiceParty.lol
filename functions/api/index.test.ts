@@ -640,12 +640,32 @@ describe("Capacity via live presence (RealtimeKit source of truth)", () => {
 	});
 });
 
-// Phase 1: report records a pseudonymized entry and (client-side) mutes the
-// reported user. Phase 2/3: distinct reporters accrue into a temporary auto-ban
-// that blocks the reported user's next join.
+// Phase 1: report persists both Riot IDs in the clear, permanently, and
+// (client-side) mutes the reported user. Phase 2/3: distinct reporters accrue
+// into a temporary auto-ban that blocks the reported user's next join.
 describe("Reports & auto-ban (moderation)", () => {
 	// biome-ignore lint/suspicious/noExplicitAny: Mocking KV
 	const mockKV: any = { get: vi.fn(), put: vi.fn(), list: vi.fn() };
+
+	// Minimal D1 stand-in: records the args bound to INSERTs, and replays
+	// whatever rows a test stages for the aggregator's SELECT.
+	// biome-ignore lint/suspicious/noExplicitAny: Mocking D1 rows
+	let stagedRows: any[] = [];
+	// biome-ignore lint/suspicious/noExplicitAny: Mocking D1 bind args
+	let inserts: any[][] = [];
+	const mockDB = {
+		prepare: (sql: string) => ({
+			// biome-ignore lint/suspicious/noExplicitAny: Mocking D1 bind args
+			bind: (...args: any[]) => ({
+				run: async () => {
+					if (sql.includes("INSERT")) inserts.push(args);
+					return { success: true };
+				},
+				all: async () => ({ results: stagedRows }),
+			}),
+		}),
+	};
+
 	const env = {
 		RIOT_CLIENT_ID: "t",
 		RIOT_CLIENT_SECRET: "t",
@@ -653,10 +673,15 @@ describe("Reports & auto-ban (moderation)", () => {
 		REALTIME_API_KEY: "k",
 		REALTIME_KIT_APP_ID: "a",
 		VC_SESSIONS: mockKV,
+		// biome-ignore lint/suspicious/noExplicitAny: Mocking D1
+		VC_DB: mockDB as any,
 		USE_MOCK_REALTIME: "true",
-		REPORT_SALT: "test-salt",
 	};
 
+	beforeEach(() => {
+		stagedRows = [];
+		inserts = [];
+	});
 	afterEach(() => vi.clearAllMocks());
 
 	const postReport = (body: unknown) =>
@@ -673,27 +698,30 @@ describe("Reports & auto-ban (moderation)", () => {
 	const putKeys = (): string[] =>
 		mockKV.put.mock.calls.map((c: unknown[]) => String(c[0]));
 
-	it("records a report under a report: key with TTL and metadata", async () => {
-		mockKV.list.mockResolvedValue({ keys: [] });
+	it("persists both Riot IDs in the clear, normalized plus raw", async () => {
 		const res = await postReport({
-			reporterSummonerId: "alice#JP1",
-			reportedSummonerId: "troll#JP1",
+			reporterSummonerId: " Alice#JP1 ",
+			reportedSummonerId: "TROLL#JP1",
 			reason: "harassment",
 		});
 		expect(res.status).toBe(200);
 
-		const call = mockKV.put.mock.calls.find((c: unknown[]) =>
-			String(c[0]).startsWith("report:"),
-		);
-		expect(call).toBeTruthy();
-		expect(call[2].expirationTtl).toBe(30 * 24 * 60 * 60);
-		expect(call[2].metadata.reason).toBe("harassment");
-		// A single reporter never triggers a ban.
+		expect(inserts).toHaveLength(1);
+		const [, sessionId, reporter, reporterRaw, reported, reportedRaw, reason] =
+			inserts[0];
+		expect(sessionId).toBe("room-1");
+		// Normalized for matching, raw preserved for display.
+		expect(reporter).toBe("alice#jp1");
+		expect(reporterRaw).toBe("Alice#JP1");
+		expect(reported).toBe("troll#jp1");
+		expect(reportedRaw).toBe("TROLL#JP1");
+		expect(reason).toBe("harassment");
+		// Nothing about a report goes to KV any more, and one reporter never bans.
+		expect(putKeys().some((k) => k.startsWith("report:"))).toBe(false);
 		expect(putKeys().some((k) => k.startsWith("ban:"))).toBe(false);
 	});
 
 	it("rejects a self-report (case-insensitive)", async () => {
-		mockKV.list.mockResolvedValue({ keys: [] });
 		const res = await postReport({
 			reporterSummonerId: "same#JP1",
 			reportedSummonerId: "SAME#jp1",
@@ -703,7 +731,6 @@ describe("Reports & auto-ban (moderation)", () => {
 	});
 
 	it("rejects an invalid reason", async () => {
-		mockKV.list.mockResolvedValue({ keys: [] });
 		const res = await postReport({
 			reporterSummonerId: "a#JP1",
 			reportedSummonerId: "b#JP1",
@@ -719,22 +746,11 @@ describe("Reports & auto-ban (moderation)", () => {
 
 	it("issues a temporary ban once enough DISTINCT reporters flag severe reasons", async () => {
 		const now = Date.now();
-		mockKV.list.mockResolvedValue({
-			keys: [
-				{
-					name: "report:x:s1:r1",
-					metadata: { r: "r1", reason: "harassment", t: now },
-				},
-				{
-					name: "report:x:s2:r2",
-					metadata: { r: "r2", reason: "hate", t: now },
-				},
-				{
-					name: "report:x:s3:r3",
-					metadata: { r: "r3", reason: "illegal", t: now },
-				},
-			],
-		});
+		stagedRows = [
+			{ reporter_riot_id: "r1", reason: "harassment", created_at: now },
+			{ reporter_riot_id: "r2", reason: "hate", created_at: now },
+			{ reporter_riot_id: "r3", reason: "illegal", created_at: now },
+		];
 		const res = await postReport({
 			reporterSummonerId: "reporter3#JP1",
 			reportedSummonerId: "troll#JP1",
@@ -746,33 +762,65 @@ describe("Reports & auto-ban (moderation)", () => {
 			String(c[0]).startsWith("ban:"),
 		);
 		expect(banCall).toBeTruthy();
+		// Bans key on the normalized Riot ID now that nothing is hashed.
+		expect(banCall[0]).toBe("ban:troll#jp1");
 		expect(banCall[2].expirationTtl).toBe(24 * 60 * 60);
 	});
 
 	it("does not ban when many reports come from a single reporter", async () => {
 		const now = Date.now();
-		mockKV.list.mockResolvedValue({
-			keys: [
-				{
-					name: "report:x:s1:r1",
-					metadata: { r: "r1", reason: "harassment", t: now },
-				},
-				{
-					name: "report:x:s2:r1",
-					metadata: { r: "r1", reason: "harassment", t: now },
-				},
-				{
-					name: "report:x:s3:r1",
-					metadata: { r: "r1", reason: "harassment", t: now },
-				},
-			],
-		});
+		stagedRows = [
+			{ reporter_riot_id: "r1", reason: "harassment", created_at: now },
+			{ reporter_riot_id: "r1", reason: "harassment", created_at: now },
+			{ reporter_riot_id: "r1", reason: "harassment", created_at: now },
+		];
 		const res = await postReport({
 			reporterSummonerId: "r1#JP1",
 			reportedSummonerId: "troll#JP1",
 			reason: "harassment",
 		});
 		expect(res.status).toBe(200);
+		expect(putKeys().some((k) => k.startsWith("ban:"))).toBe(false);
+	});
+
+	// Reports no longer expire, so recency decay is the only thing stopping old
+	// reports from accumulating into a ban forever.
+	it("does not count reports older than 30 days toward a ban", async () => {
+		const now = Date.now();
+		const old = now - 31 * 24 * 60 * 60 * 1000;
+		stagedRows = [
+			{ reporter_riot_id: "r1", reason: "harassment", created_at: old },
+			{ reporter_riot_id: "r2", reason: "hate", created_at: old },
+			{ reporter_riot_id: "r3", reason: "illegal", created_at: old },
+		];
+		const res = await postReport({
+			reporterSummonerId: "reporter4#JP1",
+			reportedSummonerId: "troll#JP1",
+			reason: "illegal",
+		});
+		expect(res.status).toBe(200);
+		expect(putKeys().some((k) => k.startsWith("ban:"))).toBe(false);
+	});
+
+	// child_safety is escalated to humans; it must never drive the auto-ban, or
+	// the most severe category becomes the easiest one to weaponize.
+	it("stores a child-safety report but keeps it out of the auto-ban score", async () => {
+		const now = Date.now();
+		stagedRows = [
+			{ reporter_riot_id: "r1", reason: "child_safety", created_at: now },
+			{ reporter_riot_id: "r2", reason: "child_safety", created_at: now },
+			{ reporter_riot_id: "r3", reason: "child_safety", created_at: now },
+		];
+		const res = await postReport({
+			reporterSummonerId: "reporter4#JP1",
+			reportedSummonerId: "troll#JP1",
+			reason: "child_safety",
+		});
+		expect(res.status).toBe(200);
+		// Persisted like any other report...
+		expect(inserts).toHaveLength(1);
+		expect(inserts[0][6]).toBe("child_safety");
+		// ...but never scored.
 		expect(putKeys().some((k) => k.startsWith("ban:"))).toBe(false);
 	});
 

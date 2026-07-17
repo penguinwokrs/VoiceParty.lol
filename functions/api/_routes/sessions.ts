@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { hashId } from "../_lib/hash";
 import { isBanned, maybeAutoBan } from "../_lib/moderation";
 import { callRealtimeKit, getActiveParticipantCount } from "../_lib/realtime";
+import { recordReport } from "../_lib/reports";
 import {
 	getAccountByRiotId,
 	getProfileIconUrl,
@@ -19,10 +19,9 @@ const MAX_USERS = 5;
 const SESSION_TTL_SECONDS = 6 * 60 * 60; // 6 hours
 const KV_TTL = { expirationTtl: SESSION_TTL_SECONDS };
 
-// User reports (moderation). Kept longer than a session so counts can accrue
-// toward the future auto-ban signal (Phase 2/3). Stored under a per-reported
-// prefix so reports for one person can be listed/counted.
-const REPORT_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
+// User reports (moderation) are persisted in D1 with no expiry — see
+// functions/api/_lib/reports.ts. Recency decay in the auto-ban aggregator, not
+// a store TTL, is what stops old reports counting toward a ban.
 const REPORT_REASONS = new Set([
 	"harassment",
 	"hate",
@@ -36,7 +35,6 @@ const REPORT_REASONS = new Set([
 // Reports flagging child safety are preserved for review and never fed into the
 // automatic score (which could be weaponized for such a severe category).
 const CHILD_SAFETY_REASON = "child_safety";
-const CHILD_SAFETY_TTL_SECONDS = 365 * 24 * 60 * 60; // 1 year, for review/evidence
 const MAX_NOTE_LENGTH = 280;
 
 app.post("/", async (c) => {
@@ -110,7 +108,7 @@ app.post("/:id/join", async (c) => {
 	}
 
 	// Phase 3: reject users under an active moderation ban before doing any work.
-	if (await isBanned(c.env, await hashId(summonerId, c.env))) {
+	if (await isBanned(c.env, summonerId)) {
 		return c.text(
 			"This account is temporarily suspended due to user reports.",
 			403,
@@ -346,50 +344,34 @@ app.post("/:id/reports", async (c) => {
 		return c.text("Invalid report reason", 400);
 	}
 
-	const [reporterHash, reportedHash] = await Promise.all([
-		hashId(reporter, c.env),
-		hashId(reported, c.env),
-	]);
+	const createdAt = Date.now();
 
-	const record = {
-		createdAt: Date.now(),
+	// Persisted to D1 with no expiry, Riot IDs in the clear. Both parties are
+	// recorded permanently — see the privacy policy (sections 1/7/9) and
+	// migrations/0001_create_reports.sql for why.
+	await recordReport(c.env, {
 		sessionId,
+		reporter,
+		reported,
 		reason,
-		...(note ? { note } : {}),
-		reporterHash,
-		reportedHash,
-	};
+		note,
+		createdAt,
+	});
 
-	// Child-safety reports are handled out-of-band: preserved for a year for
-	// human review/evidence, and NOT fed into the automatic score (a single
-	// reporter must be able to escalate, and the category is too severe to let a
-	// score-based auto-ban be weaponized). All other reasons follow the normal
-	// path: one report per (reported, session, reporter), deduped by key, with
-	// reporter/reason/time in metadata so the aggregator reads them in one list().
+	// Child-safety reports are handled out-of-band and never feed the automatic
+	// score (a single reporter must be able to escalate, and the category is too
+	// severe to let a score-based auto-ban be weaponized). The row is stored the
+	// same way; `evaluateReports` is what skips it.
 	if (reason === CHILD_SAFETY_REASON) {
-		await c.env.VC_SESSIONS.put(
-			`csae:${reportedHash}:${sessionId}:${reporterHash}`,
-			JSON.stringify(record),
-			{ expirationTtl: CHILD_SAFETY_TTL_SECONDS },
-		);
 		return c.json({ ok: true });
 	}
-
-	await c.env.VC_SESSIONS.put(
-		`report:${reportedHash}:${sessionId}:${reporterHash}`,
-		JSON.stringify(record),
-		{
-			expirationTtl: REPORT_TTL_SECONDS,
-			metadata: { r: reporterHash, reason, t: record.createdAt },
-		},
-	);
 
 	// Phase 2/3: re-evaluate this user's reports and issue a temporary auto-ban
 	// if over threshold. Run it in the background (waitUntil) so the report
 	// response returns immediately; fall back to awaiting when there is no
 	// execution context (e.g. tests). Never let it fail the response.
 	const evaluate = () =>
-		maybeAutoBan(c.env, reportedHash, record.createdAt).catch((e) => {
+		maybeAutoBan(c.env, reported, createdAt).catch((e) => {
 			console.error("[reports] auto-ban evaluation failed:", e);
 		});
 	// `c.executionCtx` throws when absent, so probe it defensively.
