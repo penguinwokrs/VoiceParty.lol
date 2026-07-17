@@ -98,6 +98,8 @@ export const en: TranslationResources = {
 		gameIdPlaceholder: "Enter game ID to join",
 		region: "Region",
 		regionPlaceholder: "Select your region",
+		regionFromLink:
+			"Set by the invite link — other regions can't play together",
 		joinGame: "Join Game",
 		consent:
 			"By pressing “Join Game”, you agree to the <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>. You must be 13 or older to use the Service.",

@@ -93,6 +93,9 @@ describe("VoiceChat", () => {
 			<MemoryRouter initialEntries={["/join/session-123"]}>
 				<Routes>
 					<Route path="/" element={<VoiceChat />} />
+					{/* Mirrors App.tsx: picking a region moves the room onto the
+					    region-scoped path before joining. */}
+					<Route path="/join/:region/:sessionId" element={<VoiceChat />} />
 					<Route path="/join/:sessionId" element={<VoiceChat />} />
 				</Routes>
 			</MemoryRouter>,
@@ -117,6 +120,87 @@ describe("VoiceChat", () => {
 
 		expect(screen.getByText("test-user")).toBeInTheDocument();
 		expect(screen.getByText("(You)")).toBeInTheDocument();
+	});
+
+	// A room is region-scoped: players on different platforms can't play
+	// together, so the region has to survive the invite link.
+	describe("region in the URL", () => {
+		const renderAt = (path: string) =>
+			render(
+				<MemoryRouter initialEntries={[path]}>
+					<Routes>
+						<Route path="/join/:region/:sessionId" element={<VoiceChat />} />
+						<Route path="/join/:sessionId" element={<VoiceChat />} />
+					</Routes>
+				</MemoryRouter>,
+			);
+
+		it("takes the region from the link and locks the field", () => {
+			vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
+			renderAt("/join/kr/session-123");
+
+			const region = screen.getByLabelText("Region") as HTMLInputElement;
+			expect(region.value).toBe("Korea (KR)");
+			expect(region).toBeDisabled();
+		});
+
+		it("ignores an unknown region and lets the player pick", () => {
+			vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
+			renderAt("/join/not-a-region/session-123");
+
+			const region = screen.getByLabelText("Region") as HTMLInputElement;
+			expect(region.value).toBe("");
+			expect(region).toBeEnabled();
+		});
+
+		it("does not remember a region that came from someone else's link", () => {
+			vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
+			const setItem = vi
+				.spyOn(Storage.prototype, "setItem")
+				.mockImplementation(() => {});
+
+			renderAt("/join/kr/session-123");
+
+			expect(setItem).not.toHaveBeenCalledWith("vp_region", "kr");
+		});
+
+		it("puts the region in the invite link", async () => {
+			vi.spyOn(Storage.prototype, "getItem").mockImplementation((k) =>
+				k === "vp_age_ok" ? "true" : null,
+			);
+			const writeText = vi.fn().mockResolvedValue(undefined);
+			Object.defineProperty(navigator, "clipboard", {
+				value: { writeText },
+				configurable: true,
+			});
+			global.fetch = vi.fn().mockResolvedValue({
+				ok: true,
+				text: () => Promise.resolve(""),
+				json: () =>
+					Promise.resolve({
+						session: {
+							sessionId: "session-123",
+							users: [{ summonerId: "test-user", joinedAt: Date.now() }],
+							createdAt: Date.now(),
+						},
+						realtime: { token: "mock-token", meetingId: "mock-id" },
+					}),
+			});
+
+			renderAt("/join/kr/session-123");
+			fireEvent.change(screen.getByLabelText("Summoner ID"), {
+				target: { value: "test-user" },
+			});
+			fireEvent.click(screen.getByRole("button", { name: "Join Game" }));
+
+			await waitFor(() => {
+				expect(screen.getByText(/Session:.*session-123/)).toBeInTheDocument();
+			});
+
+			fireEvent.click(screen.getByRole("button", { name: /Copy link/ }));
+			await waitFor(() => expect(writeText).toHaveBeenCalled());
+			expect(writeText.mock.calls[0][0]).toContain("/join/kr/session-123");
+		});
 	});
 
 	it("age gate blocks users under 13 and lets 13+ through", async () => {

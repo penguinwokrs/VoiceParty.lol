@@ -121,6 +121,8 @@ const connectionKeyframes = {
 type ActiveSessionViewProps = {
 	session: Session;
 	summonerId: string;
+	/** Riot platform of this room; included in the invite link. */
+	region?: string;
 	isConnected: boolean;
 	// Richer lifecycle; falls back to isConnected when not provided.
 	connectionState?: ConnectionState;
@@ -321,6 +323,7 @@ const PeerAudio = ({
 export const ActiveSessionView = ({
 	session,
 	summonerId,
+	region,
 	isConnected,
 	connectionState,
 	isMicMuted,
@@ -441,9 +444,14 @@ export const ActiveSessionView = ({
 	};
 
 	// Sharing: invite friends to this room by link or a playful tweet.
+	// The link carries the region: players on another platform can't join this
+	// game at all, so an invite that omits it is an invite to a dead end. Left
+	// language-neutral on purpose — the recipient gets their own language.
 	const shareUrl =
 		typeof window !== "undefined"
-			? `${window.location.origin}/join/${encodeURIComponent(session.sessionId)}`
+			? `${window.location.origin}${
+					region ? `/join/${encodeURIComponent(region)}` : "/join"
+				}/${encodeURIComponent(session.sessionId)}`
 			: "";
 	const [copiedToast, setCopiedToast] = useState(false);
 	const copyLink = () => {

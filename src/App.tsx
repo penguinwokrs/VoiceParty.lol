@@ -18,6 +18,10 @@ function App() {
 					<Route element={<LangLayout />}>
 						<Route path="/" element={<LandingPage />} />
 						<Route path="/join" element={<JoinPage />} />
+						{/* Rooms are region-scoped (see ./components/VoiceChat/regions).
+						    The bare form is kept so links shared before the region was
+						    part of the URL still resolve — the joiner picks it instead. */}
+						<Route path="/join/:region/:sessionId" element={<JoinPage />} />
 						<Route path="/join/:sessionId" element={<JoinPage />} />
 						<Route path="/privacy" element={<PrivacyPage />} />
 						<Route path="/terms" element={<TermsPage />} />
@@ -27,6 +31,7 @@ function App() {
 					<Route path=":lang" element={<LangLayout />}>
 						<Route index element={<LandingPage />} />
 						<Route path="join" element={<JoinPage />} />
+						<Route path="join/:region/:sessionId" element={<JoinPage />} />
 						<Route path="join/:sessionId" element={<JoinPage />} />
 						<Route path="privacy" element={<PrivacyPage />} />
 						<Route path="terms" element={<TermsPage />} />
