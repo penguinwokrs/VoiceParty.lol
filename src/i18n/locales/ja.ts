@@ -89,10 +89,14 @@ export const ja = {
 	},
 	join: {
 		heading: "ボイスチャット",
-		summonerId: "サモナー名",
-		summonerIdPlaceholder: "名前を入力",
+		summonerId: "Riot ID",
+		summonerIdPlaceholder: "Faker#KR1",
+		summonerIdHelp:
+			"旧「サモナーネーム」です。名前の後ろに #タグ が付きます。ゲームクライアント右上のプロフィールで確認できます。",
 		gameId: "ゲームID",
-		gameIdPlaceholder: "参加するゲームIDを入力",
+		gameIdPlaceholder: "例: yoru-no-ranked",
+		gameIdHelp:
+			"仲間と決める合い言葉です。同じものを入れた人同士が同じルームに入ります。まだ無ければ新しく作られます。",
 		region: "リージョン",
 		regionPlaceholder: "リージョンを選択",
 		regionFromLink:

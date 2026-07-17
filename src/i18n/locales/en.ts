@@ -92,10 +92,14 @@ export const en: TranslationResources = {
 	},
 	join: {
 		heading: "Voice Chat",
-		summonerId: "Summoner ID",
-		summonerIdPlaceholder: "Enter your name",
+		summonerId: "Riot ID",
+		summonerIdPlaceholder: "Faker#KR1",
+		summonerIdHelp:
+			"Formerly your Summoner Name. It ends with a #tag — find it on your profile in the top right of the game client.",
 		gameId: "Game ID",
-		gameIdPlaceholder: "Enter game ID to join",
+		gameIdPlaceholder: "e.g. friday-ranked",
+		gameIdHelp:
+			"A password you agree on with your friends. Everyone who types the same one lands in the same room. If it doesn't exist yet, it's created.",
 		region: "Region",
 		regionPlaceholder: "Select your region",
 		regionFromLink:

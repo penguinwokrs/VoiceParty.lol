@@ -92,10 +92,14 @@ export const ko: TranslationResources = {
 	},
 	join: {
 		heading: "음성 채팅",
-		summonerId: "소환사 이름",
-		summonerIdPlaceholder: "이름을 입력하세요",
+		summonerId: "Riot ID",
+		summonerIdPlaceholder: "Faker#KR1",
+		summonerIdHelp:
+			"예전의 '소환사 이름'입니다. 이름 뒤에 #태그가 붙습니다. 게임 클라이언트 오른쪽 위 프로필에서 확인할 수 있습니다.",
 		gameId: "게임 ID",
-		gameIdPlaceholder: "참가할 게임 ID를 입력하세요",
+		gameIdPlaceholder: "예: geumyoil-ranked",
+		gameIdHelp:
+			"친구들과 정하는 암호입니다. 같은 것을 입력한 사람끼리 같은 방에 들어갑니다. 아직 없으면 새로 만들어집니다.",
 		region: "지역",
 		regionPlaceholder: "지역 선택",
 		regionFromLink:

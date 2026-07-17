@@ -28,7 +28,7 @@ describe("VoiceChat", () => {
 			</MemoryRouter>,
 		);
 		expect(screen.getByText("Voice Chat")).toBeInTheDocument();
-		expect(screen.getByLabelText("Summoner ID")).toBeInTheDocument();
+		expect(screen.getByLabelText("Riot ID")).toBeInTheDocument();
 		expect(screen.getByLabelText("Region")).toBeInTheDocument();
 		expect(screen.getByLabelText("Game ID")).toBeInTheDocument();
 	});
@@ -53,7 +53,7 @@ describe("VoiceChat", () => {
 		const joinBtn = screen.getByText("Join Game");
 		expect(joinBtn).toBeDisabled();
 
-		const userInput = screen.getByLabelText("Summoner ID") as HTMLInputElement;
+		const userInput = screen.getByLabelText("Riot ID") as HTMLInputElement;
 		fireEvent.change(userInput, { target: { value: "test-user" } });
 		expect(userInput.value).toBe("test-user");
 		expect(joinBtn).toBeDisabled(); // Still disabled, no Game ID
@@ -100,7 +100,7 @@ describe("VoiceChat", () => {
 				</Routes>
 			</MemoryRouter>,
 		);
-		const userInput = screen.getByLabelText("Summoner ID");
+		const userInput = screen.getByLabelText("Riot ID");
 		fireEvent.change(userInput, { target: { value: "test-user" } });
 
 		const sessionInput = screen.getByLabelText("Game ID");
@@ -188,7 +188,7 @@ describe("VoiceChat", () => {
 			});
 
 			renderAt("/join/kr/session-123");
-			fireEvent.change(screen.getByLabelText("Summoner ID"), {
+			fireEvent.change(screen.getByLabelText("Riot ID"), {
 				target: { value: "test-user" },
 			});
 			fireEvent.click(screen.getByRole("button", { name: "Join Game" }));
@@ -216,7 +216,7 @@ describe("VoiceChat", () => {
 				</Routes>
 			</MemoryRouter>,
 		);
-		fireEvent.change(screen.getByLabelText("Summoner ID"), {
+		fireEvent.change(screen.getByLabelText("Riot ID"), {
 			target: { value: "u" },
 		});
 		fireEvent.change(screen.getByLabelText("Game ID"), {
