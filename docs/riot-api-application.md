@@ -15,7 +15,7 @@ once RSO access is approved.
 Includes explicit operation steps. Use when the form has a character limit.
 `~1050 chars`.
 
-> VoiceParty.lol is a browser-based voice chat for League of Legends players.
+> VoiceCrew is a browser-based voice chat for League of Legends players.
 > Players sharing the same Game ID join a WebRTC voice room (up to 5) to talk
 > while playing — no install.
 >
@@ -41,7 +41,7 @@ Includes explicit operation steps. Use when the form has a character limit.
 Shorter; operation is summarized in prose rather than numbered steps.
 `~950 chars`.
 
-> VoiceParty.lol is a browser-based voice chat for League of Legends players.
+> VoiceCrew is a browser-based voice chat for League of Legends players.
 > Players sharing the same Game ID join a WebRTC voice room (up to 5) to talk
 > while playing — no install.
 >
@@ -62,7 +62,7 @@ Shorter; operation is summarized in prose rather than numbered steps.
 
 For tighter limits. `~640 chars`.
 
-> VoiceParty.lol is a browser voice chat for League of Legends. Players sharing
+> VoiceCrew is a browser voice chat for League of Legends. Players sharing
 > a Game ID join a WebRTC voice room (up to 5) to talk while playing.
 >
 > Currently they enter a Riot ID (GameName#TagLine) and Game ID; the backend
@@ -79,15 +79,15 @@ For tighter limits. `~640 chars`.
 
 Use when there is no meaningful character limit.
 
-**Product Name:** VoiceParty.lol
+**Product Name:** VoiceCrew
 
-**Product URL:** https://voiceparty.pages.dev
+**Product URL:** https://voicecrew.pages.dev
 
 **Category:** Web application (voice chat companion for League of Legends)
 
 ### Short description
 
-VoiceParty.lol is a browser-based voice chat service for League of Legends
+VoiceCrew is a browser-based voice chat service for League of Legends
 players. Players who share the same "Game ID" join a lightweight WebRTC voice
 room (up to 5 participants) so a party or team can talk together while
 playing — no install required.
@@ -144,7 +144,7 @@ state, and Cloudflare RealtimeKit for WebRTC audio.
 
 ## 日本語対訳（社内確認用・提出はしない）
 
-**プロダクト名:** VoiceParty.lol / **URL:** https://voiceparty.pages.dev
+**プロダクト名:** VoiceCrew / **URL:** https://voicecrew.pages.dev
 
 **概要:** League of Legends プレイヤー向けのブラウザ音声チャット。同じ「Game
 ID」を使う人同士が WebRTC 音声ルーム（最大5人）に入り、プレイしながら会話でき

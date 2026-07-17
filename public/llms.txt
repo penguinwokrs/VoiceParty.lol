@@ -1,6 +1,6 @@
-# Voice Party
+# VoiceCrew
 
-> Voice Party is a free, browser-based real-time voice chat for gaming teams.
+> VoiceCrew is a free, browser-based real-time voice chat for gaming teams.
 > There is nothing to install and no account to create: enter a name and a
 > shared game ID, join, and talk with your team over crystal-clear voice.
 > Invite others simply by sharing the page URL. The interface is available in
@@ -31,19 +31,19 @@
 
 ## Pages
 
-- Home / landing (usage guide): https://voiceparty.lol/
-- Join a voice room: https://voiceparty.lol/join
+- Home / landing (usage guide): https://voicecrew.gg/
+- Join a voice room: https://voicecrew.gg/join
 
 ## Languages
 
 The UI defaults to English and is also available in Japanese and Korean via
 language-prefixed URLs:
 
-- English (default): https://voiceparty.lol/ and https://voiceparty.lol/join
-- 日本語 (Japanese): https://voiceparty.lol/ja and https://voiceparty.lol/ja/join
-- 한국어 (Korean): https://voiceparty.lol/ko and https://voiceparty.lol/ko/join
+- English (default): https://voicecrew.gg/ and https://voicecrew.gg/join
+- 日本語 (Japanese): https://voicecrew.gg/ja and https://voicecrew.gg/ja/join
+- 한국어 (Korean): https://voicecrew.gg/ko and https://voicecrew.gg/ko/join
 
 ## Notes
 
-- Voice Party is an independent project and is not affiliated with, endorsed by,
+- VoiceCrew is an independent project and is not affiliated with, endorsed by,
   or sponsored by Riot Games.

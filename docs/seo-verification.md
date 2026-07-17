@@ -20,19 +20,19 @@ How to verify the SEO and AI-optimization setup after deploying.
 
 ## Quick checks (after deploy)
 
-Replace `voiceparty.lol` with the deployed host.
+Replace `voicecrew.gg` with the deployed host.
 
 ```sh
 # Localized title + hreflang are injected by the edge middleware
-curl -s https://voiceparty.lol/    | grep -Ei '<title>|hreflang|og:locale'
-curl -s https://voiceparty.lol/ja  | grep -Ei '<title>|hreflang|og:locale'
-curl -s https://voiceparty.lol/ko  | grep -Ei '<title>|hreflang|og:locale'
+curl -s https://voicecrew.gg/    | grep -Ei '<title>|hreflang|og:locale'
+curl -s https://voicecrew.gg/ja  | grep -Ei '<title>|hreflang|og:locale'
+curl -s https://voicecrew.gg/ko  | grep -Ei '<title>|hreflang|og:locale'
 
 # Crawler files resolve
-curl -sI https://voiceparty.lol/robots.txt
-curl -sI https://voiceparty.lol/sitemap.xml
-curl -sI https://voiceparty.lol/llms.txt
-curl -sI https://voiceparty.lol/og-image.png
+curl -sI https://voicecrew.gg/robots.txt
+curl -sI https://voicecrew.gg/sitemap.xml
+curl -sI https://voicecrew.gg/llms.txt
+curl -sI https://voicecrew.gg/og-image.png
 ```
 
 Expect the `/ja` and `/ko` responses to show the localized `<title>`,
@@ -42,7 +42,7 @@ Expect the `/ja` and `/ko` responses to show the localized `<title>`,
 ## Validators
 
 - **Rich Results Test** — https://search.google.com/test/rich-results
-  Enter `https://voiceparty.lol/` and confirm the `HowTo` (and
+  Enter `https://voicecrew.gg/` and confirm the `HowTo` (and
   `WebApplication`) items are detected without errors.
 - **Schema Markup Validator** — https://validator.schema.org/
   Paste the page URL or the JSON-LD to validate both blocks.

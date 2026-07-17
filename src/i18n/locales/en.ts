@@ -3,7 +3,7 @@ import type { TranslationResources } from "./ja";
 export const en: TranslationResources = {
 	landing: {
 		eyebrow: "Browser voice · No install",
-		title: "Partyline",
+		title: "VoiceCrew",
 		headline: "The call before you commit.",
 		lead: "Found a duo in LFG? Stacking five for the weekend? Send one link and hear them on voice — before anyone trades a Discord.",
 		ctaStart: "Start a room",
@@ -23,13 +23,13 @@ export const en: TranslationResources = {
 			invite: "+ invite",
 			footNote: "3 on the line · randoms muted",
 			ariaLabel:
-				"A Partyline room: three people connected, one speaking, two open seats.",
+				"A VoiceCrew room: three people connected, one speaking, two open seats.",
 		},
 		why: {
 			eyebrow: "The idea",
 			heading:
 				"Solo queue? Mute all is correct. The crew you chose? Different story.",
-			body: "Partyline doesn't fight mute culture — it lives on the other side of it. Nobody wants voice with four randoms. Everybody wants it with the people they picked.",
+			body: "VoiceCrew doesn't fight mute culture — it lives on the other side of it. Nobody wants voice with four randoms. Everybody wants it with the people they picked.",
 			cold: {
 				tag: "/mute all",
 				title: "The lobby of strangers",
@@ -93,7 +93,7 @@ export const en: TranslationResources = {
 			ctaStart: "Start a room",
 			ctaHow: "See how it works",
 		},
-		footer: "© {{year}} Partyline.",
+		footer: "© {{year}} VoiceCrew.",
 	},
 	app: {
 		subtitle: "Real-time voice chat",
@@ -127,7 +127,7 @@ export const en: TranslationResources = {
 		shareOnX: "Share on X",
 		linkCopied: "Link copied",
 		shareText:
-			"🎮 Jumping into Partyline for some crystal-clear voice chat — come play with me! 👉",
+			"🎮 Jumping into VoiceCrew for some crystal-clear voice chat — come play with me! 👉",
 		safetyNote:
 			"🔒 Voice is never recorded. You may be talking with strangers — don't share personal information, and mute, report, or leave if you feel uncomfortable.",
 		noiseSuppression: "Noise suppression",
@@ -176,7 +176,7 @@ export const en: TranslationResources = {
 	},
 	legal: {
 		disclaimer:
-			"Partyline isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
+			"VoiceCrew isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
 		updated: "Last updated: July 16, 2026",
 		nav: {
 			home: "Home",
@@ -186,7 +186,7 @@ export const en: TranslationResources = {
 		privacy: {
 			title: "Privacy Policy",
 			intro:
-				'This policy describes how VoiceParty.lol (the "Service") handles personal information. It follows Japan\'s Act on the Protection of Personal Information (APPI), where the operator is based, and also accommodates users under the GDPR (EEA) and CCPA (California).',
+				'This policy describes how VoiceCrew (the "Service") handles personal information. It follows Japan\'s Act on the Protection of Personal Information (APPI), where the operator is based, and also accommodates users under the GDPR (EEA) and CCPA (California).',
 			sections: [
 				{
 					heading: "1. Information we collect and why",
@@ -249,7 +249,7 @@ export const en: TranslationResources = {
 		terms: {
 			title: "Terms of Service",
 			intro:
-				'These Terms of Service (the "Terms") govern your use of VoiceParty.lol (the "Service"). By using the Service, you agree to these Terms.',
+				'These Terms of Service (the "Terms") govern your use of VoiceCrew (the "Service"). By using the Service, you agree to these Terms.',
 			sections: [
 				{
 					heading: "1. Scope and acceptance",

@@ -1,7 +1,7 @@
 export const ja = {
 	landing: {
 		eyebrow: "ブラウザ音声 · インストール不要",
-		title: "Partyline",
+		title: "VoiceCrew",
 		headline: "合流を決める、その前の一声。",
 		lead: "LFGで見つけたデュオと。週末に組む5人と。リンクをひとつ送るだけで、Discordを交換する前に声で確かめられる。",
 		ctaStart: "ルームを作る",
@@ -20,12 +20,12 @@ export const ja = {
 			connected: "接続済み",
 			invite: "+ 招待",
 			footNote: "3人が通話中 · 野良はミュート",
-			ariaLabel: "Partyline のルーム：3人が接続中、1人が発話中、空席が2つ。",
+			ariaLabel: "VoiceCrew のルーム：3人が接続中、1人が発話中、空席が2つ。",
 		},
 		why: {
 			eyebrow: "コンセプト",
 			heading: "ソロキューなら「全員ミュート」で正解。選んだ仲間なら、話は別。",
-			body: "Partyline はミュート文化と戦いません。その向こう側に立ちます。知らない4人との通話は誰も望まない。でも、自分で選んだ相手となら、みんな話したい。",
+			body: "VoiceCrew はミュート文化と戦いません。その向こう側に立ちます。知らない4人との通話は誰も望まない。でも、自分で選んだ相手となら、みんな話したい。",
 			cold: {
 				tag: "/mute all",
 				title: "知らない人ばかりのロビー",
@@ -89,7 +89,7 @@ export const ja = {
 			ctaStart: "ルームを作る",
 			ctaHow: "使い方を見る",
 		},
-		footer: "© {{year}} Partyline.",
+		footer: "© {{year}} VoiceCrew.",
 	},
 	app: {
 		subtitle: "リアルタイム・ボイスチャット",
@@ -124,7 +124,7 @@ export const ja = {
 		shareOnX: "X で共有",
 		linkCopied: "リンクをコピーしました",
 		shareText:
-			"🎮 Partyline でワイワイ通話しながら遊んでるよ！このリンクから合流してね👉",
+			"🎮 VoiceCrew でワイワイ通話しながら遊んでるよ！このリンクから合流してね👉",
 		safetyNote:
 			"🔒 音声は録音されません。見知らぬ相手と話す場合があります。個人情報は共有せず、不快なときはミュート・通報・退出で自衛してください。",
 		noiseSuppression: "ノイズ抑制",
@@ -175,7 +175,7 @@ export const ja = {
 		// Riot's required boilerplate is a legal notice kept in English across all
 		// locales, as mandated by the Riot Developer Policies.
 		disclaimer:
-			"Partyline isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
+			"VoiceCrew isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
 		updated: "最終更新日: 2026年7月16日",
 		nav: {
 			home: "ホーム",
@@ -185,7 +185,7 @@ export const ja = {
 		privacy: {
 			title: "プライバシーポリシー",
 			intro:
-				"VoiceParty.lol（以下「本サービス」）における個人情報の取扱いについて定めます。運営者所在地である日本の個人情報保護法を基準とし、欧州（GDPR）および米国カリフォルニア州（CCPA）の利用者にも配慮します。",
+				"VoiceCrew（以下「本サービス」）における個人情報の取扱いについて定めます。運営者所在地である日本の個人情報保護法を基準とし、欧州（GDPR）および米国カリフォルニア州（CCPA）の利用者にも配慮します。",
 			sections: [
 				{
 					heading: "1. 取得する情報と利用目的",
@@ -248,7 +248,7 @@ export const ja = {
 		terms: {
 			title: "利用規約",
 			intro:
-				"本利用規約（以下「本規約」）は、VoiceParty.lol（以下「本サービス」）の利用条件を定めるものです。利用者は本規約に同意のうえ本サービスを利用するものとします。",
+				"本利用規約（以下「本規約」）は、VoiceCrew（以下「本サービス」）の利用条件を定めるものです。利用者は本規約に同意のうえ本サービスを利用するものとします。",
 			sections: [
 				{
 					heading: "1. 適用・同意",

@@ -1,6 +1,6 @@
 # Riot Games コンプライアンス自己監査
 
-本サービス「VoiceParty.lol」（以下「本サービス」）は Riot Games の API・知的財産を利用する第三者アプリケーションである。[Riot General Policies](https://developer.riotgames.com/policies/general) および [API Terms & Conditions](https://developer.riotgames.com/terms) への適合状況を記録する。
+本サービス「VoiceCrew」（以下「本サービス」）は Riot Games の API・知的財産を利用する第三者アプリケーションである。[Riot General Policies](https://developer.riotgames.com/policies/general) および [API Terms & Conditions](https://developer.riotgames.com/terms) への適合状況を記録する。
 
 - 最終監査日: 2026-07-16
 - 関連 issue: #39 ／ 連動: #19（RSO）
@@ -9,7 +9,7 @@
 
 Riot が要求する定型文を、全ページのフッターに掲示済み（英語原文・商標帰属を含む）。
 
-> VoiceParty.lol isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+> VoiceCrew isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
 
 - 実装: `src/components/SiteFooter.tsx`（`legal.disclaimer`、ja/en/ko 共通で英語原文を表示）。
 - 掲示範囲: 全ルート（AppShell 経由でフッターを全ページに表示）。
@@ -35,7 +35,7 @@ Riot が要求する定型文を、全ページのフッターに掲示済み（
 | プロフィールアイコン | Data Dragon（`ddragon.leagueoflegends.com`）の公開 CDN のみ使用（`functions/api/_lib/riot.ts`） |
 | Riot ロゴ／Press Kit 素材 | 未使用（本サービスは Riot の商標ロゴを表示しない） |
 | ゲームとの外観・機能の類似 | 非該当（ボイスチャット UI であり、Riot 製品を模していない） |
-| 名称・ドメイン | 「VoiceParty.lol」。Riot 公式サービスとの提携・承認を示唆しない。ディスクレーマーで非提携を明示。**留意**: `.lol` TLD は "League of Legends" を想起させ得るため、Riot から指摘があれば別 TLD への移行を運用リスクとして想定する |
+| 名称・ドメイン | 「VoiceCrew」。Riot 公式サービスとの提携・承認を示唆しない。ディスクレーマーで非提携を明示。**留意**: `.lol` TLD は "League of Legends" を想起させ得るため、Riot から指摘があれば別 TLD への移行を運用リスクとして想定する |
 
 ## 4. API / RSO 運用
 

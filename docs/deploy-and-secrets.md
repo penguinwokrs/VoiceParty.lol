@@ -1,7 +1,7 @@
 # Deployment & secrets
 
-VoiceParty is a Cloudflare **Pages** project (`voiceparty`, served at
-`voiceparty.pages.dev`). No Terraform — the repo config is `wrangler.toml`.
+VoiceCrew is a Cloudflare **Pages** project (`voiceparty`, served at
+`voicecrew.pages.dev`). No Terraform — the repo config is `wrangler.toml`.
 
 ## Deployment
 
@@ -53,7 +53,7 @@ value).
 ## Verify production
 
 ```bash
-curl -s -X POST https://voiceparty.pages.dev/api/sessions/probe-1/join \
+curl -s -X POST https://voicecrew.pages.dev/api/sessions/probe-1/join \
   -H 'Content-Type: application/json' -d '{"summonerId":"AAA#JP1"}'
 # realtime.token should be a long JWT (not "mock-token") and meetingId a real UUID.
 ```

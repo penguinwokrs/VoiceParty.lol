@@ -3,7 +3,7 @@ import type { TranslationResources } from "./ja";
 export const ko: TranslationResources = {
 	landing: {
 		eyebrow: "브라우저 음성 · 설치 불필요",
-		title: "Partyline",
+		title: "VoiceCrew",
 		headline: "합류를 정하기 전, 그 한마디.",
 		lead: "LFG에서 찾은 듀오와. 주말에 함께할 5인과. 링크 하나만 보내면 Discord를 교환하기 전에 목소리로 확인할 수 있습니다.",
 		ctaStart: "방 만들기",
@@ -22,13 +22,13 @@ export const ko: TranslationResources = {
 			connected: "연결됨",
 			invite: "+ 초대",
 			footNote: "3명 통화 중 · 모르는 사람은 음소거",
-			ariaLabel: "Partyline 방: 3명 연결, 1명 발언 중, 빈자리 2개.",
+			ariaLabel: "VoiceCrew 방: 3명 연결, 1명 발언 중, 빈자리 2개.",
 		},
 		why: {
 			eyebrow: "콘셉트",
 			heading:
 				"솔로 큐라면 '전체 음소거'가 정답. 직접 고른 팀이라면, 이야기가 다릅니다.",
-			body: "Partyline은 음소거 문화와 싸우지 않습니다. 그 반대편에 섭니다. 모르는 4명과의 음성은 아무도 원하지 않습니다. 하지만 직접 고른 상대와는 모두가 이야기하고 싶어 합니다.",
+			body: "VoiceCrew은 음소거 문화와 싸우지 않습니다. 그 반대편에 섭니다. 모르는 4명과의 음성은 아무도 원하지 않습니다. 하지만 직접 고른 상대와는 모두가 이야기하고 싶어 합니다.",
 			cold: {
 				tag: "/mute all",
 				title: "낯선 사람들의 로비",
@@ -92,7 +92,7 @@ export const ko: TranslationResources = {
 			ctaStart: "방 만들기",
 			ctaHow: "사용법 보기",
 		},
-		footer: "© {{year}} Partyline.",
+		footer: "© {{year}} VoiceCrew.",
 	},
 	app: {
 		subtitle: "실시간 음성 채팅",
@@ -127,7 +127,7 @@ export const ko: TranslationResources = {
 		shareOnX: "X에 공유",
 		linkCopied: "링크를 복사했습니다",
 		shareText:
-			"🎮 Partyline에서 음성 채팅하며 놀고 있어요! 이 링크로 같이 놀아요 👉",
+			"🎮 VoiceCrew에서 음성 채팅하며 놀고 있어요! 이 링크로 같이 놀아요 👉",
 		safetyNote:
 			"🔒 음성은 녹음되지 않습니다. 낯선 상대와 대화할 수 있으니 개인정보를 공유하지 말고, 불편하면 음소거・신고・퇴장으로 자신을 보호하세요.",
 		noiseSuppression: "노이즈 억제",
@@ -176,7 +176,7 @@ export const ko: TranslationResources = {
 	},
 	legal: {
 		disclaimer:
-			"Partyline isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
+			"VoiceCrew isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
 		updated: "최종 업데이트: 2026년 7월 16일",
 		nav: {
 			home: "홈",
@@ -186,7 +186,7 @@ export const ko: TranslationResources = {
 		privacy: {
 			title: "개인정보 처리방침",
 			intro:
-				'본 방침은 VoiceParty.lol(이하 "본 서비스")의 개인정보 취급에 대해 규정합니다. 운영자 소재지인 일본의 개인정보보호법(APPI)을 기준으로 하며, 유럽(GDPR) 및 미국 캘리포니아주(CCPA) 이용자도 배려합니다.',
+				'본 방침은 VoiceCrew(이하 "본 서비스")의 개인정보 취급에 대해 규정합니다. 운영자 소재지인 일본의 개인정보보호법(APPI)을 기준으로 하며, 유럽(GDPR) 및 미국 캘리포니아주(CCPA) 이용자도 배려합니다.',
 			sections: [
 				{
 					heading: "1. 수집하는 정보와 이용 목적",
@@ -249,7 +249,7 @@ export const ko: TranslationResources = {
 		terms: {
 			title: "이용약관",
 			intro:
-				'본 이용약관(이하 "본 약관")은 VoiceParty.lol(이하 "본 서비스")의 이용 조건을 정합니다. 이용자는 본 약관에 동의한 후 본 서비스를 이용하는 것으로 합니다.',
+				'본 이용약관(이하 "본 약관")은 VoiceCrew(이하 "본 서비스")의 이용 조건을 정합니다. 이용자는 본 약관에 동의한 후 본 서비스를 이용하는 것으로 합니다.',
 			sections: [
 				{
 					heading: "1. 적용・동의",

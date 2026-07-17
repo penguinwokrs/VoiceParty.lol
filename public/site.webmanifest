@@ -1,6 +1,6 @@
 {
-	"name": "Partyline",
-	"short_name": "Partyline",
+	"name": "VoiceCrew",
+	"short_name": "VoiceCrew",
 	"description": "Free, browser-based real-time voice chat for gaming teams. No install, no sign-up.",
 	"start_url": "/",
 	"scope": "/",

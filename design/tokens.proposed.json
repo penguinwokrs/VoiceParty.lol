@@ -1,0 +1,95 @@
+{
+	"$description": "PROPOSED rebrand tokens (W3C DTCG) — theme 'Signal on Ink'. Cool ink base with a single warm signature (Ember) reserved for live/voice states. Replaces the current LoL-derived Hextech gold/teal palette (compliance fix). NOTE: key names change (brand.gold/teal/hextech -> brand.ember*, shadow.glowTeal/Gold -> glowEmber); src/theme/index.ts references must be updated in the same change. See issue for steps. This file is non-breaking until copied over design/tokens.json.",
+	"color": {
+		"brand": {
+			"ember": { "$type": "color", "$value": "#FF6A3D" },
+			"emberHover": { "$type": "color", "$value": "#FF7E56" },
+			"emberPress": { "$type": "color", "$value": "#E5522A" }
+		},
+		"bg": {
+			"base": { "$type": "color", "$value": "#0B0E13" },
+			"gradientTop": { "$type": "color", "$value": "#12161F" },
+			"surface": { "$type": "color", "$value": "#151A22" },
+			"surfaceHover": { "$type": "color", "$value": "#1C232E" }
+		},
+		"border": {
+			"subtle": { "$type": "color", "$value": "rgba(255, 255, 255, 0.08)" },
+			"strong": { "$type": "color", "$value": "rgba(255, 255, 255, 0.16)" }
+		},
+		"text": {
+			"primary": { "$type": "color", "$value": "#F2F4F7" },
+			"secondary": { "$type": "color", "$value": "#A7B0BD" },
+			"muted": { "$type": "color", "$value": "rgba(242, 244, 247, 0.45)" },
+			"onEmber": { "$type": "color", "$value": "#0B0E13" }
+		},
+		"state": {
+			"cool": { "$type": "color", "$value": "#5B6675" },
+			"success": { "$type": "color", "$value": "#22C55E" },
+			"warning": { "$type": "color", "$value": "#F59E0B" },
+			"error": { "$type": "color", "$value": "#F43F5E" }
+		},
+		"semantic": {
+			"primary": { "$type": "color", "$value": "{color.brand.ember}" },
+			"secondary": { "$type": "color", "$value": "{color.text.primary}" }
+		}
+	},
+	"space": {
+		"1": { "$type": "dimension", "$value": "4px" },
+		"2": { "$type": "dimension", "$value": "8px" },
+		"3": { "$type": "dimension", "$value": "12px" },
+		"4": { "$type": "dimension", "$value": "16px" },
+		"6": { "$type": "dimension", "$value": "24px" },
+		"8": { "$type": "dimension", "$value": "32px" },
+		"12": { "$type": "dimension", "$value": "48px" },
+		"16": { "$type": "dimension", "$value": "64px" }
+	},
+	"radius": {
+		"sm": { "$type": "dimension", "$value": "8px" },
+		"md": { "$type": "dimension", "$value": "12px" },
+		"lg": { "$type": "dimension", "$value": "20px" },
+		"pill": { "$type": "dimension", "$value": "999px" }
+	},
+	"shadow": {
+		"card": { "$type": "shadow", "$value": "0 8px 24px rgba(0, 0, 0, 0.40)" },
+		"cardHover": {
+			"$type": "shadow",
+			"$value": "0 12px 32px rgba(0, 0, 0, 0.50)"
+		},
+		"glowEmber": {
+			"$type": "shadow",
+			"$value": "0 0 0 3px rgba(255, 106, 61, 0.28), 0 0 20px rgba(255, 106, 61, 0.35)"
+		}
+	},
+	"font": {
+		"family": {
+			"display": {
+				"$type": "fontFamily",
+				"$value": "'Space Grotesk', 'Noto Sans JP', 'Noto Sans KR', system-ui, sans-serif"
+			},
+			"base": {
+				"$type": "fontFamily",
+				"$value": "'Inter', 'Noto Sans JP', 'Noto Sans KR', system-ui, sans-serif"
+			},
+			"mono": {
+				"$type": "fontFamily",
+				"$value": "'JetBrains Mono', 'Noto Sans JP', monospace"
+			}
+		},
+		"weight": {
+			"regular": { "$type": "number", "$value": "400" },
+			"medium": { "$type": "number", "$value": "500" },
+			"semibold": { "$type": "number", "$value": "600" },
+			"bold": { "$type": "number", "$value": "700" }
+		},
+		"size": {
+			"displayXL": { "$type": "dimension", "$value": "48px" },
+			"h1": { "$type": "dimension", "$value": "36px" },
+			"h2": { "$type": "dimension", "$value": "28px" },
+			"h3": { "$type": "dimension", "$value": "22px" },
+			"bodyL": { "$type": "dimension", "$value": "18px" },
+			"bodyM": { "$type": "dimension", "$value": "16px" },
+			"bodyS": { "$type": "dimension", "$value": "14px" },
+			"caption": { "$type": "dimension", "$value": "13px" }
+		}
+	}
+}
