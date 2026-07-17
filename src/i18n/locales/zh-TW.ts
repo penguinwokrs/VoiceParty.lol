@@ -24,7 +24,7 @@ export const zhTW: PartialTranslationResources = {
 		trust: {
 			noDownload: "免下載",
 			browser: "瀏覽器就能用",
-			muted: "路人進不來",
+			muted: "比信號更快",
 		},
 		panel: {
 			ariaLabel:

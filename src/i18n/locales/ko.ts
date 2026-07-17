@@ -11,7 +11,7 @@ export const ko: TranslationResources = {
 		trust: {
 			noDownload: "다운로드 불필요",
 			browser: "브라우저만으로 완결",
-			muted: "모르는 사람은 못 들어옴",
+			muted: "핑보다 빠르게",
 		},
 		panel: {
 			ariaLabel:

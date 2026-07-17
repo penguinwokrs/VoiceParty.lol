@@ -11,7 +11,7 @@ export const en: TranslationResources = {
 		trust: {
 			noDownload: "No download",
 			browser: "Works in the browser",
-			muted: "Randoms can't get in",
+			muted: "Faster than pings",
 		},
 		panel: {
 			ariaLabel:

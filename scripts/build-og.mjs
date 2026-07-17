@@ -54,7 +54,7 @@ const LOCALES = [
 		lang: "en",
 		headline: "The call before you commit.",
 		lead: "Send one link and hear them on voice — before anyone trades a Discord.",
-		trust: ["No download", "Works in the browser", "Randoms can't get in"],
+		trust: ["No download", "Works in the browser", "Faster than pings"],
 	},
 	{
 		id: "ja",
@@ -62,7 +62,7 @@ const LOCALES = [
 		lang: "ja",
 		headline: "合流を決める、その前の一声。",
 		lead: "リンクをひとつ送るだけ。Discordを交換する前に、声で確かめられる。",
-		trust: ["ダウンロード不要", "ブラウザだけで完結", "野良は入って来ない"],
+		trust: ["ダウンロード不要", "ブラウザだけで完結", "ピンより速い"],
 	},
 	{
 		id: "ko",
@@ -70,11 +70,7 @@ const LOCALES = [
 		lang: "ko",
 		headline: "합류를 정하기 전, 그 한마디.",
 		lead: "링크 하나만 보내면 Discord를 교환하기 전에 목소리로 확인할 수 있습니다.",
-		trust: [
-			"다운로드 불필요",
-			"브라우저만으로 완결",
-			"모르는 사람은 못 들어옴",
-		],
+		trust: ["다운로드 불필요", "브라우저만으로 완결", "핑보다 빠르게"],
 	},
 	{
 		id: "zh-TW",
@@ -82,7 +78,7 @@ const LOCALES = [
 		lang: "zh-Hant-TW",
 		headline: "決定組隊前，先聽一句。",
 		lead: "傳一條連結，在交換 Discord 之前先用語音確認彼此。",
-		trust: ["免下載", "瀏覽器就能用", "路人進不來"],
+		trust: ["免下載", "瀏覽器就能用", "比信號更快"],
 	},
 ];
 

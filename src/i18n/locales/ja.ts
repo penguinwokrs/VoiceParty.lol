@@ -9,7 +9,7 @@ export const ja = {
 		trust: {
 			noDownload: "ダウンロード不要",
 			browser: "ブラウザだけで完結",
-			muted: "野良は入って来ない",
+			muted: "ピンより速い",
 		},
 		panel: {
 			ariaLabel:
