@@ -96,10 +96,6 @@ export const en: TranslationResources = {
 		summonerIdPlaceholder: "Faker#KR1",
 		summonerIdHelp:
 			"Formerly your Summoner Name. It ends with a #tag — find it on your profile in the top right of the game client.",
-		gameId: "Game ID",
-		gameIdPlaceholder: "e.g. friday-ranked",
-		gameIdHelp:
-			"A password you agree on with your friends. Everyone who types the same one lands in the same room. If it doesn't exist yet, it's created.",
 		region: "Region",
 		regionPlaceholder: "Select your region",
 		regionFromLink:
@@ -149,7 +145,7 @@ export const en: TranslationResources = {
 		},
 	},
 	errors: {
-		idsRequired: "Summoner name and game ID are required",
+		idsRequired: "Riot ID is required",
 		joinFailed: "Failed to join session",
 		voiceConnectionFailed:
 			"Joined session but voice connection failed (check console/creds)",

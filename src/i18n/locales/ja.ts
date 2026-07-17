@@ -93,10 +93,6 @@ export const ja = {
 		summonerIdPlaceholder: "Faker#KR1",
 		summonerIdHelp:
 			"旧「サモナーネーム」です。名前の後ろに #タグ が付きます。ゲームクライアント右上のプロフィールで確認できます。",
-		gameId: "ゲームID",
-		gameIdPlaceholder: "例: yoru-no-ranked",
-		gameIdHelp:
-			"仲間と決める合い言葉です。同じものを入れた人同士が同じルームに入ります。まだ無ければ新しく作られます。",
 		region: "リージョン",
 		regionPlaceholder: "リージョンを選択",
 		regionFromLink:
@@ -147,7 +143,7 @@ export const ja = {
 		},
 	},
 	errors: {
-		idsRequired: "サモナー名とゲームIDを入力してください",
+		idsRequired: "Riot ID を入力してください",
 		joinFailed: "セッションへの参加に失敗しました",
 		voiceConnectionFailed:
 			"セッションには参加しましたが、音声接続に失敗しました（コンソール／認証情報を確認してください）",

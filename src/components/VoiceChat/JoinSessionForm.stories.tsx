@@ -17,12 +17,10 @@ const meta = {
 	parameters: { layout: "centered" },
 	args: {
 		summonerId: "",
-		sessionId: "",
 		region: "",
 		loading: false,
 		error: "",
 		onSummonerIdChange: fn(),
-		onSessionIdChange: fn(),
 		onRegionChange: fn(),
 		onJoin: fn(),
 	},
@@ -34,22 +32,22 @@ type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
 
 export const Filled: Story = {
-	args: { summonerId: "Nova#JP1", sessionId: "GAME-1234", region: "jp1" },
+	args: { summonerId: "Nova#JP1", region: "jp1" },
 };
 
 export const Loading: Story = {
 	args: {
 		summonerId: "Nova#JP1",
-		sessionId: "GAME-1234",
 		region: "jp1",
 		loading: true,
 	},
 };
 
 export const WithError: Story = {
-	args: { error: "Summoner name and game ID are required" },
+	args: { error: "Riot ID is required" },
 };
 
-export const SessionLocked: Story = {
-	args: { sessionId: "GAME-1234", disableSessionInput: true },
+// Following an invite link pins the region: you can't play across platforms.
+export const RegionLocked: Story = {
+	args: { summonerId: "Nova#JP1", region: "jp1", disableRegionInput: true },
 };

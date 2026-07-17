@@ -67,30 +67,24 @@ const isAgeConfirmed = (): boolean => {
 
 type JoinSessionFormProps = {
 	summonerId: string;
-	sessionId: string;
 	region: string;
 	loading: boolean;
 	error: string;
 	onSummonerIdChange: (summonerId: string) => void;
-	onSessionIdChange: (sessionId: string) => void;
 	onRegionChange: (region: string) => void;
 	onJoin: () => void;
-	disableSessionInput?: boolean;
 	/** The invite link fixed the region — you can't play across platforms. */
 	disableRegionInput?: boolean;
 };
 
 export const JoinSessionForm = ({
 	summonerId,
-	sessionId,
 	region,
 	loading,
 	error,
 	onSummonerIdChange,
-	onSessionIdChange,
 	onRegionChange,
 	onJoin,
-	disableSessionInput,
 	disableRegionInput,
 }: JoinSessionFormProps) => {
 	const { t, i18n } = useTranslation();
@@ -183,26 +177,11 @@ export const JoinSessionForm = ({
 						}}
 					/>
 
-					<TextField
-						label={t("join.gameId")}
-						value={sessionId}
-						onChange={(e) => onSessionIdChange(e.target.value)}
-						fullWidth
-						placeholder={t("join.gameIdPlaceholder")}
-						disabled={disableSessionInput}
-						slotProps={{
-							input: {
-								endAdornment: <FieldHelp text={t("join.gameIdHelp")} />,
-							},
-							inputLabel: { shrink: true },
-						}}
-					/>
-
 					<Button
 						fullWidth
 						variant="contained"
 						onClick={handleJoinClick}
-						disabled={loading || !summonerId || !sessionId || !region}
+						disabled={loading || !summonerId || !region}
 					>
 						{loading ? (
 							<CircularProgress size={24} color="inherit" />

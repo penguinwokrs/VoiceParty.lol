@@ -108,10 +108,6 @@ export const zhTW: PartialTranslationResources = {
 		summonerIdPlaceholder: "Faker#KR1",
 		summonerIdHelp:
 			"就是以前的「召喚師名稱」。名稱後面會加上 #標籤，可在遊戲客戶端右上角的個人檔案中確認。",
-		gameId: "遊戲 ID",
-		gameIdPlaceholder: "例如: friday-ranked",
-		gameIdHelp:
-			"和隊友約定的通關密語。輸入相同內容的人會進到同一個房間；還不存在的話就會建立新的。",
 		region: "伺服器",
 		regionPlaceholder: "選擇你的伺服器",
 		regionFromLink: "由邀請連結指定——不同伺服器無法一起遊玩",
@@ -158,7 +154,7 @@ export const zhTW: PartialTranslationResources = {
 		},
 	},
 	errors: {
-		idsRequired: "請輸入召喚師名稱與遊戲 ID",
+		idsRequired: "請輸入 Riot ID",
 		joinFailed: "加入工作階段失敗",
 		voiceConnectionFailed:
 			"已加入工作階段，但語音連線失敗（請檢查主控台／憑證）",

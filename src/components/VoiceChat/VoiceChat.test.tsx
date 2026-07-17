@@ -30,10 +30,11 @@ describe("VoiceChat", () => {
 		expect(screen.getByText("Voice Chat")).toBeInTheDocument();
 		expect(screen.getByLabelText("Riot ID")).toBeInTheDocument();
 		expect(screen.getByLabelText("Region")).toBeInTheDocument();
-		expect(screen.getByLabelText("Game ID")).toBeInTheDocument();
+		// The room ID is generated, so there is no field to type it into.
+		expect(screen.queryByLabelText("Game ID")).not.toBeInTheDocument();
 	});
 
-	it("Join Game button is disabled without User ID or Game ID", () => {
+	it("Join Game button is disabled without a Riot ID", () => {
 		vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
 		render(
 			<MemoryRouter>
@@ -56,11 +57,6 @@ describe("VoiceChat", () => {
 		const userInput = screen.getByLabelText("Riot ID") as HTMLInputElement;
 		fireEvent.change(userInput, { target: { value: "test-user" } });
 		expect(userInput.value).toBe("test-user");
-		expect(joinBtn).toBeDisabled(); // Still disabled, no Game ID
-
-		const sessionInput = screen.getByLabelText("Game ID") as HTMLInputElement;
-		fireEvent.change(sessionInput, { target: { value: "test-session" } });
-		expect(sessionInput.value).toBe("test-session");
 		expect(joinBtn).toBeDisabled(); // Still disabled, no region
 
 		// Pick a region from the suggestions.
@@ -103,9 +99,7 @@ describe("VoiceChat", () => {
 		const userInput = screen.getByLabelText("Riot ID");
 		fireEvent.change(userInput, { target: { value: "test-user" } });
 
-		const sessionInput = screen.getByLabelText("Game ID");
-		fireEvent.change(sessionInput, { target: { value: "session-123" } });
-
+		// The room comes from the invite link in the URL, not from a field.
 		fireEvent.mouseDown(screen.getByLabelText("Region"));
 		fireEvent.click(await screen.findByText("Korea (KR)"));
 
@@ -203,6 +197,35 @@ describe("VoiceChat", () => {
 		});
 	});
 
+	// Regression: a returning player has a stored Riot ID, which used to be
+	// enough for a shared link to drop them straight into a live call — mic on,
+	// before they ever saw the form. Arriving must land on the form; the stored
+	// name only prefills it.
+	it("does not auto-join from a shared link, even with a stored Riot ID", async () => {
+		vi.spyOn(Storage.prototype, "getItem").mockImplementation((k) =>
+			k === "vp_summoner_id" ? "Nova#JP1" : k === "vp_age_ok" ? "true" : null,
+		);
+		const fetchMock = vi.fn();
+		global.fetch = fetchMock;
+
+		render(
+			<MemoryRouter initialEntries={["/join/jp1/s1"]}>
+				<Routes>
+					<Route path="/join/:region/:sessionId" element={<VoiceChat />} />
+				</Routes>
+			</MemoryRouter>,
+		);
+
+		// The form is shown, prefilled — not the in-call view.
+		const userInput = (await screen.findByLabelText(
+			"Riot ID",
+		)) as HTMLInputElement;
+		expect(userInput.value).toBe("Nova#JP1");
+		expect(screen.getByText("Join Game")).toBeInTheDocument();
+		// Nothing was joined behind their back.
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
 	it("age gate blocks users under 13 and lets 13+ through", async () => {
 		vi.spyOn(Storage.prototype, "getItem").mockReturnValue(null);
 		const setItem = vi
@@ -218,9 +241,6 @@ describe("VoiceChat", () => {
 		);
 		fireEvent.change(screen.getByLabelText("Riot ID"), {
 			target: { value: "u" },
-		});
-		fireEvent.change(screen.getByLabelText("Game ID"), {
-			target: { value: "s1" },
 		});
 		fireEvent.mouseDown(screen.getByLabelText("Region"));
 		fireEvent.click(await screen.findByText("Japan (JP)"));
