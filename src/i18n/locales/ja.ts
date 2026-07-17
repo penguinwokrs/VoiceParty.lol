@@ -25,7 +25,10 @@ export const ja = {
 				body: "マイクなし、連携なし、結構です。選んでいない相手には、沈黙こそ正しい設定。",
 			},
 			warm: {
-				tag: "on the line",
+				// `/party` is a real client command (aliases /p, /pt) whose channel is
+				// documented as "only players in the pre-made party" — exactly this
+				// card's meaning, and a true opposite to the /mute all above.
+				tag: "/party",
 				title: "自分で選んだ仲間",
 				body: "デュオも、週末のフルパも。リンクを送って、ランクを回す前に一度だけ話しておく。",
 			},
