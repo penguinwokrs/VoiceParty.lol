@@ -1,17 +1,20 @@
 import { createTheme } from "@mui/material";
 import { cssVar, tokens } from "./tokens.generated";
 
-// Refined modern-gaming theme (LoL-inspired teal/gold on deep navy), built
-// entirely from generated design tokens (design/tokens.json). Concrete values
-// are fed to createTheme so MUI can derive hover/contrast variants.
+// "Signal on Ink" theme: a cool ink base with a single warm Ember signature,
+// built entirely from generated design tokens (design/tokens.json). Concrete
+// values are fed to createTheme so MUI can derive hover/contrast variants.
 const t = tokens;
 
 export const theme = createTheme({
 	palette: {
 		mode: "dark",
-		primary: { main: t["color.brand.teal"], contrastText: t["color.bg.base"] },
+		primary: {
+			main: t["color.brand.ember"],
+			contrastText: t["color.text.onEmber"],
+		},
 		secondary: {
-			main: t["color.brand.gold"],
+			main: t["color.semantic.secondary"],
 			contrastText: t["color.bg.base"],
 		},
 		background: {
@@ -83,11 +86,11 @@ export const theme = createTheme({
 						borderColor: t["color.border.strong"],
 					},
 					"&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-						borderColor: t["color.brand.teal"],
+						borderColor: t["color.brand.ember"],
 						borderWidth: 1,
 					},
 					"&.Mui-focused": {
-						boxShadow: t["shadow.glowTeal"],
+						boxShadow: t["shadow.glowEmber"],
 					},
 				},
 			},
@@ -96,7 +99,7 @@ export const theme = createTheme({
 			styleOverrides: {
 				root: {
 					color: t["color.text.secondary"],
-					"&.Mui-focused": { color: t["color.brand.teal"] },
+					"&.Mui-focused": { color: t["color.brand.ember"] },
 				},
 			},
 		},
@@ -114,19 +117,19 @@ export const theme = createTheme({
 					},
 				},
 				containedPrimary: {
-					background: `linear-gradient(180deg, ${t["color.brand.teal"]} 0%, ${t["color.brand.tealDark"]} 100%)`,
-					color: t["color.bg.base"],
+					background: `linear-gradient(180deg, ${t["color.brand.ember"]} 0%, ${t["color.brand.emberPress"]} 100%)`,
+					color: t["color.text.onEmber"],
 					"&:hover": {
-						background: `linear-gradient(180deg, ${t["color.brand.tealHover"]} 0%, ${t["color.brand.teal"]} 100%)`,
-						boxShadow: t["shadow.glowTeal"],
+						background: `linear-gradient(180deg, ${t["color.brand.emberHover"]} 0%, ${t["color.brand.ember"]} 100%)`,
+						boxShadow: t["shadow.glowEmber"],
 					},
 				},
 				containedSecondary: {
-					background: `linear-gradient(180deg, ${t["color.brand.gold"]} 0%, ${t["color.brand.goldDark"]} 100%)`,
+					background: t["color.semantic.secondary"],
 					color: t["color.bg.base"],
 					"&:hover": {
-						background: `linear-gradient(180deg, ${t["color.brand.goldHover"]} 0%, ${t["color.brand.gold"]} 100%)`,
-						boxShadow: t["shadow.glowGold"],
+						background: t["color.text.secondary"],
+						boxShadow: t["shadow.cardHover"],
 					},
 				},
 				outlined: {

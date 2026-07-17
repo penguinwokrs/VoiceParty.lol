@@ -16,7 +16,7 @@ const PageWrapper = styled.div`
     radial-gradient(900px 520px at 50% -10%, var(--color-bg-gradientTop) 0%, transparent 60%),
     linear-gradient(180deg, var(--color-bg-gradientTop) 0%, var(--color-bg-base) 55%);
 
-  /* Subtle hextech grid, faded toward the edges. Decorative only, so it never
+  /* Subtle ink grid, faded toward the edges. Decorative only, so it never
      intercepts pointer events, and the fade uses a fixed-size mask anchored a
      fixed distance from the top so it looks the same on short and tall pages. */
   &::before {

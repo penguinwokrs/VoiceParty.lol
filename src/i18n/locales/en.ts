@@ -2,58 +2,98 @@ import type { TranslationResources } from "./ja";
 
 export const en: TranslationResources = {
 	landing: {
-		eyebrow: "Real-time voice",
-		title: "Voice Party",
-		subtitle:
-			"Gather your allies, coordinate your plays, and dominate the rift with crystal-clear voice — right in your browser.",
-		cta: "Join",
-		scrollHint: "How to",
+		eyebrow: "Browser voice · No install",
+		title: "Partyline",
+		headline: "The call before you commit.",
+		lead: "Found a duo in LFG? Stacking five for the weekend? Send one link and hear them on voice — before anyone trades a Discord.",
+		ctaStart: "Start a room",
+		ctaHow: "How it works",
+		trust: {
+			noDownload: "No download",
+			browser: "Works in the browser",
+			muted: "Randoms stay muted",
+		},
+		panel: {
+			room: "duskrunners",
+			live: "Live",
+			youName: "You",
+			youStatus: "Mic on",
+			speaking: "Speaking",
+			connected: "Connected",
+			invite: "+ invite",
+			footNote: "3 on the line · randoms muted",
+			ariaLabel:
+				"A Partyline room: three people connected, one speaking, two open seats.",
+		},
+		why: {
+			eyebrow: "The idea",
+			heading:
+				"Solo queue? Mute all is correct. The crew you chose? Different story.",
+			body: "Partyline doesn't fight mute culture — it lives on the other side of it. Nobody wants voice with four randoms. Everybody wants it with the people they picked.",
+			cold: {
+				tag: "/mute all",
+				title: "The lobby of strangers",
+				body: "No mic, no comms, no thanks. Silence is the correct setting for people you didn't choose.",
+			},
+			warm: {
+				tag: "on the line",
+				title: "The ones you picked",
+				body: "Your duo. Your five-stack for the weekend. Send them a link and warm up your voice before it counts.",
+			},
+		},
 		features: {
-			eyebrow: "Why Voice Party",
-			heading: "Features",
+			eyebrow: "What it's for",
+			heading: "One link. Two to five. Then decide.",
 			items: {
-				noInstall: {
-					title: "No install",
-					body: "Just a browser — no app downloads, no sign-ups. Open it and start talking instantly.",
+				micCheck: {
+					title: "A mic check, not a marriage",
+					body: "Audition a duo or warm up a five-stack. If the vibe's off, you're out in thirty seconds. No account, no history.",
 				},
-				clearVoice: {
-					title: "Crystal-clear voice",
-					body: "Low-noise, high-quality real-time voice. Mute and unmute with a single tap.",
+				onlyYouPick: {
+					title: "Only who you pick",
+					body: "No matchmaking with strangers. Share the room link — only people who have it get on the line with you.",
 				},
-				invite: {
-					title: "Invite by link",
-					body: "Just share the game ID URL with your allies. One click and everyone lands in the same voice chat.",
-				},
-				lowLatency: {
-					title: "Low latency",
-					body: "A globally distributed network delivers low-latency calls from anywhere in the world.",
+				beforeDiscord: {
+					title: "The step before Discord",
+					body: "Not a Discord replacement — the thing you do before you bother making a server for someone you met ten minutes ago.",
 				},
 			},
 		},
 		steps: {
 			eyebrow: "How it works",
-			heading: "Get started in 4 easy steps",
+			heading: "From link to comms in under a minute.",
 			items: {
-				enter: {
-					title: "Enter your summoner name & game ID",
-					body: 'Hit "Join," then enter your summoner name and a game ID that works as a shared passphrase. Any ID is fine as long as your allies use the same one.',
+				riotId: {
+					title: "Drop your Riot ID",
+					body: "Name#Tag, no download, straight in the browser.",
 				},
-				connect: {
-					title: "Connect to voice chat",
-					body: 'Press "Join Game" to enable your mic and connect with everyone on the same game ID.',
+				shareLink: {
+					title: "Share the room link",
+					body: "Paste it in LFG, a DM, or your stream. One tap to join.",
 				},
-				share: {
-					title: "Share the URL with allies",
-					body: "Just send your browser URL to your allies. Whoever opens the link joins the same room.",
+				micCheck: {
+					title: "Mic check",
+					body: "Talk it out. Feel the vibe. See if the comms actually click.",
 				},
-				win: {
-					title: "Strategize and win",
-					body: "Coordinate with crystal-clear voice and take over the rift. Leave anytime with one click.",
+				commit: {
+					title: "Commit — or leave",
+					body: "Add them on Discord, run it back, or bail clean. Your call.",
 				},
 			},
 		},
-		finalCta: "Let's get started",
-		footer: "© {{year}} Voice Party.",
+		safety: {
+			eyebrow: "Safety",
+			heading: "Muted by default is a feature, not a bug.",
+			body: "Every room ships with one-tap report and local mute, a 13+ age gate, and moderation built in. You choose who gets your voice — and you can take it back instantly.",
+		},
+		finalCta: {
+			eyebrow: "Ready when you are",
+			heading: "Get your crew on the line.",
+			body: "No install. No sign-up wall. Just a link and a mic check — before you commit to anyone.",
+			ctaStart: "Start a room",
+			ctaHow: "See how it works",
+		},
+		footer: "© {{year}} Partyline.",
 	},
 	app: {
 		subtitle: "Real-time voice chat",
@@ -87,7 +127,7 @@ export const en: TranslationResources = {
 		shareOnX: "Share on X",
 		linkCopied: "Link copied",
 		shareText:
-			"🎮 Jumping into VoiceParty.lol for some crystal-clear voice chat — come play with me! 👉",
+			"🎮 Jumping into Partyline for some crystal-clear voice chat — come play with me! 👉",
 		safetyNote:
 			"🔒 Voice is never recorded. You may be talking with strangers — don't share personal information, and mute, report, or leave if you feel uncomfortable.",
 		noiseSuppression: "Noise suppression",
@@ -136,7 +176,7 @@ export const en: TranslationResources = {
 	},
 	legal: {
 		disclaimer:
-			"VoiceParty.lol isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
+			"Partyline isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
 		updated: "Last updated: July 16, 2026",
 		nav: {
 			home: "Home",

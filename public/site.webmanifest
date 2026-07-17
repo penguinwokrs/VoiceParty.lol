@@ -1,12 +1,12 @@
 {
-	"name": "Voice Party",
-	"short_name": "Voice Party",
+	"name": "Partyline",
+	"short_name": "Partyline",
 	"description": "Free, browser-based real-time voice chat for gaming teams. No install, no sign-up.",
 	"start_url": "/",
 	"scope": "/",
 	"display": "standalone",
-	"background_color": "#0A1428",
-	"theme_color": "#0A1428",
+	"background_color": "#0B0E13",
+	"theme_color": "#0B0E13",
 	"lang": "en",
 	"icons": [
 		{

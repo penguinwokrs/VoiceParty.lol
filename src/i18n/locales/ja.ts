@@ -1,57 +1,95 @@
 export const ja = {
 	landing: {
-		eyebrow: "リアルタイム音声",
-		title: "Voice Party",
-		subtitle:
-			"仲間を集め、連携を決め、クリアな音声でリフトを制圧しよう。すべてブラウザだけで完結します。",
-		cta: "参加する",
-		scrollHint: "使い方",
+		eyebrow: "ブラウザ音声 · インストール不要",
+		title: "Partyline",
+		headline: "合流を決める、その前の一声。",
+		lead: "LFGで見つけたデュオと。週末に組む5人と。リンクをひとつ送るだけで、Discordを交換する前に声で確かめられる。",
+		ctaStart: "ルームを作る",
+		ctaHow: "使い方を見る",
+		trust: {
+			noDownload: "ダウンロード不要",
+			browser: "ブラウザだけで完結",
+			muted: "野良はミュートのまま",
+		},
+		panel: {
+			room: "duskrunners",
+			live: "ライブ",
+			youName: "あなた",
+			youStatus: "マイクON",
+			speaking: "発話中",
+			connected: "接続済み",
+			invite: "+ 招待",
+			footNote: "3人が通話中 · 野良はミュート",
+			ariaLabel: "Partyline のルーム：3人が接続中、1人が発話中、空席が2つ。",
+		},
+		why: {
+			eyebrow: "コンセプト",
+			heading: "ソロキューなら「全員ミュート」で正解。選んだ仲間なら、話は別。",
+			body: "Partyline はミュート文化と戦いません。その向こう側に立ちます。知らない4人との通話は誰も望まない。でも、自分で選んだ相手となら、みんな話したい。",
+			cold: {
+				tag: "/mute all",
+				title: "知らない人ばかりのロビー",
+				body: "マイクなし、連携なし、結構です。選んでいない相手には、沈黙こそ正しい設定。",
+			},
+			warm: {
+				tag: "on the line",
+				title: "自分で選んだ仲間",
+				body: "デュオも、週末の5人スタックも。リンクを送って、本番の前に声を温めておこう。",
+			},
+		},
 		features: {
-			eyebrow: "Why Voice Party",
-			heading: "特長",
+			eyebrow: "何のために",
+			heading: "リンクひとつ。2〜5人。あとは決めるだけ。",
 			items: {
-				noInstall: {
-					title: "インストール不要",
-					body: "ブラウザだけでOK。アプリのダウンロードもアカウント登録も必要ありません。開いてすぐに話せます。",
+				micCheck: {
+					title: "結婚ではなく、マイクチェック",
+					body: "デュオを試したり、5人スタックを温めたり。合わなければ30秒で抜けられる。アカウントも履歴も不要。",
 				},
-				clearVoice: {
-					title: "クリアな音声",
-					body: "低ノイズ・高音質のリアルタイム音声。ワンタップでミュートの切り替えができます。",
+				onlyYouPick: {
+					title: "入れるのは選んだ人だけ",
+					body: "知らない人とのマッチングはなし。ルームのリンクを共有すれば、それを持つ人だけが通話に入れる。",
 				},
-				invite: {
-					title: "リンクで即招待",
-					body: "ゲームIDのURLを味方に共有するだけ。ワンクリックで同じボイスチャットに集まれます。",
-				},
-				lowLatency: {
-					title: "低遅延・軽量",
-					body: "世界中に分散したネットワークで、どこからでも遅延の少ない通話を実現します。",
+				beforeDiscord: {
+					title: "Discordの、その前に",
+					body: "Discordの置き換えではありません。10分前に出会った相手のためにサーバーを作る、その前にやることです。",
 				},
 			},
 		},
 		steps: {
-			eyebrow: "How it works",
-			heading: "使い方はかんたん 4 ステップ",
+			eyebrow: "使い方",
+			heading: "リンクから通話まで、1分もかからない。",
 			items: {
-				enter: {
-					title: "サモナー名とゲームIDを入力",
-					body: "「参加」を押して、あなたのサモナー名と合言葉になるゲームIDを入力します。IDは味方と揃えれば何でもOKです。",
+				riotId: {
+					title: "Riot IDを入力",
+					body: "Name#Tag を入力。ダウンロード不要、ブラウザで直接。",
 				},
-				connect: {
-					title: "ボイスチャットに接続",
-					body: "「Join Game」を押すとマイクが有効になり、同じゲームIDの仲間と音声でつながります。",
+				shareLink: {
+					title: "ルームのリンクを共有",
+					body: "LFG、DM、配信に貼るだけ。ワンタップで参加。",
 				},
-				share: {
-					title: "URLを味方に共有",
-					body: "ブラウザのURLをそのまま味方に送るだけ。受け取った人はリンクを開くと同じ部屋に参加できます。",
+				micCheck: {
+					title: "マイクチェック",
+					body: "話してみて、空気を感じる。連携が本当に噛み合うか確かめよう。",
 				},
-				win: {
-					title: "作戦を立てて勝利へ",
-					body: "クリアな音声で連携し、リフトを制圧しましょう。退出はいつでもワンクリックです。",
+				commit: {
+					title: "合流する、あるいは抜ける",
+					body: "Discordを交換、もう一戦、あるいはきれいに離脱。あなた次第。",
 				},
 			},
 		},
-		finalCta: "さあ、始めよう",
-		footer: "© {{year}} Voice Party.",
+		safety: {
+			eyebrow: "安全性",
+			heading: "デフォルトでミュートは、バグではなく仕様。",
+			body: "すべてのルームにワンタップ通報とローカルミュート、13歳以上の年齢確認、モデレーションを標準装備。声を届ける相手はあなたが選び、いつでも取り戻せます。",
+		},
+		finalCta: {
+			eyebrow: "準備ができたら",
+			heading: "仲間を通話に集めよう。",
+			body: "インストールなし。登録の壁もなし。リンクとマイクチェックだけ——誰かに合流を決める、その前に。",
+			ctaStart: "ルームを作る",
+			ctaHow: "使い方を見る",
+		},
+		footer: "© {{year}} Partyline.",
 	},
 	app: {
 		subtitle: "リアルタイム・ボイスチャット",
@@ -86,7 +124,7 @@ export const ja = {
 		shareOnX: "X で共有",
 		linkCopied: "リンクをコピーしました",
 		shareText:
-			"🎮 VoiceParty.lol でワイワイ通話しながら遊んでるよ！このリンクから合流してね👉",
+			"🎮 Partyline でワイワイ通話しながら遊んでるよ！このリンクから合流してね👉",
 		safetyNote:
 			"🔒 音声は録音されません。見知らぬ相手と話す場合があります。個人情報は共有せず、不快なときはミュート・通報・退出で自衛してください。",
 		noiseSuppression: "ノイズ抑制",
@@ -137,7 +175,7 @@ export const ja = {
 		// Riot's required boilerplate is a legal notice kept in English across all
 		// locales, as mandated by the Riot Developer Policies.
 		disclaimer:
-			"VoiceParty.lol isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
+			"Partyline isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
 		updated: "最終更新日: 2026年7月16日",
 		nav: {
 			home: "ホーム",

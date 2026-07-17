@@ -11,8 +11,8 @@ import {
 const sample = {
 	$description: "meta ignored",
 	color: {
-		brand: { teal: { $type: "color", $value: "#0AC8B9" } },
-		semantic: { primary: { $type: "color", $value: "{color.brand.teal}" } },
+		brand: { ember: { $type: "color", $value: "#FF6A3D" } },
+		semantic: { primary: { $type: "color", $value: "{color.brand.ember}" } },
 	},
 	radius: { md: { $type: "dimension", $value: "8px" } },
 };
@@ -22,20 +22,20 @@ describe("tokens-lib", () => {
 		const leaves = flattenTokens(sample);
 		const paths = leaves.map((l) => dotPath(l.path)).sort();
 		expect(paths).toEqual([
-			"color.brand.teal",
+			"color.brand.ember",
 			"color.semantic.primary",
 			"radius.md",
 		]);
 	});
 
 	it("maps a path to a CSS variable name", () => {
-		expect(cssVarName(["color", "brand", "teal"])).toBe("--color-brand-teal");
+		expect(cssVarName(["color", "brand", "ember"])).toBe("--color-brand-ember");
 	});
 
 	it("resolves DTCG aliases to concrete values", () => {
 		const map = buildTokenMap(sample);
-		expect(map["color.semantic.primary"]).toBe("#0AC8B9");
-		expect(map["color.brand.teal"]).toBe("#0AC8B9");
+		expect(map["color.semantic.primary"]).toBe("#FF6A3D");
+		expect(map["color.brand.ember"]).toBe("#FF6A3D");
 	});
 
 	it("throws on an unknown alias reference", () => {
@@ -56,10 +56,10 @@ describe("tokens-lib", () => {
 	it("renders a :root CSS block with resolved values", () => {
 		const css = renderCss(sample);
 		expect(css).toContain(":root {");
-		expect(css).toContain("--color-brand-teal: #0AC8B9;");
-		// alias resolved, not left as {color.brand.teal}
-		expect(css).toContain("--color-semantic-primary: #0AC8B9;");
-		expect(css).not.toContain("{color.brand.teal}");
+		expect(css).toContain("--color-brand-ember: #FF6A3D;");
+		// alias resolved, not left as {color.brand.ember}
+		expect(css).toContain("--color-semantic-primary: #FF6A3D;");
+		expect(css).not.toContain("{color.brand.ember}");
 	});
 
 	it("builds var() references for each token", () => {
