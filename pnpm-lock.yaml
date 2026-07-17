@@ -32,6 +32,9 @@ importers:
       '@fontsource/noto-sans-kr':
         specifier: ^5.2.9
         version: 5.2.9
+      '@fontsource/noto-sans-tc':
+        specifier: ^5.2.9
+        version: 5.2.9
       '@fontsource/space-grotesk':
         specifier: ^5.2.10
         version: 5.2.10
@@ -1041,6 +1044,9 @@ packages:
 
   '@fontsource/noto-sans-kr@5.2.9':
     resolution: {integrity: sha512-pbF8F0rUzKkDmnk/KYGAbxjgW4TrIHdFKnV6OQ+kUC9ELCn5utrAURcEgMqq3J9SRX+FvjOz+aBCmfcC8/r7cw==}
+
+  '@fontsource/noto-sans-tc@5.2.9':
+    resolution: {integrity: sha512-Z+pXTvXYrip79lPV9X1lCYO3UTys55P25VqcifDStIzdZ86I4R6t8dz+NhGd09YdbvHWvOCB5Icw1m7glKHPNQ==}
 
   '@fontsource/space-grotesk@5.2.10':
     resolution: {integrity: sha512-XNXEbT74OIITPqw2H6HXwPDp85fy43uxfBwFR5PU+9sLnjuLj12KlhVM9nZVN6q6dlKjkuN8JisW/OBxwxgUew==}
@@ -5542,6 +5548,8 @@ snapshots:
   '@fontsource/noto-sans-jp@5.2.9': {}
 
   '@fontsource/noto-sans-kr@5.2.9': {}
+
+  '@fontsource/noto-sans-tc@5.2.9': {}
 
   '@fontsource/space-grotesk@5.2.10': {}
 

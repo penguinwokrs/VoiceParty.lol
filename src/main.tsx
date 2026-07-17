@@ -20,9 +20,14 @@ import "@fontsource/noto-sans-jp/700.css";
 import "@fontsource/noto-sans-kr/400.css";
 import "@fontsource/noto-sans-kr/500.css";
 import "@fontsource/noto-sans-kr/700.css";
+import "@fontsource/noto-sans-tc/400.css";
+import "@fontsource/noto-sans-tc/500.css";
+import "@fontsource/noto-sans-tc/700.css";
 
 // Design tokens as CSS variables (generated from design/tokens.json).
 import "./theme/tokens.generated.css";
+// Must follow the tokens: re-orders the CJK stack per <html lang>.
+import "./theme/lang-fonts.css";
 
 // Initialize i18n (ja / ko / en) before the app renders.
 import "./i18n";

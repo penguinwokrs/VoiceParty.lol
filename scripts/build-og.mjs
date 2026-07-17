@@ -1,6 +1,6 @@
-// Renders the Open Graph share cards (1200x630, EN/JA/KO) from design tokens.
+// Renders the Open Graph share cards (1200x630, EN/JA/KO/zh-TW) from tokens.
 //
-//   node scripts/build-og.mjs          # writes public/og-image{,-ja,-ko}.png
+//   node scripts/build-og.mjs          # writes public/og-image{,-ja,-ko,-zh-TW}.png
 //   node scripts/build-og.mjs --check  # fail if the PNGs are stale (CI)
 //
 // The cards are the main acquisition surface, so they must not drift from the
@@ -76,6 +76,14 @@ const LOCALES = [
 			"모르는 사람은 음소거 유지",
 		],
 	},
+	{
+		id: "zh-TW",
+		file: "og-image-zh-TW.png",
+		lang: "zh-Hant-TW",
+		headline: "決定組隊前，先聽一句。",
+		lead: "傳一條連結，在交換 Discord 之前先用語音確認彼此。",
+		trust: ["免下載", "瀏覽器就能用", "路人保持靜音"],
+	},
 ];
 
 // The mark, inlined — same geometry as src/components/BrandMark.tsx.
@@ -98,7 +106,19 @@ const FONT_CSS = [
 	"/node_modules/@fontsource/noto-sans-jp/700.css",
 	"/node_modules/@fontsource/noto-sans-kr/400.css",
 	"/node_modules/@fontsource/noto-sans-kr/700.css",
+	"/node_modules/@fontsource/noto-sans-tc/400.css",
+	"/node_modules/@fontsource/noto-sans-tc/700.css",
 ];
+
+// Han unification means JP and TC share codepoints but draw them differently
+// (説/說, 戸/戶). Whichever font comes first in the stack wins, so each card
+// must lead with its own language's face or the glyphs are subtly wrong.
+const CJK = {
+	en: "'Noto Sans JP', 'Noto Sans KR', 'Noto Sans TC'",
+	ja: "'Noto Sans JP', 'Noto Sans KR', 'Noto Sans TC'",
+	ko: "'Noto Sans KR', 'Noto Sans JP', 'Noto Sans TC'",
+	"zh-TW": "'Noto Sans TC', 'Noto Sans JP', 'Noto Sans KR'",
+};
 
 const html = (L) => `<!doctype html>
 <html lang="${L.lang}"><head><meta charset="utf-8">
@@ -111,7 +131,7 @@ ${FONT_CSS.map((h) => `<link rel="stylesheet" href="${h}">`).join("\n")}
       radial-gradient(90% 130% at 100% 0%, color-mix(in srgb, ${T.ember} 13%, transparent), transparent 58%),
       linear-gradient(180deg, ${T.bgTop} 0%, ${T.bgBase} 100%);
     color: ${T.textPrimary};
-    font-family: 'Inter', 'Noto Sans JP', 'Noto Sans KR', system-ui, sans-serif;
+    font-family: 'Inter', ${CJK[L.id]}, system-ui, sans-serif;
     position: relative;
     overflow: hidden;
   }
@@ -131,12 +151,12 @@ ${FONT_CSS.map((h) => `<link rel="stylesheet" href="${h}">`).join("\n")}
   }
   .brand { display: flex; align-items: center; gap: 18px; }
   .wordmark {
-    font-family: 'Space Grotesk', 'Noto Sans JP', 'Noto Sans KR', sans-serif;
+    font-family: 'Space Grotesk', ${CJK[L.id]}, sans-serif;
     font-weight: 700; font-size: 40px; letter-spacing: 0.06em;
     text-transform: uppercase;
   }
   h1 {
-    font-family: 'Space Grotesk', 'Noto Sans JP', 'Noto Sans KR', sans-serif;
+    font-family: 'Space Grotesk', ${CJK[L.id]}, sans-serif;
     font-weight: 700; letter-spacing: -0.022em; line-height: 1.06;
     font-size: ${L.id === "en" ? 86 : 74}px;
     max-width: 22ch; text-wrap: balance;

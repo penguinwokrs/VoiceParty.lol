@@ -33,7 +33,10 @@ export const theme = createTheme({
 		borderRadius: Number.parseInt(t["radius.md"], 10),
 	},
 	typography: {
-		fontFamily: t["font.family.base"],
+		// The CSS variable, not the raw token string: lang-fonts.css re-orders the
+		// CJK faces per language, and a baked-in string would ignore that (MUI
+		// components would keep the JP-first stack on Chinese pages).
+		fontFamily: "var(--font-family-base)",
 		h1: { fontWeight: 900, letterSpacing: "0.04em" },
 		h2: { fontWeight: 800, letterSpacing: "0.04em" },
 		h5: { fontWeight: 600, letterSpacing: "0.01em" },

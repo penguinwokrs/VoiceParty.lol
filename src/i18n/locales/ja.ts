@@ -325,3 +325,13 @@ export const ja = {
 };
 
 export type TranslationResources = typeof ja;
+
+// For locales that intentionally cover only part of the tree and let i18next
+// fall back to English for the rest (see zh-TW.ts). Recursive so nested groups
+// can be partially filled, while still catching typos in key names — an unknown
+// key is a type error even though a missing one is allowed.
+type DeepPartial<T> = {
+	[K in keyof T]?: T[K] extends string ? T[K] : DeepPartial<T[K]>;
+};
+
+export type PartialTranslationResources = DeepPartial<TranslationResources>;

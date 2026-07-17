@@ -34,4 +34,11 @@ export const seoMeta: Record<LanguageCode, SeoMeta> = {
 		ogLocale: "ko_KR",
 		ogImage: "/og-image-ko.png",
 	},
+	"zh-TW": {
+		title: "VoiceCrew — 為你的隊伍打造的瀏覽器語音通話",
+		description:
+			"VoiceCrew 是免安裝、免註冊，只要瀏覽器就能使用的免費即時語音通話。分享一條連結，就能用清晰的語音和隊友交談。",
+		ogLocale: "zh_TW",
+		ogImage: "/og-image-zh-TW.png",
+	},
 };
