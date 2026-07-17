@@ -183,113 +183,169 @@ const Panel = styled.div`
   overflow: hidden;
 `;
 
+// This panel is a faithful miniature of the real in-call screen
+// (ActiveSessionView.tsx): a session card with a participant roster, per-peer
+// receive-volume, and the mic / noise-suppression / leave controls. Ember is
+// spent only on the voice that's actually speaking and the live mic — never on
+// the local avatar (that would dilute the signature).
 const PanelTop = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--color-border-subtle);
   font-family: var(--font-family-mono);
-  font-size: 0.78rem;
-  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  color: var(--color-text-primary);
 
-  .room {
-    color: var(--color-text-primary);
+  .k {
+    color: var(--color-text-muted);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-size: 0.66rem;
   }
-  .live {
+  .status {
     margin-left: auto;
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    color: var(--color-brand-ember);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    font-size: 0.68rem;
+    color: var(--color-state-success);
+    font-size: 0.72rem;
   }
-  .beat {
-    width: 7px;
-    height: 7px;
+  .status .sd {
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    background: var(--color-brand-ember);
-    animation: plBeat 1.6s ease-in-out infinite;
-  }
-
-  @keyframes plBeat {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.35; }
+    background: var(--color-state-success);
   }
 `;
 
-const Seats = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.6rem;
-  padding: 1rem;
+const Roster = styled.div`
+  padding: 0.9rem 1rem 0.3rem;
+  display: flex;
+  flex-direction: column;
+
+  .plabel {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin: 0 0 0.5rem;
+  }
 `;
 
-const Seat = styled.div`
+const Row = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border-radius: var(--radius-md);
-  background: var(--color-bg-surfaceHover);
-  border: 1px solid var(--color-border-subtle);
-  min-width: 0;
-
-  &.empty {
-    border-style: dashed;
-    background: transparent;
-    color: var(--color-text-muted);
-    justify-content: center;
-    font-family: var(--font-family-mono);
-    font-size: 0.8rem;
-  }
+  gap: 0.7rem;
+  padding: 0.3rem 0;
 
   .av {
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     flex: none;
     display: grid;
     place-items: center;
-    font-weight: 700;
-    font-size: 0.9rem;
+    position: relative;
     color: #fff;
   }
-  .av.idle { box-shadow: 0 0 0 2px var(--color-border-strong); }
-  .av.on { box-shadow: 0 0 0 2px var(--color-state-success); }
+  .av svg { width: 20px; height: 20px; opacity: 0.92; }
+  .av.self { background: var(--color-state-cool); }
+  .av.peer { background: #4a5568; }
   .av.live {
-    box-shadow: var(--shadow-glowEmber);
-    animation: plPulse 1.5s ease-in-out infinite alternate;
+    box-shadow: 0 0 0 3px var(--color-brand-ember), 0 0 12px 2px rgba(255, 106, 61, 0.6);
+  }
+  .av .sd {
+    position: absolute;
+    right: -1px;
+    bottom: -1px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--color-state-success);
+    border: 2px solid var(--color-bg-surface);
   }
 
-  .who {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
+  .who { min-width: 0; flex: 1; }
+  .who .n {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .who b { font-size: 0.9rem; font-weight: 650; color: var(--color-text-primary); }
-  .who .id { font-family: var(--font-family-mono); font-size: 0.7rem; color: var(--color-text-muted); }
-  .who .st { font-family: var(--font-family-mono); font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase; }
-  .st.live-t { color: var(--color-brand-ember); }
-  .st.on-t { color: var(--color-state-success); }
-  .st.you-t { color: var(--color-text-muted); }
+  .who .r { font-size: 0.72rem; color: var(--color-text-muted); }
 
-  @keyframes plPulse {
-    from { box-shadow: 0 0 0 2px var(--color-brand-ember); }
-    to { box-shadow: 0 0 0 3px var(--color-brand-ember), 0 0 22px rgba(255, 106, 61, 0.4); }
+  .flag {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    color: var(--color-text-muted);
+    border-radius: 8px;
   }
+  .flag svg { width: 16px; height: 16px; }
 `;
 
-const PanelFoot = styled.div`
+const VolRow = styled.div`
   display: flex;
   align-items: center;
-  padding: 0.85rem 1rem;
-  border-top: 1px solid var(--color-border-subtle);
-  font-family: var(--font-family-mono);
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
+  gap: 0.55rem;
+  padding: 0 0.25rem 0.5rem 3.1rem;
+
+  > svg { width: 17px; height: 17px; color: var(--color-text-secondary); flex: none; }
+  .track {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-bg-surfaceHover);
+    position: relative;
+  }
+  .fill { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: var(--color-text-secondary); }
+  .fill.boost { background: var(--color-state-warning); }
+  .knob {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--color-text-primary);
+    box-shadow: 0 0 0 3px var(--color-bg-surface);
+  }
+  .knob.boost { background: var(--color-state-warning); }
+  .pct {
+    min-width: 42px;
+    text-align: right;
+    font-family: var(--font-family-mono);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-muted);
+  }
+  .pct.boost { color: var(--color-state-warning); }
+`;
+
+const Controls = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem 1.1rem;
+
+  .cbtn {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1.5px solid currentColor;
+    display: grid;
+    place-items: center;
+    background: transparent;
+  }
+  .cbtn svg { width: 20px; height: 20px; }
+  .cbtn.mic { color: var(--color-brand-ember); }
+  .cbtn.ns { color: var(--color-state-success); }
+  .cbtn.leave { color: var(--color-state-error); }
 `;
 
 // ---------------------------------------------------------------- why (split)
@@ -536,6 +592,73 @@ const BeforeDiscordIcon = (
 	</svg>
 );
 
+// Glyphs for the in-call panel miniature — mirror the MUI icons the real
+// ActiveSessionView uses (Person, Flag, VolumeUp, Mic, GraphicEq, CallEnd).
+// Size/color come from the panel CSS (.av svg / .cbtn svg / .flag svg).
+const PersonGlyph = () => (
+	<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+		<path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-5 0-9 2.5-9 6v2h18v-2c0-3.5-4-6-9-6Z" />
+	</svg>
+);
+const FlagGlyph = () => (
+	<svg
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth={2}
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<path d="M4 21V4m0 1h11l-1.5 4L16 13H4" />
+	</svg>
+);
+const VolGlyph = () => (
+	<svg
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth={2}
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<path d="M4 9v6h4l5 4V5L8 9H4Z" />
+		<path d="M16 8a4 4 0 0 1 0 8" />
+	</svg>
+);
+const MicGlyph = () => (
+	<svg
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth={2}
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<rect x="9" y="3" width="6" height="12" rx="3" />
+		<path d="M6 11a6 6 0 0 0 12 0M12 17v4" />
+	</svg>
+);
+const EqGlyph = () => (
+	<svg
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth={2}
+		strokeLinecap="round"
+		aria-hidden="true"
+	>
+		<path d="M6 9v6M10 5v14M14 8v8M18 11v2" />
+	</svg>
+);
+const LeaveGlyph = () => (
+	<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+		<path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08A.99.99 0 0 1 0 12.38c0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.1-.7-.28a11.27 11.27 0 0 0-2.66-1.85.998.998 0 0 1-.56-.9v-3.1C15.15 9.25 13.6 9 12 9Z" />
+	</svg>
+);
+
 type FeatureKey = "micCheck" | "onlyYouPick" | "beforeDiscord";
 const features: { key: FeatureKey; icon: ReactNode }[] = [
 	{ key: "micCheck", icon: MicCheckIcon },
@@ -586,53 +709,80 @@ export const LandingPage = () => {
 
 						<Panel role="img" aria-label={t("landing.panel.ariaLabel")}>
 							<PanelTop>
-								<span>/join/</span>
-								<span className="room">{t("landing.panel.room")}</span>
-								<span className="live">
-									<i className="beat" />
-									{t("landing.panel.live")}
+								<span className="k">Session</span>
+								<span>aram-duo</span>
+								<span className="status">
+									<i className="sd" />
+									Connected
 								</span>
 							</PanelTop>
-							<Seats>
-								<Seat>
-									<div className="av idle" style={{ background: "#3B4658" }}>
-										YU
+							<Roster>
+								<div className="plabel">Participants (3)</div>
+								{/* Local user — neutral avatar; Ember stays reserved for the live voice */}
+								<Row>
+									<div className="av self">
+										<PersonGlyph />
+										<i className="sd" />
 									</div>
 									<div className="who">
-										<b>{t("landing.panel.youName")}</b>
-										<span className="st you-t">
-											{t("landing.panel.youStatus")}
-										</span>
+										<div className="n">Nova#EUW</div>
+										<div className="r">You</div>
 									</div>
-								</Seat>
-								<Seat>
-									<div className="av live" style={{ background: "#6D4BD6" }}>
-										NV
-									</div>
-									<div className="who">
-										<b>nova</b>
-										<span className="id">nova#EUW</span>
-										<span className="st live-t">
-											{t("landing.panel.speaking")}
-										</span>
-									</div>
-								</Seat>
-								<Seat>
-									<div className="av on" style={{ background: "#2E7D6B" }}>
-										KI
+								</Row>
+								{/* Speaking peer — Ember ring */}
+								<Row>
+									<div className="av peer live">
+										<PersonGlyph />
+										<i className="sd" />
 									</div>
 									<div className="who">
-										<b>kirei</b>
-										<span className="id">kirei#NA</span>
-										<span className="st on-t">
-											{t("landing.panel.connected")}
-										</span>
+										<div className="n">kirei#NA</div>
 									</div>
-								</Seat>
-								<Seat className="empty">{t("landing.panel.invite")}</Seat>
-								<Seat className="empty">{t("landing.panel.invite")}</Seat>
-							</Seats>
-							<PanelFoot>{t("landing.panel.footNote")}</PanelFoot>
+									<span className="flag">
+										<FlagGlyph />
+									</span>
+								</Row>
+								<VolRow>
+									<VolGlyph />
+									<div className="track">
+										<div className="fill" style={{ width: "33%" }} />
+										<span className="knob" style={{ left: "33%" }} />
+									</div>
+									<span className="pct">100%</span>
+								</VolRow>
+								{/* Peer with boosted receive volume */}
+								<Row>
+									<div className="av peer">
+										<PersonGlyph />
+										<i className="sd" />
+									</div>
+									<div className="who">
+										<div className="n">m0chi#EUW</div>
+									</div>
+									<span className="flag">
+										<FlagGlyph />
+									</span>
+								</Row>
+								<VolRow>
+									<VolGlyph />
+									<div className="track">
+										<div className="fill boost" style={{ width: "50%" }} />
+										<span className="knob boost" style={{ left: "50%" }} />
+									</div>
+									<span className="pct boost">150%</span>
+								</VolRow>
+							</Roster>
+							<Controls>
+								<span className="cbtn mic" title="Mute mic">
+									<MicGlyph />
+								</span>
+								<span className="cbtn ns" title="Noise suppression">
+									<EqGlyph />
+								</span>
+								<span className="cbtn leave" title="Leave">
+									<LeaveGlyph />
+								</span>
+							</Controls>
 						</Panel>
 					</HeroGrid>
 				</Container>

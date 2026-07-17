@@ -23,7 +23,7 @@ export const en: TranslationResources = {
 			invite: "+ invite",
 			footNote: "3 on the line · randoms muted",
 			ariaLabel:
-				"A VoiceCrew room: three people connected, one speaking, two open seats.",
+				"The VoiceCrew in-call screen: a session with three teammates on voice, one speaking, plus mic, noise-suppression, and leave controls.",
 		},
 		why: {
 			eyebrow: "The idea",

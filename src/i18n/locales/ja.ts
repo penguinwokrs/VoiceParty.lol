@@ -20,7 +20,8 @@ export const ja = {
 			connected: "接続済み",
 			invite: "+ 招待",
 			footNote: "3人が通話中 · 野良はミュート",
-			ariaLabel: "VoiceCrew のルーム：3人が接続中、1人が発話中、空席が2つ。",
+			ariaLabel:
+				"VoiceCrew の通話画面：3人のチームメイトが通話中で1人が発話中。マイク・ノイズ抑制・退出の操作ボタン付き。",
 		},
 		why: {
 			eyebrow: "コンセプト",

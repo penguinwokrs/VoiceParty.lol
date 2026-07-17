@@ -22,7 +22,8 @@ export const ko: TranslationResources = {
 			connected: "연결됨",
 			invite: "+ 초대",
 			footNote: "3명 통화 중 · 모르는 사람은 음소거",
-			ariaLabel: "VoiceCrew 방: 3명 연결, 1명 발언 중, 빈자리 2개.",
+			ariaLabel:
+				"VoiceCrew 통화 화면: 팀원 3명이 음성 통화 중이며 1명이 발언 중. 마이크·소음 억제·나가기 컨트롤 포함.",
 		},
 		why: {
 			eyebrow: "콘셉트",

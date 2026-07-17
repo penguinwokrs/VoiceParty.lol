@@ -660,7 +660,10 @@ export const ActiveSessionView = ({
 									alt={summonerId}
 									state={state}
 									dimmed={!healthy}
-									bgcolor="primary.main"
+									// Neutral (not primary/Ember): the Ember signature is reserved
+									// for the live voice (speaking ring) and the active mic, so the
+									// local avatar must not be permanently Ember-filled.
+									bgcolor="var(--color-state-cool)"
 									speaking={healthy && selfSpeaking}
 								/>
 							</ListItemAvatar>
