@@ -1,10 +1,13 @@
 -- Report records, retained with no expiry.
 --
 -- Riot IDs are stored in the clear (previously HMAC-hashed under a KV key).
--- This is a deliberate operator decision: appeals need identity verification,
--- child-safety reports need evidence preservation, lawful disclosure requests
--- need answering, and reports are intended to be referred to Riot Games later.
--- The privacy policy (sections 1/5/7/8/9/10/11) states this explicitly.
+-- This is a deliberate operator decision: appeals need the underlying record
+-- looked up and answered, child-safety reports need to be preserved for later
+-- inquiry, and lawful disclosure requests need answering.
+-- The privacy policy (sections 1/7/8/9/10/11) describes this handling. Note the
+-- policy deliberately does NOT mention referring reports to Riot Games — that
+-- is on hold and unimplemented; do not add it here or in the policy without a
+-- purpose-change / consent path (see docs/moderation.md).
 --
 -- `reporter_riot_id` / `reported_riot_id` hold the normalized (trimmed,
 -- lower-cased) form used for matching. `*_riot_id_raw` keeps the string as the
