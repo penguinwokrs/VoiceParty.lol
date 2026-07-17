@@ -1,0 +1,25 @@
+/* Per-language CJK font ordering. Must be imported AFTER tokens.generated.css.
+ *
+ * Han unification means Japanese and Traditional Chinese share codepoints but
+ * draw them differently (説/說, 戸/戶, 直/直). CSS picks the first font in the
+ * stack that has the glyph, so the JP-first base stack in tokens.generated.css
+ * would render a Traditional Chinese page with Japanese glyph shapes — subtly
+ * wrong to a native reader, and invisible to anyone who can't read it.
+ *
+ * LangLayout sets <html lang> from the URL prefix, so keying off it is enough.
+ * Only zh-TW needs re-ordering: Hangul isn't in Noto Sans JP, so Korean already
+ * resolves to Noto Sans KR on its own.
+ *
+ * These re-orders are generated from the same families as design/tokens.json —
+ * if you add a face there, mirror it here.
+ */
+html[lang="zh-TW"] {
+	--font-family-display:
+		"Space Grotesk", "Noto Sans TC", "Noto Sans JP", "Noto Sans KR", system-ui,
+		sans-serif;
+	--font-family-base:
+		"Inter", "Noto Sans TC", "Noto Sans JP", "Noto Sans KR", system-ui,
+		sans-serif;
+	--font-family-mono:
+		"JetBrains Mono", "Noto Sans TC", "Noto Sans JP", monospace;
+}

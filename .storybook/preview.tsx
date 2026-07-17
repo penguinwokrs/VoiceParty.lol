@@ -16,8 +16,12 @@ import "@fontsource/noto-sans-jp/700.css";
 import "@fontsource/noto-sans-kr/400.css";
 import "@fontsource/noto-sans-kr/500.css";
 import "@fontsource/noto-sans-kr/700.css";
+import "@fontsource/noto-sans-tc/400.css";
+import "@fontsource/noto-sans-tc/500.css";
+import "@fontsource/noto-sans-tc/700.css";
 // Design tokens (CSS variables) used by the branded components.
 import "../src/theme/tokens.generated.css";
+import "../src/theme/lang-fonts.css";
 
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import type { Decorator, Preview } from "@storybook/react-vite";
@@ -25,7 +29,8 @@ import { useEffect } from "react";
 import i18n from "../src/i18n";
 import { theme } from "../src/theme";
 
-// Language switcher in the Storybook toolbar (this app ships en / ja / ko).
+// Language switcher in the Storybook toolbar (this app ships en / ja / ko /
+// zh-TW). Keep in sync with supportedLanguages in src/i18n/index.ts.
 export const globalTypes = {
 	locale: {
 		description: "Language",
@@ -36,6 +41,7 @@ export const globalTypes = {
 				{ value: "en", title: "English" },
 				{ value: "ja", title: "日本語" },
 				{ value: "ko", title: "한국어" },
+				{ value: "zh-TW", title: "繁體中文" },
 			],
 			dynamicTitle: true,
 		},
@@ -48,6 +54,9 @@ const LocaleSync = ({ locale }: { locale: string }) => {
 		if (i18n.resolvedLanguage !== locale) {
 			void i18n.changeLanguage(locale);
 		}
+		// LangLayout does this in the app; mirror it here so lang-fonts.css picks
+		// the right CJK face in stories too.
+		document.documentElement.lang = locale;
 	}, [locale]);
 	return null;
 };

@@ -2,10 +2,10 @@
 
 // Edge localization of the SPA's <head>. Crawlers and social scrapers do not
 // run the React app, so this rewrites the static index.html per request based
-// on the URL's language prefix (/ja, /ko; default English at /). Keep the META
-// map in sync with src/i18n/seo-meta.ts.
+// on the URL's language prefix (/ja, /ko, /zh-TW; default English at /). Keep
+// the META map in sync with src/i18n/seo-meta.ts.
 
-const LANGS = ["en", "ja", "ko"] as const;
+const LANGS = ["en", "ja", "ko", "zh-TW"] as const;
 type Lang = (typeof LANGS)[number];
 const DEFAULT_LANG: Lang = "en";
 
@@ -37,6 +37,13 @@ const META: Record<Lang, Meta> = {
 			"VoiceCrew는 설치·가입 없이 브라우저만으로 사용하는 무료 실시간 음성 채팅입니다. 링크만 공유하면 선명한 음성으로 팀과 대화할 수 있습니다.",
 		ogLocale: "ko_KR",
 		ogImage: "/og-image-ko.png",
+	},
+	"zh-TW": {
+		title: "VoiceCrew — 為你的隊伍打造的瀏覽器語音通話",
+		description:
+			"VoiceCrew 是免安裝、免註冊，只要瀏覽器就能使用的免費即時語音通話。分享一條連結，就能用清晰的語音和隊友交談。",
+		ogLocale: "zh_TW",
+		ogImage: "/og-image-zh-TW.png",
 	},
 };
 
