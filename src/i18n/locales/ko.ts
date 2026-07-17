@@ -2,58 +2,90 @@ import type { TranslationResources } from "./ja";
 
 export const ko: TranslationResources = {
 	landing: {
-		eyebrow: "실시간 음성",
-		title: "Voice Party",
-		subtitle:
-			"동료를 모으고 전략을 맞추며, 선명한 음성으로 협곡을 지배하세요. 모든 것이 브라우저만으로 완결됩니다.",
-		cta: "참가하기",
-		scrollHint: "사용법",
+		eyebrow: "브라우저 음성 · 설치 불필요",
+		title: "VoiceCrew",
+		headline: "합류를 정하기 전, 그 한마디.",
+		lead: "LFG에서 찾은 듀오와. 주말에 함께할 5인과. 링크 하나만 보내면 Discord를 교환하기 전에 목소리로 확인할 수 있습니다.",
+		ctaStart: "방 만들기",
+		ctaHow: "사용법 보기",
+		trust: {
+			noDownload: "다운로드 불필요",
+			browser: "브라우저만으로 완결",
+			muted: "모르는 사람은 음소거 유지",
+		},
+		panel: {
+			ariaLabel:
+				"VoiceCrew 통화 화면: 팀원 3명이 음성 통화 중이며 1명이 발언 중. 마이크·소음 억제·나가기 컨트롤 포함.",
+		},
+		why: {
+			eyebrow: "콘셉트",
+			heading:
+				"솔로 큐라면 '전체 음소거'가 정답. 직접 고른 팀이라면, 이야기가 다릅니다.",
+			body: "VoiceCrew은 음소거 문화와 싸우지 않습니다. 그 반대편에 섭니다. 모르는 4명과의 음성은 아무도 원하지 않습니다. 하지만 직접 고른 상대와는 모두가 이야기하고 싶어 합니다.",
+			cold: {
+				tag: "/mute all",
+				title: "낯선 사람들의 로비",
+				body: "마이크 없이, 소통 없이, 사양합니다. 고르지 않은 상대에게는 침묵이 올바른 설정입니다.",
+			},
+			warm: {
+				tag: "on the line",
+				title: "직접 고른 사람들",
+				body: "당신의 듀오. 주말의 5인 스택. 링크를 보내고 본 게임 전에 목소리를 맞춰 두세요.",
+			},
+		},
 		features: {
-			eyebrow: "Why Voice Party",
-			heading: "특징",
+			eyebrow: "무엇을 위한 것",
+			heading: "링크 하나. 2~5명. 그다음 결정.",
 			items: {
-				noInstall: {
-					title: "설치 불필요",
-					body: "브라우저만 있으면 OK. 앱 다운로드도 계정 등록도 필요 없습니다. 열자마자 바로 대화할 수 있습니다.",
+				micCheck: {
+					title: "결혼이 아니라 마이크 체크",
+					body: "듀오를 시험하거나 5인 스택을 맞춰 보세요. 분위기가 아니면 30초 만에 나갈 수 있습니다. 계정도, 기록도 없습니다.",
 				},
-				clearVoice: {
-					title: "선명한 음성",
-					body: "저소음·고음질의 실시간 음성. 원탭으로 음소거를 전환할 수 있습니다.",
+				onlyYouPick: {
+					title: "당신이 고른 사람만",
+					body: "낯선 사람과의 매칭은 없습니다. 방 링크를 공유하면 그것을 가진 사람만 통화에 들어올 수 있습니다.",
 				},
-				invite: {
-					title: "링크로 즉시 초대",
-					body: "게임 ID의 URL을 동료에게 공유하기만 하면 됩니다. 원클릭으로 같은 음성 채팅에 모일 수 있습니다.",
-				},
-				lowLatency: {
-					title: "저지연·경량",
-					body: "전 세계에 분산된 네트워크로 어디서나 지연이 적은 통화를 실현합니다.",
+				beforeDiscord: {
+					title: "Discord, 그 전 단계",
+					body: "Discord의 대체가 아닙니다. 10분 전에 만난 상대를 위해 서버를 만들기 전에 하는 일입니다.",
 				},
 			},
 		},
 		steps: {
-			eyebrow: "How it works",
-			heading: "사용법은 간단한 4단계",
+			eyebrow: "사용법",
+			heading: "링크에서 통화까지, 1분도 걸리지 않습니다.",
 			items: {
-				enter: {
-					title: "소환사 이름과 게임 ID 입력",
-					body: "'참가'를 눌러 소환사 이름과 암호가 될 게임 ID를 입력합니다. ID는 동료와 맞추기만 하면 무엇이든 괜찮습니다.",
+				riotId: {
+					title: "Riot ID 입력",
+					body: "Name#Tag 입력. 다운로드 없이 브라우저에서 바로.",
 				},
-				connect: {
-					title: "음성 채팅에 연결",
-					body: "'Join Game'을 누르면 마이크가 활성화되고, 같은 게임 ID의 동료와 음성으로 연결됩니다.",
+				shareLink: {
+					title: "방 링크 공유",
+					body: "LFG, DM, 방송에 붙여넣기만 하면 됩니다. 원탭으로 참가.",
 				},
-				share: {
-					title: "URL을 동료에게 공유",
-					body: "브라우저의 URL을 그대로 동료에게 보내기만 하면 됩니다. 받은 사람은 링크를 열면 같은 방에 참가할 수 있습니다.",
+				micCheck: {
+					title: "마이크 체크",
+					body: "말해 보고, 분위기를 느껴 보세요. 소통이 정말 맞는지 확인하세요.",
 				},
-				win: {
-					title: "전략을 세워 승리로",
-					body: "선명한 음성으로 협력하여 협곡을 제압하세요. 퇴장은 언제든지 원클릭입니다.",
+				commit: {
+					title: "합류하거나, 떠나거나",
+					body: "Discord를 교환하거나, 한 판 더, 아니면 깔끔하게 이탈. 당신의 선택입니다.",
 				},
 			},
 		},
-		finalCta: "자, 시작해요",
-		footer: "© {{year}} Voice Party.",
+		safety: {
+			eyebrow: "안전",
+			heading: "기본 음소거는 버그가 아니라 기능입니다.",
+			body: "모든 방에 원탭 신고와 로컬 음소거, 13세 이상 연령 확인, 모더레이션이 기본 탑재되어 있습니다. 목소리를 전할 상대는 당신이 고르고, 언제든지 되찾을 수 있습니다.",
+		},
+		finalCta: {
+			eyebrow: "준비되면",
+			heading: "팀을 통화로 모으세요.",
+			body: "설치 없이. 가입의 벽도 없이. 링크와 마이크 체크만 — 누군가에게 합류를 정하기 전에.",
+			ctaStart: "방 만들기",
+			ctaHow: "사용법 보기",
+		},
+		footer: "© {{year}} VoiceCrew.",
 	},
 	app: {
 		subtitle: "실시간 음성 채팅",
@@ -64,6 +96,8 @@ export const ko: TranslationResources = {
 		summonerIdPlaceholder: "이름을 입력하세요",
 		gameId: "게임 ID",
 		gameIdPlaceholder: "참가할 게임 ID를 입력하세요",
+		region: "지역",
+		regionPlaceholder: "지역 선택",
 		joinGame: "참가하기",
 		consent:
 			"'참가하기'를 누르면 <terms>이용약관</terms>과 <privacy>개인정보 처리방침</privacy>에 동의한 것으로 간주됩니다. 만 13세 이상만 이용할 수 있습니다.",
@@ -88,7 +122,7 @@ export const ko: TranslationResources = {
 		shareOnX: "X에 공유",
 		linkCopied: "링크를 복사했습니다",
 		shareText:
-			"🎮 VoiceParty.lol에서 음성 채팅하며 놀고 있어요! 이 링크로 같이 놀아요 👉",
+			"🎮 VoiceCrew에서 음성 채팅하며 놀고 있어요! 이 링크로 같이 놀아요 👉",
 		safetyNote:
 			"🔒 음성은 녹음되지 않습니다. 낯선 상대와 대화할 수 있으니 개인정보를 공유하지 말고, 불편하면 음소거・신고・퇴장으로 자신을 보호하세요.",
 		noiseSuppression: "노이즈 억제",
@@ -137,7 +171,7 @@ export const ko: TranslationResources = {
 	},
 	legal: {
 		disclaimer:
-			"VoiceParty.lol isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
+			"VoiceCrew isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
 		updated: "최종 업데이트: 2026년 7월 16일",
 		nav: {
 			home: "홈",
@@ -147,7 +181,7 @@ export const ko: TranslationResources = {
 		privacy: {
 			title: "개인정보 처리방침",
 			intro:
-				'본 방침은 VoiceParty.lol(이하 "본 서비스")의 개인정보 취급에 대해 규정합니다. 운영자 소재지인 일본의 개인정보보호법(APPI)을 기준으로 하며, 유럽(GDPR) 및 미국 캘리포니아주(CCPA) 이용자도 배려합니다.',
+				'본 방침은 VoiceCrew(이하 "본 서비스")의 개인정보 취급에 대해 규정합니다. 운영자 소재지인 일본의 개인정보보호법(APPI)을 기준으로 하며, 유럽(GDPR) 및 미국 캘리포니아주(CCPA) 이용자도 배려합니다.',
 			sections: [
 				{
 					heading: "1. 수집하는 정보와 이용 목적",
@@ -210,7 +244,7 @@ export const ko: TranslationResources = {
 		terms: {
 			title: "이용약관",
 			intro:
-				'본 이용약관(이하 "본 약관")은 VoiceParty.lol(이하 "본 서비스")의 이용 조건을 정합니다. 이용자는 본 약관에 동의한 후 본 서비스를 이용하는 것으로 합니다.',
+				'본 이용약관(이하 "본 약관")은 VoiceCrew(이하 "본 서비스")의 이용 조건을 정합니다. 이용자는 본 약관에 동의한 후 본 서비스를 이용하는 것으로 합니다.',
 			sections: [
 				{
 					heading: "1. 적용・동의",

@@ -1,8 +1,8 @@
-# VoiceParty.lol Project Analysis
+# VoiceCrew Project Analysis
 
 ## Project Overview
 
-**VoiceParty.lol** (formerly LoBump) is a real-time voice chat application integrated with Riot Games authentication. It uses **Cloudflare Workers/Pages** for the backend and **React (Vite)** for the frontend. Real-time voice features are powered by **Cloudflare RealtimeKit**.
+**VoiceCrew** (formerly LoBump) is a real-time voice chat application integrated with Riot Games authentication. It uses **Cloudflare Workers/Pages** for the backend and **React (Vite)** for the frontend. Real-time voice features are powered by **Cloudflare RealtimeKit**.
 
 ## Architecture
 

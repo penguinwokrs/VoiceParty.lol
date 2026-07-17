@@ -18,10 +18,12 @@ const meta = {
 	args: {
 		summonerId: "",
 		sessionId: "",
+		region: "",
 		loading: false,
 		error: "",
 		onSummonerIdChange: fn(),
 		onSessionIdChange: fn(),
+		onRegionChange: fn(),
 		onJoin: fn(),
 	},
 } satisfies Meta<typeof JoinSessionForm>;
@@ -32,11 +34,16 @@ type Story = StoryObj<typeof meta>;
 export const Empty: Story = {};
 
 export const Filled: Story = {
-	args: { summonerId: "Ashe#JP1", sessionId: "GAME-1234" },
+	args: { summonerId: "Nova#JP1", sessionId: "GAME-1234", region: "jp1" },
 };
 
 export const Loading: Story = {
-	args: { summonerId: "Ashe#JP1", sessionId: "GAME-1234", loading: true },
+	args: {
+		summonerId: "Nova#JP1",
+		sessionId: "GAME-1234",
+		region: "jp1",
+		loading: true,
+	},
 };
 
 export const WithError: Story = {

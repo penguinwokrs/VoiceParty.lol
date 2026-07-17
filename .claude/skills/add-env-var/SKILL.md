@@ -1,6 +1,6 @@
 ---
 name: add-env-var
-description: How to add (or remove) an environment variable / secret for the VoiceParty Cloudflare Pages app. Use whenever adding a new RIOT_*, REALTIME_*, API key, flag, or any env var the Pages Functions read via context.env, or when a var keeps disappearing after deploy. Covers the wrangler.toml (plain) vs `wrangler pages secret put` (secret) split.
+description: How to add (or remove) an environment variable / secret for the VoiceCrew Cloudflare Pages app. Use whenever adding a new RIOT_*, REALTIME_*, API key, flag, or any env var the Pages Functions read via context.env, or when a var keeps disappearing after deploy. Covers the wrangler.toml (plain) vs `wrangler pages secret put` (secret) split.
 ---
 
 # Adding an environment variable
@@ -64,7 +64,7 @@ Notes:
 The definitive check is runtime behavior. Probe the live join flow:
 
 ```bash
-curl -s -X POST https://voiceparty.pages.dev/api/sessions/probe-1/join \
+curl -s -X POST https://voicecrew.pages.dev/api/sessions/probe-1/join \
   -H 'Content-Type: application/json' -d '{"summonerId":"AAA#JP1"}'
 # realtime.token should be a long JWT, not "mock-token"; meetingId a real UUID.
 ```

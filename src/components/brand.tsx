@@ -4,22 +4,22 @@ import styled from "@emotion/styled";
 import { Typography } from "@mui/material";
 
 export const Eyebrow = styled.span`
-  color: var(--color-brand-teal);
-  font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: 0.35em;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+  font-weight: 500;
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   padding-left: 0.35em;
 `;
 
 export const BrandTitle = styled(Typography)`
   font-family: var(--font-family-display);
-  font-weight: 900;
-  color: var(--color-brand-gold);
+  font-weight: 800;
+  color: var(--color-text-primary);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   line-height: 1.02;
-  text-shadow: 0 2px 24px rgba(200, 170, 110, 0.25);
 `;
 
 export const BrandSubtitle = styled(Typography)`
@@ -32,5 +32,5 @@ export const BrandSubtitle = styled(Typography)`
 export const BrandDivider = styled.div`
   height: 1px;
   width: 120px;
-  background: linear-gradient(90deg, transparent, var(--color-brand-gold), transparent);
+  background: linear-gradient(90deg, transparent, var(--color-brand-ember), transparent);
 `;

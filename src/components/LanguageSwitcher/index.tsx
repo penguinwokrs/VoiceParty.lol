@@ -10,7 +10,7 @@ const Switcher = styled.div`
   gap: 2px;
   padding: 4px;
   border-radius: var(--radius-pill);
-  background: rgba(10, 20, 40, 0.6);
+  background: rgba(11, 14, 19, 0.6);
   border: 1px solid var(--color-border-subtle);
   backdrop-filter: blur(8px);
 `;
@@ -27,16 +27,16 @@ const LangButton = styled.button<{ active: boolean }>`
   letter-spacing: 0.02em;
   transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   color: ${(p) =>
-		p.active ? "var(--color-bg-base)" : "var(--color-text-secondary)"};
+		p.active ? "var(--color-text-onEmber)" : "var(--color-text-secondary)"};
   background: ${(p) =>
 		p.active
-			? "linear-gradient(180deg, var(--color-brand-gold) 0%, var(--color-brand-goldDark) 100%)"
+			? "linear-gradient(180deg, var(--color-brand-ember) 0%, var(--color-brand-emberPress) 100%)"
 			: "transparent"};
-  box-shadow: ${(p) => (p.active ? "var(--shadow-glowGold)" : "none")};
+  box-shadow: ${(p) => (p.active ? "var(--shadow-glowEmber)" : "none")};
 
   &:hover {
     color: ${(p) =>
-			p.active ? "var(--color-bg-base)" : "var(--color-text-primary)"};
+			p.active ? "var(--color-text-onEmber)" : "var(--color-text-primary)"};
   }
 `;
 

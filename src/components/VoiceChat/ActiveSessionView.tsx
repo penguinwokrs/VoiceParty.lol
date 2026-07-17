@@ -106,8 +106,9 @@ const connectionKeyframes = {
 		"0%": { backgroundPosition: "200% 0" },
 		"100%": { backgroundPosition: "-200% 0" },
 	},
-	// Speaking indicator: a thick, vivid green ring + a constant soft glow +
-	// an expanding pulse halo, so it reads clearly even over the teal self avatar.
+	// Speaking indicator: a thick Ember ring + a constant soft glow + an
+	// expanding pulse halo (Ember is the "Signal on Ink" signature, reserved for
+	// the voice that's actually speaking), so it reads clearly over any avatar.
 	// The solid ring + glow are a static box-shadow; only this halo animates, via
 	// GPU-composited transform/opacity (no per-frame repaint) on an ::after ring.
 	"@keyframes vpSpeakPulse": {
@@ -163,7 +164,7 @@ const StatusDot = ({ state }: { state: ConnectionState }) => {
 };
 
 // Avatar with a connection-status dot badge at the bottom-right, plus a pulsing
-// green ring while the participant is speaking.
+// Ember ring while the participant is speaking.
 const AvatarWithStatus = ({
 	src,
 	alt,
@@ -193,7 +194,8 @@ const AvatarWithStatus = ({
 					// are border-box, so inset:0 would sit inside it and clip the icon).
 					inset: "-3px",
 					borderRadius: "50%",
-					border: "2px solid rgba(46, 213, 115, 0.9)",
+					border:
+						"2px solid color-mix(in srgb, var(--color-brand-ember) 90%, transparent)",
 					animation: "vpSpeakPulse 1.3s ease-out infinite",
 					pointerEvents: "none",
 				},
@@ -211,7 +213,7 @@ const AvatarWithStatus = ({
 				// Solid ring + soft glow, set once (static box-shadow → no repaint).
 				...(speaking && {
 					boxShadow:
-						"0 0 0 3px rgba(46, 213, 115, 1), 0 0 12px 2px rgba(46, 213, 115, 0.75)",
+						"0 0 0 3px var(--color-brand-ember), 0 0 12px 2px color-mix(in srgb, var(--color-brand-ember) 75%, transparent)",
 				}),
 			}}
 		>
@@ -659,7 +661,10 @@ export const ActiveSessionView = ({
 									alt={summonerId}
 									state={state}
 									dimmed={!healthy}
-									bgcolor="primary.main"
+									// Neutral (not primary/Ember): the Ember signature is reserved
+									// for the live voice (speaking ring) and the active mic, so the
+									// local avatar must not be permanently Ember-filled.
+									bgcolor="var(--color-state-cool)"
 									speaking={healthy && selfSpeaking}
 								/>
 							</ListItemAvatar>
