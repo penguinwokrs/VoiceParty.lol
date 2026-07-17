@@ -197,6 +197,48 @@ describe("VoiceChat", () => {
 		});
 	});
 
+	// Regression: creating a room walks /join -> /join/:region/:sessionId, which
+	// are two different <Route>s. Joining survives that hop only because React
+	// keeps the component (and the `joinRequested` ref) across the switch — if it
+	// ever remounts, the ref resets and Join would navigate but never join,
+	// leaving a button that does nothing.
+	it("mints a room ID and joins when there is no room in the URL", async () => {
+		vi.spyOn(Storage.prototype, "getItem").mockImplementation((k) =>
+			k === "vp_age_ok" ? "true" : null,
+		);
+		const fetchMock = vi.fn().mockResolvedValue({
+			ok: true,
+			text: () => Promise.resolve(""),
+			json: () =>
+				Promise.resolve({
+					session: { sessionId: "x", users: [], createdAt: Date.now() },
+					realtime: { token: "mock-token", meetingId: "mock-id" },
+				}),
+		});
+		global.fetch = fetchMock;
+
+		render(
+			<MemoryRouter initialEntries={["/join"]}>
+				<Routes>
+					<Route path="/join" element={<VoiceChat />} />
+					<Route path="/join/:region/:sessionId" element={<VoiceChat />} />
+				</Routes>
+			</MemoryRouter>,
+		);
+
+		fireEvent.change(screen.getByLabelText("Riot ID"), {
+			target: { value: "Nova#JP1" },
+		});
+		fireEvent.mouseDown(screen.getByLabelText("Region"));
+		fireEvent.click(await screen.findByText("Japan (JP)"));
+		fireEvent.click(screen.getByText("Join Game"));
+
+		await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+		// The room ID was generated, not typed, and reached the API.
+		const url = fetchMock.mock.calls[0][0] as string;
+		expect(url).toMatch(/^\/api\/sessions\/[\w-]{12}\/join$/);
+	});
+
 	// Regression: a returning player has a stored Riot ID, which used to be
 	// enough for a shared link to drop them straight into a live call — mic on,
 	// before they ever saw the form. Arriving must land on the form; the stored
