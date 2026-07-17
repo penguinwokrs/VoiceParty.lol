@@ -11,7 +11,7 @@ export const ko: TranslationResources = {
 		trust: {
 			noDownload: "다운로드 불필요",
 			browser: "브라우저만으로 완결",
-			muted: "모르는 사람은 음소거 유지",
+			muted: "모르는 사람은 못 들어옴",
 		},
 		panel: {
 			ariaLabel:
@@ -75,8 +75,8 @@ export const ko: TranslationResources = {
 		},
 		safety: {
 			eyebrow: "안전",
-			heading: "기본 음소거는 버그가 아니라 기능입니다.",
-			body: "모든 방에 원탭 신고와 로컬 음소거, 13세 이상 연령 확인, 모더레이션이 기본 탑재되어 있습니다. 목소리를 전할 상대는 당신이 고르고, 언제든지 되찾을 수 있습니다.",
+			heading: "모르는 사람은 음소거 이전에, 들어올 수 없습니다.",
+			body: "모든 방에 원탭 신고와 로컬 음소거, 연령 확인, 모더레이션이 기본 탑재되어 있습니다. 누구에게 목소리를 전할지는 당신이 고르고, 언제든지 다시 음소거할 수 있습니다.",
 		},
 		finalCta: {
 			eyebrow: "준비되면",

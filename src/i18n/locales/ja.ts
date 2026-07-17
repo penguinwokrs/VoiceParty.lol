@@ -9,7 +9,7 @@ export const ja = {
 		trust: {
 			noDownload: "ダウンロード不要",
 			browser: "ブラウザだけで完結",
-			muted: "野良はミュートのまま",
+			muted: "野良は入って来ない",
 		},
 		panel: {
 			ariaLabel:
@@ -75,8 +75,11 @@ export const ja = {
 		},
 		safety: {
 			eyebrow: "安全性",
-			heading: "デフォルトでミュートは、バグではなく仕様。",
-			body: "すべてのルームにワンタップ通報とローカルミュート、13歳以上の年齢確認、モデレーションを標準装備。誰に声を届けるかはあなたが選び、いつでもミュートに戻せます。",
+			// Not "muted by default" — nothing here is. The mic is live on join and
+			// no peer starts muted. What is true is stronger: without the link a
+			// stranger can't reach the room at all.
+			heading: "知らない人は、ミュート以前に入れない。",
+			body: "すべてのルームにワンタップ通報とローカルミュート、年齢確認、モデレーションを標準装備。誰に声を届けるかはあなたが選び、いつでもミュートに戻せます。",
 		},
 		finalCta: {
 			eyebrow: "準備ができたら",

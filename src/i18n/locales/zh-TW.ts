@@ -24,7 +24,7 @@ export const zhTW: PartialTranslationResources = {
 		trust: {
 			noDownload: "免下載",
 			browser: "瀏覽器就能用",
-			muted: "路人保持靜音",
+			muted: "路人進不來",
 		},
 		panel: {
 			ariaLabel:
@@ -87,8 +87,8 @@ export const zhTW: PartialTranslationResources = {
 		},
 		safety: {
 			eyebrow: "安全",
-			heading: "預設靜音是功能，不是缺陷。",
-			body: "每個房間都內建一鍵檢舉與本機靜音、13 歲以上年齡確認，以及內容管理。聲音要給誰由你決定，而且隨時可以收回。",
+			heading: "陌生人不是被靜音，而是根本進不來。",
+			body: "每個房間都內建一鍵檢舉與本機靜音、年齡確認，以及內容管理。聲音要給誰由你決定，而且隨時可以切回靜音。",
 		},
 		finalCta: {
 			eyebrow: "準備好就開始",

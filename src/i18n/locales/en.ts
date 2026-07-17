@@ -11,7 +11,7 @@ export const en: TranslationResources = {
 		trust: {
 			noDownload: "No download",
 			browser: "Works in the browser",
-			muted: "Randoms stay muted",
+			muted: "Randoms can't get in",
 		},
 		panel: {
 			ariaLabel:
@@ -75,8 +75,8 @@ export const en: TranslationResources = {
 		},
 		safety: {
 			eyebrow: "Safety",
-			heading: "Muted by default is a feature, not a bug.",
-			body: "Every room ships with one-tap report and local mute, a 13+ age gate, and moderation built in. You choose who gets your voice — and you can take it back instantly.",
+			heading: "Strangers don't get muted. They don't get in.",
+			body: "Every room ships with one-tap report and local mute, an age check, and moderation built in. You choose who gets your voice — and you can mute them again any time.",
 		},
 		finalCta: {
 			eyebrow: "Ready when you are",
