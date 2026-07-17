@@ -17,7 +17,7 @@ export const zhTW: PartialTranslationResources = {
 	landing: {
 		eyebrow: "瀏覽器語音 · 免安裝",
 		title: "VoiceCrew",
-		headline: "決定開黑前，先聽一句。",
+		headline: "決定組隊前，先聽一句。",
 		lead: "在 LFG 找到雙排？週末要湊五排？傳一條連結，在交換 Discord 之前先用語音確認彼此。",
 		ctaStart: "建立房間",
 		ctaHow: "使用方式",
@@ -80,7 +80,7 @@ export const zhTW: PartialTranslationResources = {
 					body: "聊聊看，感受氣氛，確認溝通是否真的合拍。",
 				},
 				commit: {
-					title: "開黑——或離開",
+					title: "組隊——或離開",
 					body: "加 Discord、再來一場，或乾脆俐落地離開。你決定。",
 				},
 			},
@@ -93,7 +93,7 @@ export const zhTW: PartialTranslationResources = {
 		finalCta: {
 			eyebrow: "準備好就開始",
 			heading: "把你的隊友拉上線。",
-			body: "免安裝。沒有註冊門檻。只要一條連結和一次試音——在你決定和誰開黑之前。",
+			body: "免安裝。沒有註冊門檻。只要一條連結和一次試音——在你決定和誰組隊之前。",
 			ctaStart: "建立房間",
 			ctaHow: "看看怎麼用",
 		},

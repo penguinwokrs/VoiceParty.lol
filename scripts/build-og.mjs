@@ -80,7 +80,7 @@ const LOCALES = [
 		id: "zh-TW",
 		file: "og-image-zh-TW.png",
 		lang: "zh-Hant-TW",
-		headline: "決定開黑前，先聽一句。",
+		headline: "決定組隊前，先聽一句。",
 		lead: "傳一條連結，在交換 Discord 之前先用語音確認彼此。",
 		trust: ["免下載", "瀏覽器就能用", "路人保持靜音"],
 	},
