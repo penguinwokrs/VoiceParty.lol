@@ -8,6 +8,15 @@ binding = "VC_SESSIONS"
 id = "74421f4d32f648e4b6ad64a9ef5498ee"
 preview_id = "bfac51e6cf5e4e4388609f68c70f8c5d"
 
+# Report records live here rather than in KV: they are retained permanently
+# (no TTL) and need to be queried by reported user, so KV's list+metadata
+# aggregation no longer fits. See docs/moderation.md and the privacy policy.
+[[d1_databases]]
+binding = "VC_DB"
+database_name = "voicecrew-reports"
+database_id = "0b49755f-8c3a-477d-93a6-47ff1fe0cd13"
+migrations_dir = "migrations"
+
 # Temporary: Riot API validation is disabled while awaiting RSO production
 # approval (~1 month lead time). The RSO/validation code is kept intact.
 # Set to "true" or remove this to re-enable validation.
