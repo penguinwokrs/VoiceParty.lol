@@ -1,22 +1,31 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
+import type { LanguageCode } from "../../i18n";
+import { localizePath } from "../../i18n/paths";
 import { ActiveSessionView } from "./ActiveSessionView";
 import { JoinSessionForm } from "./JoinSessionForm";
+import { isRegionCode } from "./regions";
 import type { JoinResponse, Session } from "./types";
 import { useRealtime } from "./useRealtime";
 
 export const VoiceChat = () => {
-	const { t } = useTranslation();
-	const { sessionId: routeSessionId } = useParams();
+	const { t, i18n } = useTranslation();
+	const lang = (i18n.resolvedLanguage ?? "en") as LanguageCode;
+	const { sessionId: routeSessionId, region: routeRegionParam } = useParams();
 	const navigate = useNavigate();
+	// An unknown code in the URL is ignored rather than trusted, which also
+	// lets a legacy /join/:sessionId link fall through to the picker.
+	const routeRegion = isRegionCode(routeRegionParam) ? routeRegionParam : "";
 	const [sessionId, setSessionId] = useState(routeSessionId || "");
 	const [summonerId, setSummonerId] = useState(() => {
 		const stored = localStorage.getItem("vp_summoner_id") || "";
 		return stored.length > 32 ? "" : stored;
 	});
-	// Player's Riot platform region (e.g. "na1"). Remembered across sessions.
+	// Player's Riot platform region (e.g. "na1"). An invite link pins it —
+	// you can't play across platforms — otherwise we remember the last choice.
 	const [region, setRegion] = useState(() => {
+		if (routeRegion) return routeRegion;
 		try {
 			return localStorage.getItem("vp_region") || "";
 		} catch {
@@ -48,17 +57,30 @@ export const VoiceChat = () => {
 		}
 	}, [summonerId]);
 
-	useEffect(() => {
-		if (region) {
-			try {
-				localStorage.setItem("vp_region", region);
-			} catch {
-				/* ignore storage errors */
-			}
+	// Only regions the player picked themselves are remembered. A region pinned
+	// by someone else's invite link must not become their default — a JP player
+	// following a KR link would otherwise start their next room on KR.
+	const handleRegionChange = (next: string) => {
+		setRegion(next);
+		if (!next) return;
+		try {
+			localStorage.setItem("vp_region", next);
+		} catch {
+			/* ignore storage errors */
 		}
-	}, [region]);
+	};
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Only run once on mount when params exist
+	// Follow the link if it points at a different region than the one in hand.
+	useEffect(() => {
+		if (routeRegion) setRegion(routeRegion);
+	}, [routeRegion]);
+
+	// In-app room path. Keeps the current language prefix, so joining from
+	// /ja/join doesn't drop the reader back into English.
+	const roomPath = (id: string) =>
+		localizePath(region ? `/join/${region}/${id}` : `/join/${id}`, lang);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Re-runs when the room the URL points at changes
 	useEffect(() => {
 		if (routeSessionId && summonerId && !currentSession) {
 			setSessionId(routeSessionId);
@@ -67,7 +89,7 @@ export const VoiceChat = () => {
 			setSessionId(routeSessionId);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [routeSessionId]);
+	}, [routeSessionId, routeRegion]);
 
 	const joinSession = async (targetSessionId: string) => {
 		if (!targetSessionId || !summonerId) {
@@ -75,12 +97,17 @@ export const VoiceChat = () => {
 			return;
 		}
 
-		if (!routeSessionId || targetSessionId !== routeSessionId) {
-			navigate(`/join/${targetSessionId}`);
-			// The useEffect will trigger joinSession again, so we can return here
-			// But if we want instant feedback, we can proceed.
-			// However, navigating unmounts/remounts components usually unless router preserves state.
-			// Here we assume it might remount.
+		// Put the room in the URL before joining, so the address bar is always a
+		// shareable invite. Region is part of that identity; links made before it
+		// existed stay on the bare path until the joiner picks one.
+		if (
+			!routeSessionId ||
+			targetSessionId !== routeSessionId ||
+			(region && region !== routeRegion)
+		) {
+			navigate(roomPath(targetSessionId));
+			// Navigating re-runs the effect above, which calls joinSession again
+			// with the params now in place.
 			return;
 		}
 
@@ -143,6 +170,7 @@ export const VoiceChat = () => {
 			<ActiveSessionView
 				session={currentSession}
 				summonerId={summonerId}
+				region={region}
 				isConnected={isConnected}
 				connectionState={connectionState}
 				isMicMuted={isMicMuted}
@@ -170,9 +198,10 @@ export const VoiceChat = () => {
 			error={error}
 			onSummonerIdChange={setSummonerId}
 			onSessionIdChange={setSessionId}
-			onRegionChange={setRegion}
+			onRegionChange={handleRegionChange}
 			onJoin={() => joinSession(sessionId)}
 			disableSessionInput={!!routeSessionId}
+			disableRegionInput={!!routeRegion}
 		/>
 	);
 };

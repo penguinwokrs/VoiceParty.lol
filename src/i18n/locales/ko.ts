@@ -98,6 +98,8 @@ export const ko: TranslationResources = {
 		gameIdPlaceholder: "참가할 게임 ID를 입력하세요",
 		region: "지역",
 		regionPlaceholder: "지역 선택",
+		regionFromLink:
+			"초대 링크에서 지정된 지역입니다 — 다른 지역과는 함께 플레이할 수 없습니다",
 		joinGame: "참가하기",
 		consent:
 			"'참가하기'를 누르면 <terms>이용약관</terms>과 <privacy>개인정보 처리방침</privacy>에 동의한 것으로 간주됩니다. 만 13세 이상만 이용할 수 있습니다.",

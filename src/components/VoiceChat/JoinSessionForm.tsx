@@ -19,6 +19,7 @@ import { Link as RouterLink } from "react-router-dom";
 import type { LanguageCode } from "../../i18n";
 import { localizePath } from "../../i18n/paths";
 import { Button } from "../Button";
+import { REGIONS } from "./regions";
 
 // Minimum age to use the Service (see Terms/Privacy). Enforced with a neutral
 // birth-year gate rather than a yes/no prompt.
@@ -34,28 +35,6 @@ const isAgeConfirmed = (): boolean => {
 	}
 };
 
-// Riot platform routing regions (LoL). `code` is the platform value used by the
-// Riot API; the label is what the player picks from the suggestions.
-type Region = { code: string; label: string };
-const REGIONS: Region[] = [
-	{ code: "na1", label: "North America (NA)" },
-	{ code: "euw1", label: "EU West (EUW)" },
-	{ code: "eun1", label: "EU Nordic & East (EUNE)" },
-	{ code: "kr", label: "Korea (KR)" },
-	{ code: "jp1", label: "Japan (JP)" },
-	{ code: "oc1", label: "Oceania (OCE)" },
-	{ code: "br1", label: "Brazil (BR)" },
-	{ code: "la1", label: "Latin America North (LAN)" },
-	{ code: "la2", label: "Latin America South (LAS)" },
-	{ code: "tr1", label: "Türkiye (TR)" },
-	{ code: "ru", label: "Russia (RU)" },
-	{ code: "ph2", label: "Philippines (PH)" },
-	{ code: "sg2", label: "Singapore (SG)" },
-	{ code: "th2", label: "Thailand (TH)" },
-	{ code: "tw2", label: "Taiwan (TW)" },
-	{ code: "vn2", label: "Vietnam (VN)" },
-];
-
 type JoinSessionFormProps = {
 	summonerId: string;
 	sessionId: string;
@@ -67,6 +46,8 @@ type JoinSessionFormProps = {
 	onRegionChange: (region: string) => void;
 	onJoin: () => void;
 	disableSessionInput?: boolean;
+	/** The invite link fixed the region — you can't play across platforms. */
+	disableRegionInput?: boolean;
 };
 
 export const JoinSessionForm = ({
@@ -80,6 +61,7 @@ export const JoinSessionForm = ({
 	onRegionChange,
 	onJoin,
 	disableSessionInput,
+	disableRegionInput,
 }: JoinSessionFormProps) => {
 	const { t, i18n } = useTranslation();
 	const lang = (i18n.resolvedLanguage ?? "en") as LanguageCode;
@@ -141,11 +123,15 @@ export const JoinSessionForm = ({
 						onChange={(_, v) => onRegionChange(v?.code ?? "")}
 						fullWidth
 						autoHighlight
+						disabled={disableRegionInput}
 						renderInput={(params) => (
 							<TextField
 								{...params}
 								label={t("join.region")}
 								placeholder={t("join.regionPlaceholder")}
+								helperText={
+									disableRegionInput ? t("join.regionFromLink") : undefined
+								}
 							/>
 						)}
 					/>

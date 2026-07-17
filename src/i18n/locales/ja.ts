@@ -95,6 +95,8 @@ export const ja = {
 		gameIdPlaceholder: "参加するゲームIDを入力",
 		region: "リージョン",
 		regionPlaceholder: "リージョンを選択",
+		regionFromLink:
+			"招待リンクのリージョンです（別リージョンとは一緒に遊べません）",
 		joinGame: "参加する",
 		consent:
 			"「参加する」を押すと、<terms>利用規約</terms>と<privacy>プライバシーポリシー</privacy>に同意したものとみなされます。13歳以上の方のみご利用いただけます。",
