@@ -133,14 +133,6 @@ export const JoinSessionForm = ({
 				)}
 
 				<Stack spacing={3}>
-					<TextField
-						label={t("join.summonerId")}
-						value={summonerId}
-						onChange={(e) => onSummonerIdChange(e.target.value)}
-						fullWidth
-						placeholder={t("join.summonerIdPlaceholder")}
-					/>
-
 					<Autocomplete
 						options={REGIONS}
 						getOptionLabel={(o) => o.label}
@@ -156,6 +148,14 @@ export const JoinSessionForm = ({
 								placeholder={t("join.regionPlaceholder")}
 							/>
 						)}
+					/>
+
+					<TextField
+						label={t("join.summonerId")}
+						value={summonerId}
+						onChange={(e) => onSummonerIdChange(e.target.value)}
+						fullWidth
+						placeholder={t("join.summonerIdPlaceholder")}
 					/>
 
 					<TextField

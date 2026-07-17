@@ -194,7 +194,8 @@ const AvatarWithStatus = ({
 					// are border-box, so inset:0 would sit inside it and clip the icon).
 					inset: "-3px",
 					borderRadius: "50%",
-					border: "2px solid rgba(255, 106, 61, 0.9)",
+					border:
+						"2px solid color-mix(in srgb, var(--color-brand-ember) 90%, transparent)",
 					animation: "vpSpeakPulse 1.3s ease-out infinite",
 					pointerEvents: "none",
 				},
@@ -212,7 +213,7 @@ const AvatarWithStatus = ({
 				// Solid ring + soft glow, set once (static box-shadow → no repaint).
 				...(speaking && {
 					boxShadow:
-						"0 0 0 3px rgba(255, 106, 61, 1), 0 0 12px 2px rgba(255, 106, 61, 0.75)",
+						"0 0 0 3px var(--color-brand-ember), 0 0 12px 2px color-mix(in srgb, var(--color-brand-ember) 75%, transparent)",
 				}),
 			}}
 		>

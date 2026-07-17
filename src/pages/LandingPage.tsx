@@ -1,5 +1,5 @@
 import styled from "@emotion/styled";
-import { Container } from "@mui/material";
+import { Button, Container } from "@mui/material";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -58,26 +58,18 @@ const CtaRow = styled.div`
   flex-wrap: wrap;
 `;
 
-const PrimaryButton = styled.button`
-  display: inline-flex;
-  align-items: center;
+// The themed MUI Button (containedPrimary) already owns the Ember gradient,
+// hover glow and focus ring; only the landing's pill geometry is layered on.
+const PrimaryButton = styled(Button)`
   gap: 0.5rem;
   height: 46px;
   padding: 0 1.4rem;
-  border: 1px solid transparent;
   border-radius: var(--radius-pill);
-  font: inherit;
   font-weight: 650;
   font-size: 0.98rem;
-  cursor: pointer;
-  color: var(--color-text-onEmber);
-  background: var(--color-brand-ember);
+  text-transform: none;
   transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 
-  &:hover {
-    background: var(--color-brand-emberHover);
-    box-shadow: var(--shadow-glowEmber);
-  }
   &:active {
     transform: translateY(1px);
     background: var(--color-brand-emberPress);
@@ -253,7 +245,8 @@ const Row = styled.div`
   .av.self { background: var(--color-state-cool); }
   .av.peer { background: #4a5568; }
   .av.live {
-    box-shadow: 0 0 0 3px var(--color-brand-ember), 0 0 12px 2px rgba(255, 106, 61, 0.6);
+    box-shadow: 0 0 0 3px var(--color-brand-ember),
+      0 0 12px 2px color-mix(in srgb, var(--color-brand-ember) 60%, transparent);
   }
   .av .sd {
     position: absolute;
@@ -369,7 +362,11 @@ const SplitCard = styled.div`
   &.warm {
     border-color: color-mix(in srgb, var(--color-brand-ember) 40%, var(--color-border-subtle));
     background:
-      radial-gradient(120% 120% at 100% 0%, rgba(255, 106, 61, 0.12), transparent 60%),
+      radial-gradient(
+        120% 120% at 100% 0%,
+        color-mix(in srgb, var(--color-brand-ember) 12%, transparent),
+        transparent 60%
+      ),
       var(--color-bg-surface);
   }
 
@@ -452,7 +449,7 @@ const FeatureCard = styled.div`
     place-items: center;
     margin-bottom: 1rem;
     color: var(--color-brand-ember);
-    background: rgba(255, 106, 61, 0.12);
+    background: color-mix(in srgb, var(--color-brand-ember) 12%, transparent);
     border: 1px solid var(--color-border-subtle);
   }
   h3 {
@@ -523,7 +520,11 @@ const Final = styled.section`
   text-align: center;
   padding: 4.5rem 0;
   background:
-    radial-gradient(70% 120% at 50% 0%, rgba(255, 106, 61, 0.14), transparent 60%),
+    radial-gradient(
+      70% 120% at 50% 0%,
+      color-mix(in srgb, var(--color-brand-ember) 14%, transparent),
+      transparent 60%
+    ),
     var(--color-bg-surface);
 
   h2 {
@@ -686,7 +687,12 @@ export const LandingPage = () => {
 							<h1>{t("landing.headline")}</h1>
 							<p className="lead">{t("landing.lead")}</p>
 							<CtaRow>
-								<PrimaryButton type="button" onClick={startRoom}>
+								<PrimaryButton
+									type="button"
+									variant="contained"
+									color="primary"
+									onClick={startRoom}
+								>
 									{t("landing.ctaStart")}
 								</PrimaryButton>
 								<GhostButton href="#how">{t("landing.ctaHow")}</GhostButton>
@@ -880,7 +886,12 @@ export const LandingPage = () => {
 						<h2>{t("landing.finalCta.heading")}</h2>
 						<p>{t("landing.finalCta.body")}</p>
 						<CtaRow style={{ justifyContent: "center" }}>
-							<PrimaryButton type="button" onClick={startRoom}>
+							<PrimaryButton
+								type="button"
+								variant="contained"
+								color="primary"
+								onClick={startRoom}
+							>
 								{t("landing.finalCta.ctaStart")}
 							</PrimaryButton>
 							<GhostButton href="#how">
