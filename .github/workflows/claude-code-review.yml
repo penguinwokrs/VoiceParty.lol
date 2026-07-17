@@ -1,0 +1,55 @@
+name: Claude Code Review
+
+# Reviews every pull request against main. Replaces the gemini-code-assist App.
+# Requires the ANTHROPIC_API_KEY repository secret:
+#   gh secret set ANTHROPIC_API_KEY
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches:
+      - main
+
+# Skip re-review while a PR is being pushed to repeatedly; only the latest
+# commit is worth spending a review on.
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Review
+    runs-on: ubuntu-latest
+    # Drafts are work-in-progress; review once they are marked ready.
+    if: github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            このプルリクエストをレビューし、指摘は**日本語**で書いてください。
+
+            優先度の高い順に報告してください:
+            1. バグ・ロジックエラー（特に KV のデータ競合、RealtimeKit のイベント購読漏れ、
+               reconnect 時の状態リーク）
+            2. セキュリティ（Riot API キー等のシークレット露出、ユーザー入力の検証漏れ、
+               PII のログ出力）
+            3. i18n の漏れ（src/i18n/locales/ の ja / en / ko / zh-TW すべてに
+               キーが揃っているか）
+
+            指摘がない場合は「指摘なし」とだけ答えてください。
+            スタイルや書式は Biome が担保しているので指摘不要です。
+            確信の持てない推測は書かないでください。
+          claude_args: |
+            --max-turns 5
+            --model claude-sonnet-5

@@ -1,0 +1,10 @@
+# Gemini Code Assist is being retired from this repository in favour of Claude
+# code review (.github/workflows/claude-code-review.yml).
+#
+# This file is the repository-level kill switch: it stops the gemini-code-assist
+# App from posting reviews even while the App itself is still installed. The App
+# must also be uninstalled from the repository settings; see docs/code-review.md.
+# Once uninstalled, this file can be deleted.
+code_review:
+  disable: true
+have_fun: false
