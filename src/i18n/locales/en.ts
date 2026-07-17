@@ -238,7 +238,7 @@ export const en: TranslationResources = {
 				},
 				{
 					heading: "14. Contact & requests",
-					body: "For questions about the handling of personal information, disclosure requests, and complaints, please contact the operator of the Service. Operator information and contact details will be provided at publication.",
+					body: "For questions about the handling of personal information, disclosure requests, and complaints, please contact the operator of the Service at voice.crew.contact@gmail.com. The operator's name and address are provided without delay upon request.",
 				},
 			],
 		},
@@ -317,7 +317,7 @@ export const en: TranslationResources = {
 				},
 				{
 					heading: "18. Contact & appeals",
-					body: "For questions about these Terms and appeals against measures, please contact the operator of the Service. Operator information and contact details will be provided at publication.",
+					body: "For questions about these Terms and appeals against measures, please contact the operator of the Service at voice.crew.contact@gmail.com. The operator's name and address are provided without delay upon request.",
 				},
 			],
 		},
