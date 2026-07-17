@@ -29,6 +29,7 @@ describe("VoiceChat", () => {
 		);
 		expect(screen.getByText("Voice Chat")).toBeInTheDocument();
 		expect(screen.getByLabelText("Summoner ID")).toBeInTheDocument();
+		expect(screen.getByLabelText("Region")).toBeInTheDocument();
 		expect(screen.getByLabelText("Game ID")).toBeInTheDocument();
 	});
 
@@ -43,7 +44,7 @@ describe("VoiceChat", () => {
 		expect(joinBtn).toBeDisabled();
 	});
 
-	it("updates input fields and enables button", () => {
+	it("updates input fields and enables button", async () => {
 		render(
 			<MemoryRouter>
 				<VoiceChat />
@@ -60,6 +61,11 @@ describe("VoiceChat", () => {
 		const sessionInput = screen.getByLabelText("Game ID") as HTMLInputElement;
 		fireEvent.change(sessionInput, { target: { value: "test-session" } });
 		expect(sessionInput.value).toBe("test-session");
+		expect(joinBtn).toBeDisabled(); // Still disabled, no region
+
+		// Pick a region from the suggestions.
+		fireEvent.mouseDown(screen.getByLabelText("Region"));
+		fireEvent.click(await screen.findByText("Korea (KR)"));
 		expect(joinBtn).toBeEnabled();
 	});
 
@@ -97,7 +103,10 @@ describe("VoiceChat", () => {
 		const sessionInput = screen.getByLabelText("Game ID");
 		fireEvent.change(sessionInput, { target: { value: "session-123" } });
 
-		const joinBtn = await screen.findByRole("button");
+		fireEvent.mouseDown(screen.getByLabelText("Region"));
+		fireEvent.click(await screen.findByText("Korea (KR)"));
+
+		const joinBtn = screen.getByRole("button", { name: "Join Game" });
 		expect(joinBtn).toBeEnabled();
 
 		fireEvent.click(joinBtn);
@@ -129,6 +138,8 @@ describe("VoiceChat", () => {
 		fireEvent.change(screen.getByLabelText("Game ID"), {
 			target: { value: "s1" },
 		});
+		fireEvent.mouseDown(screen.getByLabelText("Region"));
+		fireEvent.click(await screen.findByText("Japan (JP)"));
 		fireEvent.click(screen.getByText("Join Game"));
 
 		// Age dialog appears; an under-13 birth year is rejected.

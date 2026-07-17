@@ -14,14 +14,6 @@ export const en: TranslationResources = {
 			muted: "Randoms stay muted",
 		},
 		panel: {
-			room: "duskrunners",
-			live: "Live",
-			youName: "You",
-			youStatus: "Mic on",
-			speaking: "Speaking",
-			connected: "Connected",
-			invite: "+ invite",
-			footNote: "3 on the line · randoms muted",
 			ariaLabel:
 				"The VoiceCrew in-call screen: a session with three teammates on voice, one speaking, plus mic, noise-suppression, and leave controls.",
 		},
@@ -104,6 +96,8 @@ export const en: TranslationResources = {
 		summonerIdPlaceholder: "Enter your name",
 		gameId: "Game ID",
 		gameIdPlaceholder: "Enter game ID to join",
+		region: "Region",
+		regionPlaceholder: "Select your region",
 		joinGame: "Join Game",
 		consent:
 			"By pressing “Join Game”, you agree to the <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>. You must be 13 or older to use the Service.",

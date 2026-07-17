@@ -15,6 +15,14 @@ export const VoiceChat = () => {
 		const stored = localStorage.getItem("vp_summoner_id") || "";
 		return stored.length > 32 ? "" : stored;
 	});
+	// Player's Riot platform region (e.g. "na1"). Remembered across sessions.
+	const [region, setRegion] = useState(() => {
+		try {
+			return localStorage.getItem("vp_region") || "";
+		} catch {
+			return "";
+		}
+	});
 	const [currentSession, setCurrentSession] = useState<Session | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
@@ -39,6 +47,16 @@ export const VoiceChat = () => {
 			localStorage.setItem("vp_summoner_id", summonerId);
 		}
 	}, [summonerId]);
+
+	useEffect(() => {
+		if (region) {
+			try {
+				localStorage.setItem("vp_region", region);
+			} catch {
+				/* ignore storage errors */
+			}
+		}
+	}, [region]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Only run once on mount when params exist
 	useEffect(() => {
@@ -72,7 +90,7 @@ export const VoiceChat = () => {
 			const res = await fetch(`/api/sessions/${targetSessionId}/join`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ summonerId }),
+				body: JSON.stringify({ summonerId, region }),
 			});
 
 			if (!res.ok) {
@@ -147,10 +165,12 @@ export const VoiceChat = () => {
 		<JoinSessionForm
 			summonerId={summonerId}
 			sessionId={sessionId}
+			region={region}
 			loading={loading}
 			error={error}
 			onSummonerIdChange={setSummonerId}
 			onSessionIdChange={setSessionId}
+			onRegionChange={setRegion}
 			onJoin={() => joinSession(sessionId)}
 			disableSessionInput={!!routeSessionId}
 		/>

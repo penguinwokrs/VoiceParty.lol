@@ -12,14 +12,6 @@ export const ja = {
 			muted: "野良はミュートのまま",
 		},
 		panel: {
-			room: "duskrunners",
-			live: "ライブ",
-			youName: "あなた",
-			youStatus: "マイクON",
-			speaking: "発話中",
-			connected: "接続済み",
-			invite: "+ 招待",
-			footNote: "3人が通話中 · 野良はミュート",
 			ariaLabel:
 				"VoiceCrew の通話画面：3人のチームメイトが通話中で1人が発話中。マイク・ノイズ抑制・退出の操作ボタン付き。",
 		},
@@ -101,6 +93,8 @@ export const ja = {
 		summonerIdPlaceholder: "名前を入力",
 		gameId: "ゲームID",
 		gameIdPlaceholder: "参加するゲームIDを入力",
+		region: "リージョン",
+		regionPlaceholder: "リージョンを選択",
 		joinGame: "参加する",
 		consent:
 			"「参加する」を押すと、<terms>利用規約</terms>と<privacy>プライバシーポリシー</privacy>に同意したものとみなされます。13歳以上の方のみご利用いただけます。",
