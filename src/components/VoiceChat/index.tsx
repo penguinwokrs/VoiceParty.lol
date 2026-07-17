@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { nanoid } from "nanoid";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import type { LanguageCode } from "../../i18n";
@@ -9,6 +10,13 @@ import { isRegionCode } from "./regions";
 import type { JoinResponse, Session } from "./types";
 import { useRealtime } from "./useRealtime";
 
+// Room IDs are generated, never typed. Players no longer agree on a word out of
+// band — the invite link is the only way in — so the ID has to be unguessable
+// rather than memorable: the readable IDs this replaces ("game-123") let anyone
+// walk into a stranger's room by guessing. 12 chars of nanoid's 64-symbol
+// alphabet is far past brute force, and stays short enough to paste anywhere.
+const ROOM_ID_LENGTH = 12;
+
 export const VoiceChat = () => {
 	const { t, i18n } = useTranslation();
 	const lang = (i18n.resolvedLanguage ?? "en") as LanguageCode;
@@ -17,7 +25,11 @@ export const VoiceChat = () => {
 	// An unknown code in the URL is ignored rather than trusted, which also
 	// lets a legacy /join/:sessionId link fall through to the picker.
 	const routeRegion = isRegionCode(routeRegionParam) ? routeRegionParam : "";
-	const [sessionId, setSessionId] = useState(routeSessionId || "");
+	// Following an invite link uses that room; otherwise this visit mints a new
+	// one, so the join button is live the moment a Riot ID is filled in.
+	const [sessionId, setSessionId] = useState(
+		() => routeSessionId || nanoid(ROOM_ID_LENGTH),
+	);
 	const [summonerId, setSummonerId] = useState(() => {
 		const stored = localStorage.getItem("vp_summoner_id") || "";
 		return stored.length > 32 ? "" : stored;
@@ -35,6 +47,9 @@ export const VoiceChat = () => {
 	const [currentSession, setCurrentSession] = useState<Session | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
+	// Whether the player pressed Join. A ref, not state: it gates an effect that
+	// must see the new value on the very next run, without a re-render of its own.
+	const joinRequested = useRef(false);
 
 	const {
 		join,
@@ -82,11 +97,24 @@ export const VoiceChat = () => {
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Re-runs when the room the URL points at changes
 	useEffect(() => {
-		if (routeSessionId && summonerId && !currentSession) {
+		if (routeSessionId && routeSessionId !== sessionId) {
 			setSessionId(routeSessionId);
+		}
+		// Resume a join the player actually asked for. `joinSession` navigates to
+		// the room path first and returns, so this effect is what completes the
+		// join once the params are in place.
+		//
+		// It must NOT fire on arrival from someone's link: a returning player has
+		// a stored Riot ID, which used to be enough to drop them straight into a
+		// live call — mic on, strangers listening — without ever seeing the form.
+		// The stored name prefills the field; pressing Join stays their decision.
+		if (
+			joinRequested.current &&
+			routeSessionId &&
+			summonerId &&
+			!currentSession
+		) {
 			joinSession(routeSessionId);
-		} else if (routeSessionId && routeSessionId !== sessionId) {
-			setSessionId(routeSessionId);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [routeSessionId, routeRegion]);
@@ -142,6 +170,9 @@ export const VoiceChat = () => {
 			setError((err as Error).message);
 			// If session fetch failed, we shouldn't show the session UI
 			setCurrentSession(null);
+			// Don't let a failed attempt keep retrying behind their back — e.g. on
+			// the next region change. Pressing Join again is an explicit retry.
+			joinRequested.current = false;
 		} finally {
 			setLoading(false);
 		}
@@ -150,7 +181,9 @@ export const VoiceChat = () => {
 	const handleLeave = async () => {
 		await leave();
 		setCurrentSession(null);
-		setSessionId("");
+		// Leaving ends the intent to be in a room, and the next one is a new room.
+		joinRequested.current = false;
+		setSessionId(nanoid(ROOM_ID_LENGTH));
 		navigate("/");
 	};
 
@@ -192,15 +225,15 @@ export const VoiceChat = () => {
 	return (
 		<JoinSessionForm
 			summonerId={summonerId}
-			sessionId={sessionId}
 			region={region}
 			loading={loading}
 			error={error}
 			onSummonerIdChange={setSummonerId}
-			onSessionIdChange={setSessionId}
 			onRegionChange={handleRegionChange}
-			onJoin={() => joinSession(sessionId)}
-			disableSessionInput={!!routeSessionId}
+			onJoin={() => {
+				joinRequested.current = true;
+				joinSession(sessionId);
+			}}
 			disableRegionInput={!!routeRegion}
 		/>
 	);

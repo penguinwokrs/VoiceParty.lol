@@ -92,10 +92,10 @@ export const ja = {
 	},
 	join: {
 		heading: "ボイスチャット",
-		summonerId: "サモナー名",
-		summonerIdPlaceholder: "名前を入力",
-		gameId: "ゲームID",
-		gameIdPlaceholder: "参加するゲームIDを入力",
+		summonerId: "Riot ID",
+		summonerIdPlaceholder: "Faker#KR1",
+		summonerIdHelp:
+			"旧「サモナーネーム」です。名前の後ろに #タグ が付きます。ゲームクライアント右上のプロフィールで確認できます。",
 		region: "リージョン",
 		regionPlaceholder: "リージョンを選択",
 		regionFromLink:
@@ -146,7 +146,7 @@ export const ja = {
 		},
 	},
 	errors: {
-		idsRequired: "サモナー名とゲームIDを入力してください",
+		idsRequired: "Riot ID を入力してください",
 		joinFailed: "セッションへの参加に失敗しました",
 		voiceConnectionFailed:
 			"セッションには参加しましたが、音声接続に失敗しました（コンソール／認証情報を確認してください）",

@@ -1,3 +1,4 @@
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import {
 	Alert,
 	Autocomplete,
@@ -8,9 +9,12 @@ import {
 	DialogActions,
 	DialogContent,
 	DialogTitle,
+	IconButton,
+	InputAdornment,
 	Link,
 	Stack,
 	TextField,
+	Tooltip,
 	Typography,
 } from "@mui/material";
 import { useState } from "react";
@@ -20,6 +24,32 @@ import type { LanguageCode } from "../../i18n";
 import { localizePath } from "../../i18n/paths";
 import { Button } from "../Button";
 import { REGIONS } from "./regions";
+
+// Hover/focus help for a field. The icon sits in the input's end adornment.
+//
+// The icon must be wrapped in a button, not left bare: MUI's SvgIcon renders
+// `aria-hidden`, so a focusable bare icon would be a focus stop that screen
+// readers never announce, and Tooltip could not attach its text to it. The
+// button carries the tooltip text as its accessible name (Tooltip does this
+// for a string `title`), which is the only way the help reaches assistive tech.
+//
+// `enterTouchDelay={0}` opens it on tap as well — on touch there is no cursor
+// to hover with, and this is the only route to the text there.
+const FieldHelp = ({ text }: { text: string }) => (
+	<InputAdornment position="end">
+		<Tooltip title={text} enterTouchDelay={0} leaveTouchDelay={6000}>
+			<IconButton
+				size="small"
+				edge="end"
+				// Informational only: the tooltip is the whole behaviour.
+				disableRipple
+				sx={{ color: "text.secondary", cursor: "help" }}
+			>
+				<HelpOutlineIcon fontSize="small" />
+			</IconButton>
+		</Tooltip>
+	</InputAdornment>
+);
 
 // Minimum age to use the Service (see Terms/Privacy). Enforced with a neutral
 // birth-year gate rather than a yes/no prompt.
@@ -37,30 +67,24 @@ const isAgeConfirmed = (): boolean => {
 
 type JoinSessionFormProps = {
 	summonerId: string;
-	sessionId: string;
 	region: string;
 	loading: boolean;
 	error: string;
 	onSummonerIdChange: (summonerId: string) => void;
-	onSessionIdChange: (sessionId: string) => void;
 	onRegionChange: (region: string) => void;
 	onJoin: () => void;
-	disableSessionInput?: boolean;
 	/** The invite link fixed the region — you can't play across platforms. */
 	disableRegionInput?: boolean;
 };
 
 export const JoinSessionForm = ({
 	summonerId,
-	sessionId,
 	region,
 	loading,
 	error,
 	onSummonerIdChange,
-	onSessionIdChange,
 	onRegionChange,
 	onJoin,
-	disableSessionInput,
 	disableRegionInput,
 }: JoinSessionFormProps) => {
 	const { t, i18n } = useTranslation();
@@ -142,22 +166,22 @@ export const JoinSessionForm = ({
 						onChange={(e) => onSummonerIdChange(e.target.value)}
 						fullWidth
 						placeholder={t("join.summonerIdPlaceholder")}
-					/>
-
-					<TextField
-						label={t("join.gameId")}
-						value={sessionId}
-						onChange={(e) => onSessionIdChange(e.target.value)}
-						fullWidth
-						placeholder={t("join.gameIdPlaceholder")}
-						disabled={disableSessionInput}
+						slotProps={{
+							input: {
+								endAdornment: <FieldHelp text={t("join.summonerIdHelp")} />,
+							},
+							// Float the label permanently. MUI hides the placeholder until
+							// the label shrinks, which would keep the example invisible
+							// until the field is focused — the example is the point here.
+							inputLabel: { shrink: true },
+						}}
 					/>
 
 					<Button
 						fullWidth
 						variant="contained"
 						onClick={handleJoinClick}
-						disabled={loading || !summonerId || !sessionId || !region}
+						disabled={loading || !summonerId || !region}
 					>
 						{loading ? (
 							<CircularProgress size={24} color="inherit" />

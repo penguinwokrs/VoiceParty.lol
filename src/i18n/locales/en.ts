@@ -92,10 +92,10 @@ export const en: TranslationResources = {
 	},
 	join: {
 		heading: "Voice Chat",
-		summonerId: "Summoner ID",
-		summonerIdPlaceholder: "Enter your name",
-		gameId: "Game ID",
-		gameIdPlaceholder: "Enter game ID to join",
+		summonerId: "Riot ID",
+		summonerIdPlaceholder: "Faker#KR1",
+		summonerIdHelp:
+			"Formerly your Summoner Name. It ends with a #tag — find it on your profile in the top right of the game client.",
 		region: "Region",
 		regionPlaceholder: "Select your region",
 		regionFromLink:
@@ -145,7 +145,7 @@ export const en: TranslationResources = {
 		},
 	},
 	errors: {
-		idsRequired: "Summoner name and game ID are required",
+		idsRequired: "Riot ID is required",
 		joinFailed: "Failed to join session",
 		voiceConnectionFailed:
 			"Joined session but voice connection failed (check console/creds)",

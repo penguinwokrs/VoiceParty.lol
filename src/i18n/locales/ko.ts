@@ -92,10 +92,10 @@ export const ko: TranslationResources = {
 	},
 	join: {
 		heading: "음성 채팅",
-		summonerId: "소환사 이름",
-		summonerIdPlaceholder: "이름을 입력하세요",
-		gameId: "게임 ID",
-		gameIdPlaceholder: "참가할 게임 ID를 입력하세요",
+		summonerId: "Riot ID",
+		summonerIdPlaceholder: "Faker#KR1",
+		summonerIdHelp:
+			"예전의 '소환사 이름'입니다. 이름 뒤에 #태그가 붙습니다. 게임 클라이언트 오른쪽 위 프로필에서 확인할 수 있습니다.",
 		region: "지역",
 		regionPlaceholder: "지역 선택",
 		regionFromLink:
@@ -146,7 +146,7 @@ export const ko: TranslationResources = {
 		},
 	},
 	errors: {
-		idsRequired: "소환사 이름과 게임 ID를 입력하세요",
+		idsRequired: "Riot ID를 입력하세요",
 		joinFailed: "세션 참가에 실패했습니다",
 		voiceConnectionFailed:
 			"세션에는 참가했지만 음성 연결에 실패했습니다 (콘솔/인증 정보를 확인하세요)",
