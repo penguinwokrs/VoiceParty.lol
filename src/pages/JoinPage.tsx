@@ -1,5 +1,6 @@
 import { Container } from "@mui/material";
 import { useTranslation } from "react-i18next";
+import { BrandMark } from "../components/BrandMark";
 import {
 	BrandDivider,
 	BrandSubtitle,
@@ -28,6 +29,7 @@ export const JoinPage = () => {
 				gap: 2.5,
 			}}
 		>
+			<BrandMark size={56} />
 			<Eyebrow>{t("landing.eyebrow")}</Eyebrow>
 			{/* variant="h1" already renders an <h1> via Typography's variantMapping;
 			    styled(Typography) doesn't type the `component` override prop. */}

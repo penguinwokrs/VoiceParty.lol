@@ -1,7 +1,21 @@
-import "@fontsource/roboto/300.css";
-import "@fontsource/roboto/400.css";
-import "@fontsource/roboto/500.css";
-import "@fontsource/roboto/700.css";
+// Keep this font set in sync with src/main.tsx, or stories render in a
+// different typeface than the app.
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
+import "@fontsource/space-grotesk/500.css";
+import "@fontsource/space-grotesk/600.css";
+import "@fontsource/space-grotesk/700.css";
+import "@fontsource/jetbrains-mono/400.css";
+import "@fontsource/jetbrains-mono/500.css";
+import "@fontsource/jetbrains-mono/700.css";
+import "@fontsource/noto-sans-jp/400.css";
+import "@fontsource/noto-sans-jp/500.css";
+import "@fontsource/noto-sans-jp/700.css";
+import "@fontsource/noto-sans-kr/400.css";
+import "@fontsource/noto-sans-kr/500.css";
+import "@fontsource/noto-sans-kr/700.css";
 // Design tokens (CSS variables) used by the branded components.
 import "../src/theme/tokens.generated.css";
 
@@ -58,7 +72,8 @@ const preview: Preview = {
 		backgrounds: {
 			default: "app",
 			values: [
-				{ name: "app", value: "#0a1428" },
+				// color.bg.base — the Signal on Ink surface (design/tokens.json).
+				{ name: "app", value: "#0B0E13" },
 				{ name: "light", value: "#ffffff" },
 			],
 		},
