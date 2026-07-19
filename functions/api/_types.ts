@@ -12,9 +12,6 @@ export type Bindings = {
 	REALTIME_API_KEY: string;
 	REALTIME_KIT_APP_ID: string;
 	USE_MOCK_REALTIME: string;
-	// Funnel metrics (see _lib/analytics.ts). Optional: absent in local dev and
-	// in tests, and every write site tolerates that.
-	VC_ANALYTICS?: AnalyticsEngineDataset;
 };
 
 /** One row of the permanent report store, as read by the auto-ban aggregator. */

@@ -1,9 +1,18 @@
 /**
- * Funnel instrumentation on Workers Analytics Engine.
+ * Funnel instrumentation on D1 aggregate counters.
  *
- * Why not a KV counter: KV has no atomic increment, so concurrent writes
- * silently drop increments — exactly the failure mode you cannot detect from
- * the resulting numbers. Analytics Engine is append-only and built for this.
+ * Why D1 counters and not Analytics Engine: AE is not in the Workers Free plan,
+ * and this account has no Workers Paid subscription, so the AE binding failed
+ * the Pages deploy. D1 is already bound (VC_DB) and already deploys. A per-
+ * dimension counter row incremented with UPSERT gives the one property KV
+ * lacked — an ATOMIC increment (INSERT ... ON CONFLICT DO UPDATE SET
+ * count=count+1 is atomic within the statement in SQLite) — which was the
+ * reason AE was reached for in the first place. Same aggregate query story
+ * (GROUP BY), same privacy shape, no plan upgrade. See docs/analytics.md.
+ *
+ * At cold-start volume the write-per-event cost is far under D1's free write
+ * limit; if bot page_views ever push it, drop or sample them (they are already
+ * classified). Storage is bounded: one row per dimension-combo per day.
  *
  * Why no public beacon endpoint: every event below is written from a request
  * the server already handles (the HTML request in functions/_middleware.ts, or
@@ -12,20 +21,8 @@
  *
  * PRIVACY: no identifier is written — no Riot ID, no IP, no cookie, no
  * per-visitor ID of any kind. Only a coarse channel tag, language, country and
- * bot/human class. Aggregate and cookieless, per the privacy policy §3.
- *
- * COLUMN LAYOUT (Analytics Engine addresses columns positionally, so this
- * order is the schema — appending is safe, reordering is not):
- *
- *   index1  src        the channel, so sampling is per-channel
- *   blob1   event      page_view | room_created | joined
- *   blob2   src        share channel (see KNOWN_SOURCES)
- *   blob3   ref        partner/streamer tag, "" when absent
- *   blob4   lang       en | ja | ko | zh-TW
- *   blob5   country    CF-IPCountry, "XX" when unknown
- *   blob6   visitor    human | bot
- *   blob7   detail     per-event: landing|invite|other, or new|existing
- *   double1 1          count, so SUM(_sample_interval * double1) is the total
+ * bot/human class. Aggregate and cookieless, per the privacy policy §3. With no
+ * PII stored there is nothing to expire, so rows are kept indefinitely.
  */
 
 import type { Bindings } from "../_types";
@@ -82,28 +79,46 @@ export const classifyVisitor = (
 	userAgent: string | null | undefined,
 ): "human" | "bot" => (BOT_PATTERN.test(userAgent ?? "") ? "bot" : "human");
 
+export type FunnelEventInput = {
+	name: FunnelEvent;
+	src: string;
+	ref: string;
+	lang: string;
+	country: string;
+	visitor: "human" | "bot";
+	detail: string;
+};
+
+/** UTC calendar day (YYYY-MM-DD) that a counter row is bucketed under. */
+export const funnelDay = (now: number): string =>
+	new Date(now).toISOString().slice(0, 10);
+
 /**
- * Record one funnel event. Never throws and never blocks the response: losing
- * a metric must not cost anyone their call.
+ * Record one funnel event by incrementing its counter row. Never throws:
+ * losing a metric must not cost anyone their call. Callers run it under
+ * waitUntil so it never blocks the response either.
+ *
+ * The write is a single UPSERT; the increment is atomic within the statement.
+ * Resilient to the table not existing yet (before migration 0002 is applied),
+ * so a deploy is safe ahead of activation — it just records nothing until then.
  */
-export function writeFunnelEvent(
-	env: Pick<Bindings, "VC_ANALYTICS">,
-	event: {
-		name: FunnelEvent;
-		src: string;
-		ref: string;
-		lang: string;
-		country: string;
-		visitor: "human" | "bot";
-		detail: string;
-	},
-): void {
-	// Absent in local dev (`wrangler pages dev` without the binding) and in tests.
-	if (!env.VC_ANALYTICS) return;
+export async function writeFunnelEvent(
+	env: Pick<Bindings, "VC_DB">,
+	event: FunnelEventInput,
+	now: number = Date.now(),
+): Promise<void> {
+	// Absent in unit tests that don't stub D1.
+	if (!env.VC_DB) return;
 	try {
-		env.VC_ANALYTICS.writeDataPoint({
-			indexes: [event.src],
-			blobs: [
+		await env.VC_DB.prepare(
+			`INSERT INTO funnel_stats
+				(day, event, src, ref, lang, country, visitor, detail, count)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+			 ON CONFLICT (day, event, src, ref, lang, country, visitor, detail)
+			 DO UPDATE SET count = count + 1`,
+		)
+			.bind(
+				funnelDay(now),
 				event.name,
 				event.src,
 				event.ref,
@@ -111,10 +126,9 @@ export function writeFunnelEvent(
 				event.country,
 				event.visitor,
 				event.detail,
-			],
-			doubles: [1],
-		});
+			)
+			.run();
 	} catch (e) {
-		console.error("[analytics] writeDataPoint failed:", e);
+		console.error("[analytics] funnel write failed:", e);
 	}
 }

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import {
 	classifyVisitor,
+	type FunnelEventInput,
 	sanitizeLang,
 	sanitizeRef,
 	sanitizeSource,
@@ -60,6 +61,26 @@ const funnelContext = (headers: Headers, body: Attribution) => ({
 	country: headers.get("CF-IPCountry") ?? "XX",
 	visitor: classifyVisitor(headers.get("User-Agent")),
 });
+
+/**
+ * Fire a funnel write without delaying the response. `c.executionCtx` throws
+ * when absent (unit tests), so probe it: in production the write runs under
+ * waitUntil and this resolves immediately; in tests there is no execCtx so we
+ * await the write, which lets assertions see the row. Mirrors the auto-ban
+ * dispatch below. Awaiting this in prod costs one microtask, not the D1 write.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: Hono context, only used for executionCtx
+const recordFunnel = async (c: any, event: FunnelEventInput): Promise<void> => {
+	const write = () => writeFunnelEvent(c.env, event);
+	let execCtx: ExecutionContext | undefined;
+	try {
+		execCtx = c.executionCtx;
+	} catch {
+		execCtx = undefined;
+	}
+	if (execCtx) execCtx.waitUntil(write());
+	else await write();
+};
 
 app.post("/", async (c) => {
 	const sessionId = crypto.randomUUID();
@@ -122,7 +143,7 @@ app.post("/", async (c) => {
 		);
 	}
 
-	writeFunnelEvent(c.env, {
+	await recordFunnel(c, {
 		name: "room_created",
 		...funnelContext(c.req.raw.headers, attribution),
 		detail: "explicit",
@@ -345,7 +366,7 @@ app.post("/:id/join", async (c) => {
 		}
 	}
 
-	writeFunnelEvent(c.env, {
+	await recordFunnel(c, {
 		name: "joined",
 		...funnelContext(c.req.raw.headers, { src, ref, lang: uiLang }),
 		detail: isNewRoom ? "new" : "existing",

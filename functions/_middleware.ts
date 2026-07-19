@@ -146,16 +146,19 @@ export const onRequest: PagesFunction<Bindings> = async (context) => {
 
 	// Top of the funnel, counted on the HTML request itself. Landing on an
 	// invite is the step no server API sees otherwise, and it is the
-	// denominator for "how many invites actually convert into a join".
-	writeFunnelEvent(context.env, {
-		name: "page_view",
-		src: sanitizeSource(url.searchParams.get("src")),
-		ref: sanitizeRef(url.searchParams.get("ref")),
-		lang,
-		country: context.request.headers.get("CF-IPCountry") ?? "XX",
-		visitor: classifyVisitor(context.request.headers.get("User-Agent")),
-		detail: pageDetail(basePath),
-	});
+	// denominator for "how many invites actually convert into a join". Under
+	// waitUntil so the counter write never delays the page.
+	context.waitUntil(
+		writeFunnelEvent(context.env, {
+			name: "page_view",
+			src: sanitizeSource(url.searchParams.get("src")),
+			ref: sanitizeRef(url.searchParams.get("ref")),
+			lang,
+			country: context.request.headers.get("CF-IPCountry") ?? "XX",
+			visitor: classifyVisitor(context.request.headers.get("User-Agent")),
+			detail: pageDetail(basePath),
+		}),
+	);
 
 	const alternates = [...LANGS]
 		.map(
