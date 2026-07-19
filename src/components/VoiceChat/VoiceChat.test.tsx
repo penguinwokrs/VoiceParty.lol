@@ -195,6 +195,45 @@ describe("VoiceChat", () => {
 			await waitFor(() => expect(writeText).toHaveBeenCalled());
 			expect(writeText.mock.calls[0][0]).toContain("/join/kr/session-123");
 		});
+
+		// The channel tag is not just a metric: the edge picks the preview card's
+		// wording from it, so a copied link must claim "copy" and only that.
+		it("stamps the copied link with its share channel", async () => {
+			vi.spyOn(Storage.prototype, "getItem").mockImplementation((k) =>
+				k === "vp_age_ok" ? "true" : null,
+			);
+			const writeText = vi.fn().mockResolvedValue(undefined);
+			Object.defineProperty(navigator, "clipboard", {
+				value: { writeText },
+				configurable: true,
+			});
+			global.fetch = vi.fn().mockResolvedValue({
+				ok: true,
+				text: () => Promise.resolve(""),
+				json: () =>
+					Promise.resolve({
+						session: {
+							sessionId: "session-123",
+							users: [{ summonerId: "test-user", joinedAt: Date.now() }],
+							createdAt: Date.now(),
+						},
+						realtime: { token: "mock-token", meetingId: "mock-id" },
+					}),
+			});
+
+			renderAt("/join/kr/session-123");
+			fireEvent.change(screen.getByLabelText("Riot ID"), {
+				target: { value: "test-user" },
+			});
+			fireEvent.click(screen.getByRole("button", { name: "Join Game" }));
+			await waitFor(() => {
+				expect(screen.getByText(/Session:.*session-123/)).toBeInTheDocument();
+			});
+
+			fireEvent.click(screen.getByRole("button", { name: /Copy link/ }));
+			await waitFor(() => expect(writeText).toHaveBeenCalled());
+			expect(writeText.mock.calls[0][0]).toContain("?src=copy");
+		});
 	});
 
 	// Regression: a returning player has a stored Riot ID, which used to be
