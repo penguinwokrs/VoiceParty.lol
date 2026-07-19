@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import { isBanned, maybeAutoBan } from "../_lib/moderation";
+import { consumeJoinQuota, consumeReportQuota } from "../_lib/rate-limit";
 import { callRealtimeKit, getActiveParticipantCount } from "../_lib/realtime";
-import { recordReport } from "../_lib/reports";
+import { normalizeRiotId, recordReport } from "../_lib/reports";
 import {
 	getAccountByRiotId,
 	getProfileIconUrl,
@@ -36,6 +37,27 @@ const REPORT_REASONS = new Set([
 // automatic score (which could be weaponized for such a severe category).
 const CHILD_SAFETY_REASON = "child_safety";
 const MAX_NOTE_LENGTH = 280;
+
+/**
+ * Resolve a room ID to its stored session, following the same two hops as the
+ * join handler: `game:{sessionId}` -> meetingId -> `session:{meetingId}`.
+ * Returns null when either hop is missing (unknown room, or one whose 6h TTL
+ * has lapsed).
+ */
+async function loadSession(
+	env: Bindings,
+	sessionId: string,
+): Promise<Session | null> {
+	const meetingId = await env.VC_SESSIONS.get(`game:${sessionId}`);
+	if (!meetingId) return null;
+	const raw = await env.VC_SESSIONS.get(`session:${meetingId}`);
+	if (!raw) return null;
+	try {
+		return JSON.parse(raw) as Session;
+	} catch {
+		return null;
+	}
+}
 
 app.post("/", async (c) => {
 	const sessionId = crypto.randomUUID();
@@ -115,11 +137,23 @@ app.post("/:id/join", async (c) => {
 		);
 	}
 
+	// Cost cap, not a security control: an automated client hammering this
+	// endpoint mints RealtimeKit meetings, which bill participant-minutes.
+	if (
+		!(await consumeJoinQuota(c.env, c.req.raw.headers.get("CF-Connecting-IP")))
+	) {
+		return c.text("Too many joins from this network. Try again later.", 429);
+	}
+
 	// Validate Summoner ID via Riot API
 	// 1. Check if API Key exists (and validation is not disabled)
 	const apiKey = c.env.RIOT_GAME_API_KEY;
 	const validationDisabled = c.env.RIOT_VALIDATION_ENABLED === "false";
 	let validIconUrl = iconUrl;
+	// Recorded on the roster entry. Only the branch that actually asks Riot who
+	// this is may set it — moderation treats an unvalidated name as an unproven
+	// claim, because that is exactly what it is.
+	let identityValidated = false;
 
 	if (validationDisabled) {
 		console.warn(
@@ -135,6 +169,7 @@ app.post("/:id/join", async (c) => {
 		}
 
 		console.log(`[Join] Found Account: ${account.gameName}#${account.tagLine}`);
+		identityValidated = true;
 
 		// 2. Fetch Summoner to get Icon
 		const summoner = await getSummonerByPuuid(account.puuid, apiKey);
@@ -242,7 +277,13 @@ app.post("/:id/join", async (c) => {
 			summonerId,
 			joinedAt: Date.now(),
 			iconUrl: validIconUrl,
+			validated: identityValidated,
 		});
+	} else if (identityValidated) {
+		// Someone who first joined while validation was off, rejoining after it
+		// was switched on. Upgrade the entry rather than leaving them permanently
+		// unverified for the life of the room.
+		existingUser.validated = true;
 	}
 
 	// Persist the session and refresh the TTL on BOTH keys, unconditionally — so
@@ -344,6 +385,35 @@ app.post("/:id/reports", async (c) => {
 		return c.text("Invalid report reason", 400);
 	}
 
+	// Cheap abuse cap first, so a flood is cut off before it costs us a session
+	// lookup. Counts rejected attempts too — probing should burn quota.
+	const ip = c.req.raw.headers.get("CF-Connecting-IP");
+	if (!(await consumeReportQuota(c.env, ip))) {
+		return c.text("Too many reports. Try again later.", 429);
+	}
+
+	// Both parties must be on this room's roster. Without this the reporter is
+	// just an unvalidated string from the body, and three POSTs with invented
+	// names clear MIN_DISTINCT_REPORTERS and auto-ban any Riot ID for 24h.
+	// The roster is append-only, so someone who has already left can still be
+	// reported (and can still report) — which is the behaviour we want.
+	const session = await loadSession(c.env, sessionId);
+	if (!session) {
+		return c.text("Session not found", 404);
+	}
+	const entryFor = (riotId: string) =>
+		session.users.find(
+			(u) => normalizeRiotId(u.summonerId) === normalizeRiotId(riotId),
+		);
+	const reporterEntry = entryFor(reporter);
+	const reportedEntry = entryFor(reported);
+	if (!reporterEntry) {
+		return c.text("You can only report from a room you joined", 403);
+	}
+	if (!reportedEntry) {
+		return c.text("That user is not in this room", 403);
+	}
+
 	const createdAt = Date.now();
 
 	// Persisted to D1 with no expiry, Riot IDs in the clear. Both parties are
@@ -363,6 +433,33 @@ app.post("/:id/reports", async (c) => {
 	// severe to let a score-based auto-ban be weaponized). The row is stored the
 	// same way; `evaluateReports` is what skips it.
 	if (reason === CHILD_SAFETY_REASON) {
+		return c.json({ ok: true });
+	}
+
+	// Kill switch. Set MODERATION_AUTO_BAN_ENABLED="false" to fall back to
+	// "record + client-side local mute + human review": suspensions stop being
+	// automatic, but nothing about the evidence trail changes. Meant for when a
+	// weaponization pattern shows up faster than a fix can ship.
+	if (c.env.MODERATION_AUTO_BAN_ENABLED === "false") {
+		return c.json({ ok: true });
+	}
+
+	// Roster membership only proves "a real, distinct person" when joining
+	// required proving who you are. With RIOT_VALIDATION_ENABLED="false" — the
+	// current production setting while RSO approval is pending — join accepts any
+	// self-asserted name, so one attacker can walk a room's roster full of
+	// invented reporters plus their victim and clear MIN_DISTINCT_REPORTERS
+	// alone. Requiring both sides to be Riot-verified is what makes the
+	// distinct-reporter threshold mean anything.
+	//
+	// The report is still recorded above and the reporter's client still mutes
+	// locally; only the automatic suspension is withheld. When validation is off
+	// this disables auto-ban wholesale, which is the correct behaviour: the
+	// signal it rests on does not exist.
+	if (!(reporterEntry.validated && reportedEntry.validated)) {
+		console.warn(
+			"[reports] skipping auto-ban: identity not Riot-verified for one or both parties",
+		);
 		return c.json({ ok: true });
 	}
 
