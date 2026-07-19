@@ -14,16 +14,66 @@ export type Summoner = {
 	summonerLevel: number;
 };
 
-const ACCOUNT_API_URL = "https://asia.api.riotgames.com";
-const SUMMONER_API_URL = "https://jp1.api.riotgames.com";
+// Riot splits its API across two kinds of host. SUMMONER-V4 is per *platform*
+// (`jp1`, `na1`, …) and only knows about accounts on that platform, so calling
+// the wrong one 404s. ACCOUNT-V1 is per *regional cluster* (`americas`, `asia`,
+// `europe`) and is account-global, so the cluster only affects latency.
+//
+// Both used to be hardcoded to the JP/asia hosts, which meant every non-JP
+// player silently lost their profile icon. The platform the player picks in the
+// join form is what routes these calls now.
+//
+// Keep PLATFORM_TO_CLUSTER's keys in sync with `src/components/VoiceChat/regions.ts`
+// — the test in riot.test.ts fails if they drift apart.
+const PLATFORM_TO_CLUSTER: Record<string, string> = {
+	na1: "americas",
+	br1: "americas",
+	la1: "americas",
+	la2: "americas",
+	euw1: "europe",
+	eun1: "europe",
+	tr1: "europe",
+	ru: "europe",
+	kr: "asia",
+	jp1: "asia",
+	// SEA platforms: ACCOUNT-V1 exposes no `sea` cluster, so these route to asia.
+	oc1: "asia",
+	ph2: "asia",
+	sg2: "asia",
+	th2: "asia",
+	tw2: "asia",
+	vn2: "asia",
+};
+
+// Used when a caller passes a platform we don't recognise. ACCOUNT-V1 is
+// account-global so this still resolves; it just adds latency for far regions.
+const DEFAULT_CLUSTER = "americas";
+
+/** Platform codes this module can route. Asserted against the UI's list in tests. */
+export const KNOWN_PLATFORMS = Object.keys(PLATFORM_TO_CLUSTER);
+
+/** True for platform codes we will interpolate into a Riot API hostname. */
+export const isKnownPlatform = (region: string | undefined): boolean =>
+	!!region && Object.hasOwn(PLATFORM_TO_CLUSTER, region);
+
+const accountApiUrl = (region: string | undefined): string => {
+	// Never interpolate an unvalidated value into the host — it comes from a
+	// request body and would otherwise be a way to point our API key at an
+	// arbitrary server.
+	const cluster = isKnownPlatform(region)
+		? PLATFORM_TO_CLUSTER[region as string]
+		: DEFAULT_CLUSTER;
+	return `https://${cluster}.api.riotgames.com`;
+};
 
 /**
  * Validates Summoner ID (Riot ID format: Name#Tag) and returns Account info.
- * Uses Account-V1 API (Asia region).
+ * Uses Account-V1, routed to the regional cluster that owns `region`.
  */
 export async function getAccountByRiotId(
 	riotId: string,
 	apiKey: string,
+	region?: string,
 ): Promise<RiotAccount | null> {
 	if (!riotId || !riotId.includes("#")) {
 		return null;
@@ -32,7 +82,7 @@ export async function getAccountByRiotId(
 	const [gameName, tagLine] = riotId.split("#");
 	try {
 		const res = await fetch(
-			`${ACCOUNT_API_URL}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(
+			`${accountApiUrl(region)}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(
 				gameName,
 			)}/${encodeURIComponent(tagLine)}`,
 			{
@@ -61,16 +111,26 @@ export async function getAccountByRiotId(
 }
 
 /**
- * Fetches Summoner info by PUUID.
- * Uses Summoner-V4 API (JP1 region).
+ * Fetches Summoner info by PUUID from the player's own platform.
+ *
+ * Returns null for an unknown platform rather than guessing one: SUMMONER-V4 is
+ * platform-scoped, so a guess would 404 for most players anyway, and the caller
+ * already treats null as "no icon" without failing the join.
  */
 export async function getSummonerByPuuid(
 	puuid: string,
 	apiKey: string,
+	region: string,
 ): Promise<Summoner | null> {
+	if (!isKnownPlatform(region)) {
+		console.warn(
+			`[RiotAPI] Unknown platform '${region}'; skipping icon lookup`,
+		);
+		return null;
+	}
 	try {
 		const res = await fetch(
-			`${SUMMONER_API_URL}/lol/summoner/v4/summoners/by-puuid/${puuid}`,
+			`https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${puuid}`,
 			{
 				headers: {
 					"X-Riot-Token": apiKey,

@@ -123,7 +123,8 @@ describe("Riot ID Login (Personal Key)", () => {
 		);
 
 	it("returns resolved identity for a valid Riot ID", async () => {
-		const res = await post({ riotId: "MockUser#JP1" });
+		// `region` routes the SUMMONER-V4 lookup; the client always sends it.
+		const res = await post({ riotId: "MockUser#JP1", region: "jp1" });
 		expect(res.status).toBe(200);
 		// biome-ignore lint/suspicious/noExplicitAny: Test assertion
 		const body = (await res.json()) as any;
@@ -352,6 +353,7 @@ describe("Session Management", () => {
 				method: "POST",
 				body: JSON.stringify({
 					summonerId: "user-1#JP1",
+					region: "jp1",
 					// No iconUrl provided, should fetch
 				}),
 				headers: { "Content-Type": "application/json" },
