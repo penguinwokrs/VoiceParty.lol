@@ -1,10 +1,32 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	classifyVisitor,
+	funnelDay,
 	sanitizeRef,
 	sanitizeSource,
 	writeFunnelEvent,
 } from "./analytics";
+
+/**
+ * Minimal D1 stand-in that records the SQL and the args bound to each run().
+ * `fail: true` makes run() throw, to exercise the swallow-errors path.
+ */
+const mockD1 = (opts: { fail?: boolean } = {}) => {
+	const runs: { sql: string; args: unknown[] }[] = [];
+	const VC_DB = {
+		prepare: (sql: string) => ({
+			bind: (...args: unknown[]) => ({
+				run: async () => {
+					if (opts.fail) throw new Error("D1 down");
+					runs.push({ sql, args });
+					return { success: true };
+				},
+			}),
+		}),
+	};
+	// biome-ignore lint/suspicious/noExplicitAny: minimal D1 stand-in
+	return { env: { VC_DB } as any, runs };
+};
 
 describe("attribution sanitizers", () => {
 	it("passes through a known channel, case-insensitively", () => {
@@ -70,31 +92,42 @@ describe("writeFunnelEvent", () => {
 		detail: "existing",
 	};
 
-	it("writes the documented column layout", () => {
-		const writeDataPoint = vi.fn();
-		// biome-ignore lint/suspicious/noExplicitAny: minimal AE stand-in
-		writeFunnelEvent({ VC_ANALYTICS: { writeDataPoint } as any }, event);
+	it("upserts a counter row with the event's dimensions, keyed by UTC day", async () => {
+		const { env, runs } = mockD1();
+		// Fixed instant so the day bucket is deterministic.
+		await writeFunnelEvent(env, event, Date.parse("2026-07-19T23:30:00Z"));
 
-		expect(writeDataPoint).toHaveBeenCalledWith({
-			indexes: ["line"],
-			blobs: ["joined", "line", "streamer_01", "ja", "JP", "human", "existing"],
-			doubles: [1],
-		});
+		expect(runs).toHaveLength(1);
+		expect(runs[0].sql).toMatch(/INSERT INTO funnel_stats/);
+		// Atomic increment on conflict — the property KV lacked.
+		expect(runs[0].sql).toMatch(/ON CONFLICT[\s\S]*count = count \+ 1/);
+		expect(runs[0].args).toEqual([
+			"2026-07-19",
+			"joined",
+			"line",
+			"streamer_01",
+			"ja",
+			"JP",
+			"human",
+			"existing",
+		]);
 	});
 
-	// Local dev and tests run without the binding; a metric must never be the
-	// reason a call fails.
-	it("is a no-op when the binding is absent", () => {
-		expect(() => writeFunnelEvent({}, event)).not.toThrow();
+	it("buckets by UTC calendar day", () => {
+		expect(funnelDay(Date.parse("2026-07-19T00:00:00Z"))).toBe("2026-07-19");
+		expect(funnelDay(Date.parse("2026-07-19T23:59:59Z"))).toBe("2026-07-19");
 	});
 
-	it("swallows a failure from the binding", () => {
-		const writeDataPoint = vi.fn(() => {
-			throw new Error("AE down");
-		});
-		expect(() =>
-			// biome-ignore lint/suspicious/noExplicitAny: minimal AE stand-in
-			writeFunnelEvent({ VC_ANALYTICS: { writeDataPoint } as any }, event),
-		).not.toThrow();
+	// Unit tests that don't stub D1; a metric must never be the reason a call fails.
+	it("is a no-op when the D1 binding is absent", async () => {
+		// biome-ignore lint/suspicious/noExplicitAny: intentionally empty env
+		await expect(writeFunnelEvent({} as any, event)).resolves.toBeUndefined();
+	});
+
+	// The table may not exist yet (before migration 0002 is applied), so a
+	// failing write must be swallowed — the deploy ships safely ahead of it.
+	it("swallows a D1 failure", async () => {
+		const { env } = mockD1({ fail: true });
+		await expect(writeFunnelEvent(env, event)).resolves.toBeUndefined();
 	});
 });
