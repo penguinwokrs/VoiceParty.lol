@@ -73,6 +73,22 @@ const REPORT_REASONS = [
 	"other",
 ] as const;
 
+// Inline LINE logo. LINE is how most of the JP audience actually forwards a
+// link to one person, which is also why it maps to the "personal" invite card
+// (see PERSONAL_SOURCES in functions/_middleware.ts).
+const LineLogo = () => (
+	<svg
+		width="15"
+		height="15"
+		viewBox="0 0 24 24"
+		fill="currentColor"
+		aria-hidden
+	>
+		<title>LINE</title>
+		<path d="M12 2.25c-5.66 0-10.26 3.74-10.26 8.34 0 4.12 3.65 7.57 8.58 8.23.33.07.79.22.9.5.1.26.07.66.03.92l-.14.87c-.05.26-.21 1.01.88.55s5.9-3.48 8.05-5.95c1.48-1.63 2.19-3.28 2.19-5.12 0-4.6-4.6-8.34-10.23-8.34zM7.5 13.9H5.46a.54.54 0 0 1-.54-.54V9.28a.54.54 0 1 1 1.08 0v3.54H7.5a.54.54 0 1 1 0 1.08zm2.12-.54a.54.54 0 1 1-1.08 0V9.28a.54.54 0 1 1 1.08 0v4.08zm4.9 0a.54.54 0 0 1-.97.33l-2.09-2.85v2.52a.54.54 0 1 1-1.08 0V9.28a.54.54 0 0 1 .97-.33l2.1 2.85V9.28a.54.54 0 1 1 1.07 0v4.08zm3.28-2.58a.54.54 0 1 1 0 1.08h-1.5v.96h1.5a.54.54 0 1 1 0 1.08h-2.04a.54.54 0 0 1-.54-.54V9.28c0-.3.24-.54.54-.54h2.04a.54.54 0 1 1 0 1.08h-1.5v.96h1.5z" />
+	</svg>
+);
+
 // Inline X (Twitter) logo — self-contained so it needs no brand-icon dependency.
 const XLogo = () => (
 	<svg
@@ -477,6 +493,20 @@ export const ActiveSessionView = ({
 		)}&url=${encodeURIComponent(shareUrl("x"))}`;
 		window.open(intent, "_blank", "noopener,noreferrer");
 	};
+	const shareToLine = () => {
+		// LINE's msg/text scheme carries the whole message in one encoded segment,
+		// so the text and the URL are joined before encoding rather than passed as
+		// separate params.
+		const intent = `https://line.me/R/msg/text/?${encodeURIComponent(
+			`${t("session.shareText")}\n${shareUrl("line")}`,
+		)}`;
+		window.open(intent, "_blank", "noopener,noreferrer");
+	};
+
+	// Nobody else has joined yet, so the only thing worth doing is sending the
+	// link. The compact button row below is easy to skim past when it is the
+	// difference between a call and an empty room.
+	const isAlone = session.users.length <= 1;
 
 	// Local user's lifecycle. Falls back to the boolean for older callers/tests.
 	const state: ConnectionState =
@@ -563,25 +593,84 @@ export const ActiveSessionView = ({
 					</Stack>
 				)}
 
-				{/* Invite friends: copy the room link or share a playful tweet. */}
-				<Stack direction="row" spacing={1} mb={2} flexWrap="wrap" useFlexGap>
-					<Button
-						size="small"
-						variant="outlined"
-						startIcon={<ContentCopyIcon />}
-						onClick={copyLink}
+				{/* Invite friends. While the room is still empty this is the whole
+				    point of the screen, so it gets a panel and a primary button; once
+				    someone else is in, it steps back down to a row of quiet buttons.
+				    The room URL is deliberately NOT printed here — a streamer who
+				    opens a room on camera should not have it rendered large by
+				    default. The buttons do the sharing. */}
+				{isAlone ? (
+					<Box
+						sx={{
+							mb: 2,
+							p: 2,
+							borderRadius: 1,
+							border: "1px solid",
+							borderColor: "divider",
+							bgcolor: "action.hover",
+						}}
 					>
-						{t("session.share")}
-					</Button>
-					<Button
-						size="small"
-						variant="outlined"
-						startIcon={<XLogo />}
-						onClick={shareToX}
-					>
-						{t("session.shareOnX")}
-					</Button>
-				</Stack>
+						<Typography variant="subtitle2" gutterBottom>
+							{t("session.inviteTitle")}
+						</Typography>
+						<Typography variant="body2" color="text.secondary" mb={1.5}>
+							{t("session.inviteBody")}
+						</Typography>
+						<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+							<Button
+								size="small"
+								variant="contained"
+								startIcon={<ContentCopyIcon />}
+								onClick={copyLink}
+							>
+								{t("session.share")}
+							</Button>
+							<Button
+								size="small"
+								variant="outlined"
+								startIcon={<LineLogo />}
+								onClick={shareToLine}
+							>
+								{t("session.shareOnLine")}
+							</Button>
+							<Button
+								size="small"
+								variant="outlined"
+								startIcon={<XLogo />}
+								onClick={shareToX}
+							>
+								{t("session.shareOnX")}
+							</Button>
+						</Stack>
+					</Box>
+				) : (
+					<Stack direction="row" spacing={1} mb={2} flexWrap="wrap" useFlexGap>
+						<Button
+							size="small"
+							variant="outlined"
+							startIcon={<ContentCopyIcon />}
+							onClick={copyLink}
+						>
+							{t("session.share")}
+						</Button>
+						<Button
+							size="small"
+							variant="outlined"
+							startIcon={<LineLogo />}
+							onClick={shareToLine}
+						>
+							{t("session.shareOnLine")}
+						</Button>
+						<Button
+							size="small"
+							variant="outlined"
+							startIcon={<XLogo />}
+							onClick={shareToX}
+						>
+							{t("session.shareOnX")}
+						</Button>
+					</Stack>
+				)}
 
 				{/* Reconnection phase — prominent, animated */}
 				{state === "reconnecting" && (
