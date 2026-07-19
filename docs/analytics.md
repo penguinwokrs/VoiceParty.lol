@@ -1,52 +1,58 @@
 # ファネル計測
 
 チャネル別に「リンクを開いた → 参加した」を見るための計測。実装は
-`functions/api/_lib/analytics.ts`、保存先は Workers Analytics Engine の
-`voicecrew_funnel` データセット（バインディング `VC_ANALYTICS`）。
+`functions/api/_lib/analytics.ts`、保存先は **D1 の `funnel_stats` テーブル**
+（バインディング `VC_DB`、reports と同じデータベースに同居）。
 
 - 最終更新日: 2026-07-19
 
-## ⚠️ 現在この計測は動いていない（バインディング未設定）
+## なぜ D1 集計カウンタなのか
 
-`wrangler.toml` の `[[analytics_engine_datasets]]` は**コメントアウトしてある**。
-有効にすると Pages の **deploy 段が失敗する**（build 段は成功する）。
+当初は Workers Analytics Engine で作ったが、**AE は Workers Free プランに含まれず**、
+このアカウントは Workers Paid 未加入のため、AE バインディングを入れると Pages の
+**deploy 段が失敗**した（build 段は成功する）。
 
-- Analytics Engine は **Workers Free プランに含まれない**。Free に含まれるのは
-  Workers / Pages Functions / Workers KV / Hyperdrive のみ。
-- このアカウントの課金は `calls_paid`（RealtimeKit）と `r2_paid` だけで、
-  **Workers Paid には未加入**。
-- 実際、このブロックを含むブランチは 3 本ともデプロイに失敗し、含まないブランチは
-  2 本とも成功した。
+そこで **D1 の集計カウンタ**に置き換えた。D1 は既にバインドされ（`VC_DB`）デプロイも
+通っている。**次元の組ごとにカウンタ行を持ち、UPSERT で加算**する:
 
-コードは**バインディング不在で no-op** になるよう書いてあるので（`writeFunnelEvent`）、
-この状態でも何も壊れない。単にデータが 1 件も入らないだけである。
+```sql
+INSERT INTO funnel_stats (day, event, src, ref, lang, country, visitor, detail, count)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+ON CONFLICT (day, event, src, ref, lang, country, visitor, detail)
+DO UPDATE SET count = count + 1;
+```
 
-### 計測を有効にする
+- **KV を却下した理由（アトミック加算が無い）を、この UPSERT が解決する。** SQLite の
+  UPSERT は文単位でアトミックなので、加算が黙って消えない。AE を最初に選んだ動機は
+  D1 でも満たせる。
+- **公開のビーコン API も作らない**。下記のイベントはすべて、サーバーが既に処理して
+  いるリクエストの中から書く（HTML リクエストか、セッション API）。第三者が実際の
+  行動を伴わずにイベントを増やせる経路は無い。
+- 書き込みはレスポンスを待たせない（`waitUntil`）。テーブル未作成でも例外は握り
+  つぶす（マイグレーション適用前にデプロイしても壊れない。単に記録されないだけ）。
 
-1. Workers Paid に加入する（最低 $5/月）。
-2. `wrangler.toml` の `[[analytics_engine_datasets]]` のコメントを外す。
-3. デプロイする。
+**書き込み=イベント数**なので、`page_view`（bot 込みで全 HTML リクエスト）はそのまま
+D1 書き込みになる。コールドスタートでは D1 無料枠（10万行/日書き込み）に対して桁が
+2つ余裕。増えてきたら bot の `page_view` を書かない／サンプリングで抑える。
 
-コードの変更は不要。書き込みは初回で自動的にデータセットを作る。
+### 有効にする（1回だけ・無料）
 
-**有効にするまでは、この文書のクエリはすべて空を返す。** 施策の効果を数字で語る
-前に、まずここが有効になっているかを確認すること。
+マイグレーションをリモートに適用すればテーブルができ、計測が動き出す。
 
-## なぜ Analytics Engine なのか
+```bash
+npx wrangler d1 migrations apply voicecrew-reports --remote
+```
 
-KV のカウンタは**採用しない**。KV にアトミックなインクリメントが無いため、同時
-書き込みで加算が黙って消える。しかも消えたことは結果の数字からは分からない。
-Analytics Engine は追記専用で、この用途に合っている。
-
-**公開のビーコン API も作らない**。下記のイベントはすべて、サーバーが既に処理して
-いるリクエストの中から書いている（HTML リクエストか、セッション API）。第三者が
-実際の行動を伴わずにイベントを増やせる経路は無い。
+Pages はデプロイ時に D1 マイグレーションを自動適用しない（reports の 0001 と同じ）。
+**このコマンドを流すまで `funnel_stats` は存在せず、書き込みは握りつぶされる**ので、
+デプロイ自体は先行しても安全。適用後、コード変更なしで記録が始まる。
 
 ## 記録している内容
 
 **識別子は一切書かない。** Riot ID も IP も Cookie も、訪問者ごとの ID も無い。
 書くのはチャネルタグ・言語・国・bot/human の別だけで、すべて集計値。プライバシー
 ポリシー第 3 条（cookieless のアクセス解析）の範囲内であり、ポリシーの改定は不要。
+PII が無いので保持期限も設けない（削除するものが無い）。
 
 | イベント | 書く場所 | 意味 |
 |---|---|---|
@@ -54,48 +60,44 @@ Analytics Engine は追記専用で、この用途に合っている。
 | `room_created` | `POST /api/sessions` | ルームの明示的な作成（現状クライアントは使っていない） |
 | `joined` | `POST /api/sessions/:id/join` | 参加成立。`detail` が `new`（自分でルームを作った）/ `existing`（人の招待に乗った） |
 
-### 列のレイアウト
-
-Analytics Engine は列を**位置で**参照する。**末尾への追加は安全、並べ替えは破壊的**。
+### 列
 
 | 列 | 内容 |
 |---|---|
-| `index1` | `src`（チャネル単位でサンプリングされるように） |
-| `blob1` | イベント名 |
-| `blob2` | `src` — `copy` / `x` / `line` / `qr` / `lfg` / `stream` / `direct` / `other` |
-| `blob3` | `ref` — 配信者・パートナーのタグ。無ければ空文字 |
-| `blob4` | `lang` — `en` / `ja` / `ko` / `zh-TW` / `other` |
-| `blob5` | `country` — `CF-IPCountry`。不明は `XX` |
-| `blob6` | `human` / `bot` |
-| `blob7` | `detail`（イベントごとの意味は上表） |
-| `double1` | 1（件数） |
+| `day` | UTC の日付 `YYYY-MM-DD` |
+| `event` | `page_view` / `room_created` / `joined` |
+| `src` | `copy` / `x` / `line` / `qr` / `lfg` / `stream` / `direct` / `other` |
+| `ref` | 配信者・パートナーのタグ。無ければ空文字 |
+| `lang` | `en` / `ja` / `ko` / `zh-TW` / `other` |
+| `country` | `CF-IPCountry`。不明は `XX` |
+| `visitor` | `human` / `bot` |
+| `detail` | イベントごとの意味は上表 |
+| `count` | 件数 |
+
+`(day, event, src, ref, lang, country, visitor, detail)` が主キー兼 UPSERT の衝突
+キー兼クエリのインデックス。
 
 `src` は**アローリスト**で、未知の値は `other` に潰す。共有リンクに
-`?src=<でたらめ>` を付けるだけで列のカーディナリティ（＝課金とクエリ性能）を
-膨らませられないようにするため。**新しいチャネルを使い始めたら
-`KNOWN_SOURCES` に足すこと**。足し忘れるとそのチャネルは `other` に埋もれる。
+`?src=<でたらめ>` を付けるだけで行のカーディナリティ（＝ストレージとクエリ性能）を
+膨らませられないようにするため。**新しいチャネルを使い始めたら `KNOWN_SOURCES` に
+足すこと**。足し忘れるとそのチャネルは `other` に埋もれる。
 
 `ref` はカーディナリティが開いているのが正しい（配信者 1 人 1 値）ので、形式
 （`[a-z0-9_-]{1,32}`）だけを縛る。
 
 ## クエリ
 
-SQL API を叩く。`CLOUDFLARE_ACCOUNT_ID` と、Account Analytics の読み取り権限を
-持つ API トークンが要る。
+`wrangler d1 execute` で SQL を流す（`--remote` で本番、省略でローカル）。
 
 ```bash
-curl -s "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/analytics_engine/sql" \
-  -H "Authorization: Bearer $CF_ANALYTICS_TOKEN" \
-  -d "SELECT blob2 AS src, blob1 AS event, SUM(_sample_interval) AS n
-      FROM voicecrew_funnel
-      WHERE timestamp > NOW() - INTERVAL '7' DAY AND blob6 = 'human'
-      GROUP BY src, event ORDER BY n DESC"
+npx wrangler d1 execute voicecrew-reports --remote --command \
+  "SELECT src, event, SUM(count) AS n
+   FROM funnel_stats
+   WHERE day >= date('now','-7 day') AND visitor='human'
+   GROUP BY src, event ORDER BY n DESC"
 ```
 
-**`_sample_interval` を必ず掛けること**（`COUNT(*)` ではなく
-`SUM(_sample_interval)`）。サンプリングが入ったとき、掛けないと実数を下回る。
-
-**`blob6 = 'human'` を必ず入れること**。共有された招待リンクにはリンクプレビュー
+**`visitor='human'` を必ず入れること**。共有された招待リンクにはリンクプレビュー
 の bot（X / Discord / LINE / Slack など）が必ず来るので、入れないと `page_view`
 の大半がロボットになる。bot は捨てずに分類して記録しているので、除外はクエリ側で
 行う。
@@ -103,21 +105,21 @@ curl -s "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/an
 ### 招待の転換率（チャネル別）
 
 ```sql
-SELECT blob2 AS src,
-       SUM(IF(blob1 = 'page_view' AND blob7 = 'invite', _sample_interval, 0)) AS landed,
-       SUM(IF(blob1 = 'joined' AND blob7 = 'existing', _sample_interval, 0)) AS joined
-FROM voicecrew_funnel
-WHERE timestamp > NOW() - INTERVAL '30' DAY AND blob6 = 'human'
-GROUP BY src
+SELECT src,
+       SUM(CASE WHEN event='page_view' AND detail='invite'  THEN count ELSE 0 END) AS landed,
+       SUM(CASE WHEN event='joined'    AND detail='existing' THEN count ELSE 0 END) AS joined
+FROM funnel_stats
+WHERE day >= date('now','-30 day') AND visitor='human'
+GROUP BY src;
 ```
 
 ### 配信者別（`?ref=`）
 
 ```sql
-SELECT blob3 AS ref, blob1 AS event, SUM(_sample_interval) AS n
-FROM voicecrew_funnel
-WHERE timestamp > NOW() - INTERVAL '30' DAY AND blob6 = 'human' AND blob3 != ''
-GROUP BY ref, event ORDER BY n DESC
+SELECT ref, event, SUM(count) AS n
+FROM funnel_stats
+WHERE day >= date('now','-30 day') AND visitor='human' AND ref != ''
+GROUP BY ref, event ORDER BY n DESC;
 ```
 
 ## 読み方の注意
@@ -129,3 +131,6 @@ GROUP BY ref, event ORDER BY n DESC
   （`src/lib/attribution.ts`）。参加の途中でリロードすると `direct` に落ちる。
   チャネルは**過小評価**されるが、別のチャネルに誤って付くことはない。
 - `page_view` は HTML リクエスト単位。SPA 内の遷移は数えない。
+- **`funnel_stats` は reports と同じ D1 に同居している。** 別 DB に分けなかったのは
+  provisioning を増やさないためで、`funnel_stats` は PII を持たないので reports の
+  露出は広げない。将来分離する場合も、集計値なので移行は単純（読み替えだけ）。

@@ -645,7 +645,21 @@ describe("Capacity via live presence (RealtimeKit source of truth)", () => {
 describe("Funnel analytics", () => {
 	// biome-ignore lint/suspicious/noExplicitAny: Mocking KV
 	const mockKV: any = { get: vi.fn(), put: vi.fn() };
-	const writeDataPoint = vi.fn();
+
+	// Captures the args bound to each funnel_stats UPSERT. Column order matches
+	// the INSERT in analytics.ts: day, event, src, ref, lang, country, visitor,
+	// detail.
+	let funnelRuns: unknown[][] = [];
+	const mockDB = {
+		prepare: (sql: string) => ({
+			bind: (...args: unknown[]) => ({
+				run: async () => {
+					if (sql.includes("funnel_stats")) funnelRuns.push(args);
+					return { success: true };
+				},
+			}),
+		}),
+	};
 	const analyticsEnv = {
 		RIOT_CLIENT_ID: "t",
 		RIOT_CLIENT_SECRET: "t",
@@ -653,18 +667,32 @@ describe("Funnel analytics", () => {
 		REALTIME_API_KEY: "k",
 		REALTIME_KIT_APP_ID: "a",
 		VC_SESSIONS: mockKV,
+		// biome-ignore lint/suspicious/noExplicitAny: minimal D1 stand-in
+		VC_DB: mockDB as any,
 		USE_MOCK_REALTIME: "true",
 		RIOT_VALIDATION_ENABLED: "false",
-		VC_ANALYTICS: { writeDataPoint },
 	};
 
 	beforeEach(() => {
+		funnelRuns = [];
 		mockKV.get.mockResolvedValue(null);
 	});
 	afterEach(() => vi.clearAllMocks());
 
-	// biome-ignore lint/suspicious/noExplicitAny: mock call tuple
-	const lastPoint = (): any => writeDataPoint.mock.calls.at(-1)?.[0];
+	// The last funnel row, as a labelled object (drops the leading day column,
+	// which is time-dependent and covered in the analytics unit tests).
+	const lastFunnel = () => {
+		const a = funnelRuns.at(-1) ?? [];
+		return {
+			event: a[1],
+			src: a[2],
+			ref: a[3],
+			lang: a[4],
+			country: a[5],
+			visitor: a[6],
+			detail: a[7],
+		};
+	};
 
 	it("records a join with its channel, and flags it as a room the joiner minted", async () => {
 		const res = await app.request(
@@ -683,10 +711,14 @@ describe("Funnel analytics", () => {
 		);
 		expect(res.status).toBe(200);
 
-		expect(lastPoint()).toEqual({
-			indexes: ["line"],
-			blobs: ["joined", "line", "streamer_01", "ja", "JP", "human", "new"],
-			doubles: [1],
+		expect(lastFunnel()).toEqual({
+			event: "joined",
+			src: "line",
+			ref: "streamer_01",
+			lang: "ja",
+			country: "JP",
+			visitor: "human",
+			detail: "new",
 		});
 	});
 
@@ -716,7 +748,7 @@ describe("Funnel analytics", () => {
 			analyticsEnv,
 		);
 
-		expect(lastPoint().blobs.at(-1)).toBe("existing");
+		expect(lastFunnel().detail).toBe("existing");
 	});
 
 	// A room whose stale mock meeting has to be recreated is still a room
@@ -740,11 +772,11 @@ describe("Funnel analytics", () => {
 			{ ...analyticsEnv, USE_MOCK_REALTIME: "false" },
 		);
 
-		expect(lastPoint().blobs.at(-1)).toBe("existing");
+		expect(lastFunnel().detail).toBe("existing");
 	});
 
-	// An unbounded ?src= would let anyone inflate column cardinality by editing
-	// a shared link, so unknown channels collapse rather than pass through.
+	// An unbounded ?src= would let anyone inflate row cardinality by editing a
+	// shared link, so unknown channels collapse rather than pass through.
 	it("collapses an unknown channel and drops a malformed partner tag", async () => {
 		await app.request(
 			"/api/sessions/room-odd/join",
@@ -761,7 +793,8 @@ describe("Funnel analytics", () => {
 			analyticsEnv,
 		);
 
-		expect(lastPoint().blobs.slice(0, 4)).toEqual([
+		const f = lastFunnel();
+		expect([f.event, f.src, f.ref, f.lang]).toEqual([
 			"joined",
 			"other",
 			"",
@@ -769,15 +802,15 @@ describe("Funnel analytics", () => {
 		]);
 	});
 
-	it("still creates a session when the binding is absent", async () => {
-		const { VC_ANALYTICS, ...withoutBinding } = analyticsEnv;
+	it("still creates a session when the D1 binding is absent", async () => {
+		const { VC_DB, ...withoutDb } = analyticsEnv;
 		const res = await app.request(
 			"/api/sessions",
 			{ method: "POST" },
-			withoutBinding,
+			withoutDb,
 		);
 		expect(res.status).toBe(200);
-		expect(writeDataPoint).not.toHaveBeenCalled();
+		expect(funnelRuns).toHaveLength(0);
 	});
 });
 

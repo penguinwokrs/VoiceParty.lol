@@ -8,33 +8,18 @@ binding = "VC_SESSIONS"
 id = "74421f4d32f648e4b6ad64a9ef5498ee"
 preview_id = "bfac51e6cf5e4e4388609f68c70f8c5d"
 
-# Report records live here rather than in KV: they are retained permanently
-# (no TTL) and need to be queried by reported user, so KV's list+metadata
-# aggregation no longer fits. See docs/moderation.md and the privacy policy.
+# D1 holds two unrelated things, both queried by key:
+#   - `reports`: permanent, plaintext PII (see docs/moderation.md, privacy policy)
+#   - `funnel_stats`: identifier-free aggregate counters (see docs/analytics.md)
+# They share this database only to avoid provisioning a second one; the funnel
+# table carries no PII, so it does not widen the reports table's exposure.
+# (Funnel metrics were prototyped on Analytics Engine but AE is not in the
+# Workers Free plan and broke the Pages deploy — hence D1 counters instead.)
 [[d1_databases]]
 binding = "VC_DB"
 database_name = "voicecrew-reports"
 database_id = "0b49755f-8c3a-477d-93a6-47ff1fe0cd13"
 migrations_dir = "migrations"
-
-# Funnel metrics (page_view -> room_created -> joined, by share channel).
-# Append-only and aggregate; no identifier is ever written. KV was rejected for
-# this: it has no atomic increment, so concurrent writes drop counts silently.
-# See functions/api/_lib/analytics.ts and docs/analytics.md.
-#
-# COMMENTED OUT: enabling this binding makes the Pages *deploy* stage fail while
-# the build still succeeds. Analytics Engine is not included in the Workers Free
-# plan, and this account has no Workers Paid subscription (only calls_paid and
-# r2_paid). Every branch carrying this block failed to deploy; every branch
-# without it deployed fine.
-#
-# The instrumentation ships dormant: writeFunnelEvent() no-ops when the binding
-# is absent, so nothing breaks — there is simply no data until this is enabled.
-# To turn it on: subscribe to Workers Paid, uncomment, redeploy. Nothing else
-# changes. See docs/analytics.md ("計測を有効にする").
-# [[analytics_engine_datasets]]
-# binding = "VC_ANALYTICS"
-# dataset = "voicecrew_funnel"
 
 # Temporary: Riot API validation is disabled while awaiting RSO production
 # approval (~1 month lead time). The RSO/validation code is kept intact.
