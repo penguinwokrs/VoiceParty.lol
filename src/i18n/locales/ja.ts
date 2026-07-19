@@ -120,6 +120,12 @@ export const ja = {
 		reconnectingHint:
 			"ネットワークの復帰を待っています。そのままお待ちください。",
 		reconnect: "再接続",
+		idleWarning:
+			"しばらく誰も参加していません。まもなく通話を一時停止します（いつでも再開できます）。",
+		idleKeep: "待機を続ける",
+		idlePaused:
+			"誰も参加しなかったため、通話を一時停止しました。ルームは有効です。準備ができたら再接続してください。",
+		idleResume: "通話を再開",
 		share: "リンクをコピー",
 		shareOnLine: "LINE で送る",
 		inviteTitle: "まずはリンクを送りましょう",

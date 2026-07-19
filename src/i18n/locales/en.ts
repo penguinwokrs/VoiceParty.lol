@@ -119,6 +119,12 @@ export const en: TranslationResources = {
 		reconnecting: "Reconnecting",
 		reconnectingHint: "Waiting for the network to come back. Hang tight.",
 		reconnect: "Reconnect",
+		idleWarning:
+			"No one has joined for a while. The call will pause shortly — you can resume any time.",
+		idleKeep: "Keep waiting",
+		idlePaused:
+			"No one joined, so the call was paused. The room is still open — reconnect when you're ready.",
+		idleResume: "Resume call",
 		share: "Copy link",
 		shareOnLine: "Share on LINE",
 		inviteTitle: "Send the link first",

@@ -1,14 +1,29 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	act,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { VoiceChat } from "./index";
 
-// Mock the local Realtime hook
+// Stable spies so a test can assert the idle timer actually dropped the
+// connection (a fresh vi.fn() per render couldn't be asserted on).
+const rt = vi.hoisted(() => ({
+	join: vi.fn().mockResolvedValue(undefined),
+	leave: vi.fn().mockResolvedValue(undefined),
+	reconnect: vi.fn().mockResolvedValue(undefined),
+}));
+
+// Mock the local Realtime hook. Reports a connected, solo session (peers: []),
+// which is exactly the state the idle logic watches.
 vi.mock("./useRealtime", () => ({
 	useRealtime: () => ({
-		join: vi.fn().mockResolvedValue(undefined),
-		leave: vi.fn(),
-		reconnect: vi.fn(),
+		join: rt.join,
+		leave: rt.leave,
+		reconnect: rt.reconnect,
 		toggleMic: vi.fn(),
 		isMicMuted: false,
 		isConnected: true,
@@ -304,6 +319,74 @@ describe("VoiceChat", () => {
 		expect(screen.getByText("Join Game")).toBeInTheDocument();
 		// Nothing was joined behind their back.
 		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	// A lone participant is a live, billed RealtimeKit connection with nobody to
+	// talk to. After a spell alone the call must pause itself (drop the
+	// connection) and offer a one-tap resume.
+	it("pauses a solo connection after the timeout and resumes on demand", async () => {
+		vi.useFakeTimers();
+		rt.leave.mockClear();
+		rt.reconnect.mockClear();
+		try {
+			vi.spyOn(Storage.prototype, "getItem").mockImplementation((k) =>
+				k === "vp_age_ok" ? "true" : null,
+			);
+			global.fetch = vi.fn().mockResolvedValue({
+				ok: true,
+				text: () => Promise.resolve(""),
+				json: () =>
+					Promise.resolve({
+						session: {
+							sessionId: "session-123",
+							users: [{ summonerId: "test-user", joinedAt: 0 }],
+							createdAt: 0,
+						},
+						realtime: { token: "mock-token", meetingId: "mock-id" },
+					}),
+			});
+
+			render(
+				<MemoryRouter initialEntries={["/join/kr/session-123"]}>
+					<Routes>
+						<Route path="/join/:region/:sessionId" element={<VoiceChat />} />
+					</Routes>
+				</MemoryRouter>,
+			);
+
+			fireEvent.change(screen.getByLabelText("Riot ID"), {
+				target: { value: "test-user" },
+			});
+			fireEvent.click(screen.getByRole("button", { name: "Join Game" }));
+			// Flush the join fetch chain into the in-call view.
+			await act(async () => {
+				await vi.advanceTimersByTimeAsync(0);
+			});
+			expect(screen.getByText(/Session:.*session-123/)).toBeInTheDocument();
+
+			// Warning first (an attentive waiter could keep it alive here)…
+			await act(async () => {
+				await vi.advanceTimersByTimeAsync(4 * 60 * 1000);
+			});
+			expect(screen.getByText(/pause shortly/i)).toBeInTheDocument();
+			expect(rt.leave).not.toHaveBeenCalled();
+
+			// …then the pause drops the connection to stop the meter.
+			await act(async () => {
+				await vi.advanceTimersByTimeAsync(1 * 60 * 1000);
+			});
+			expect(rt.leave).toHaveBeenCalledTimes(1);
+			expect(screen.getByText(/was paused/i)).toBeInTheDocument();
+
+			// Resume re-joins the same room.
+			fireEvent.click(screen.getByRole("button", { name: "Resume call" }));
+			await act(async () => {
+				await vi.advanceTimersByTimeAsync(0);
+			});
+			expect(rt.reconnect).toHaveBeenCalledTimes(1);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("age gate blocks users under 13 and lets 13+ through", async () => {

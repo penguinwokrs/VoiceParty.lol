@@ -120,6 +120,12 @@ export const ko: TranslationResources = {
 		reconnectingHint:
 			"네트워크 복구를 기다리고 있습니다. 잠시만 기다려 주세요.",
 		reconnect: "다시 연결",
+		idleWarning:
+			"한동안 아무도 참여하지 않았습니다. 곧 통화를 일시 중지합니다(언제든 다시 시작할 수 있습니다).",
+		idleKeep: "계속 대기",
+		idlePaused:
+			"아무도 참여하지 않아 통화를 일시 중지했습니다. 방은 유지됩니다. 준비되면 다시 연결하세요.",
+		idleResume: "통화 재개",
 		share: "링크 복사",
 		shareOnLine: "LINE으로 보내기",
 		inviteTitle: "먼저 링크를 보내세요",
