@@ -1,7 +1,16 @@
 import { Hono } from "hono";
+import {
+	classifyVisitor,
+	type FunnelEventInput,
+	sanitizeLang,
+	sanitizeRef,
+	sanitizeSource,
+	writeFunnelEvent,
+} from "../_lib/analytics";
 import { isBanned, maybeAutoBan } from "../_lib/moderation";
+import { consumeJoinQuota, consumeReportQuota } from "../_lib/rate-limit";
 import { callRealtimeKit, getActiveParticipantCount } from "../_lib/realtime";
-import { recordReport } from "../_lib/reports";
+import { normalizeRiotId, recordReport } from "../_lib/reports";
 import {
 	getAccountByRiotId,
 	getProfileIconUrl,
@@ -37,8 +46,75 @@ const REPORT_REASONS = new Set([
 const CHILD_SAFETY_REASON = "child_safety";
 const MAX_NOTE_LENGTH = 280;
 
+/** Attribution the client sends along with a create/join request. */
+type Attribution = { src?: string; ref?: string; lang?: string };
+
+/**
+ * Attribution travels in the request body, not the URL: the app navigates to
+ * the room path before joining and react-router drops the query string, so by
+ * the time we are called the original ?src= is gone from the address bar. The
+ * client holds it in memory and hands it back here.
+ */
+const funnelContext = (headers: Headers, body: Attribution) => ({
+	src: sanitizeSource(body.src),
+	ref: sanitizeRef(body.ref),
+	lang: sanitizeLang(body.lang),
+	country: headers.get("CF-IPCountry") ?? "XX",
+	visitor: classifyVisitor(headers.get("User-Agent")),
+});
+
+/**
+ * Fire a funnel write without delaying the response. `c.executionCtx` throws
+ * when absent (unit tests), so probe it: in production the write runs under
+ * waitUntil and this resolves immediately; in tests there is no execCtx so we
+ * await the write, which lets assertions see the row. Mirrors the auto-ban
+ * dispatch below. Awaiting this in prod costs one microtask, not the D1 write.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: Hono context, only used for executionCtx
+const recordFunnel = async (c: any, event: FunnelEventInput): Promise<void> => {
+	const write = () => writeFunnelEvent(c.env, event);
+	let execCtx: ExecutionContext | undefined;
+	try {
+		execCtx = c.executionCtx;
+	} catch {
+		execCtx = undefined;
+	}
+	if (execCtx) execCtx.waitUntil(write());
+	else await write();
+};
+
+/**
+ * Resolve a room ID to its stored session, following the same two hops as the
+ * join handler: `game:{sessionId}` -> meetingId -> `session:{meetingId}`.
+ * Returns null when either hop is missing (unknown room, or one whose 6h TTL
+ * has lapsed).
+ */
+async function loadSession(
+	env: Bindings,
+	sessionId: string,
+): Promise<Session | null> {
+	const meetingId = await env.VC_SESSIONS.get(`game:${sessionId}`);
+	if (!meetingId) return null;
+	const raw = await env.VC_SESSIONS.get(`session:${meetingId}`);
+	if (!raw) return null;
+	try {
+		return JSON.parse(raw) as Session;
+	} catch {
+		return null;
+	}
+}
+
 app.post("/", async (c) => {
 	const sessionId = crypto.randomUUID();
+
+	// Attribution is optional here and the endpoint has always accepted an empty
+	// body, so a missing/!JSON body must stay a successful create.
+	let attribution: Attribution = {};
+	try {
+		attribution = (await c.req.json<Attribution>()) ?? {};
+	} catch {
+		attribution = {};
+	}
 
 	let meetingId: string | undefined;
 
@@ -89,17 +165,32 @@ app.post("/", async (c) => {
 		);
 	}
 
+	await recordFunnel(c, {
+		name: "room_created",
+		...funnelContext(c.req.raw.headers, attribution),
+		detail: "explicit",
+	});
+
 	return c.json(session);
 });
 
 app.post("/:id/join", async (c) => {
 	const sessionId = c.req.param("id");
-	const { summonerId, iconUrl, region } = await c.req.json<{
-		summonerId: string;
-		iconUrl?: string;
-		/** Riot platform the player picked (e.g. "na1"); routes the Riot lookups. */
-		region?: string;
-	}>();
+	const {
+		summonerId,
+		iconUrl,
+		region,
+		src,
+		ref,
+		lang: uiLang,
+	} = await c.req.json<
+		{
+			summonerId: string;
+			iconUrl?: string;
+			/** Riot platform the player picked (e.g. "na1"); routes the Riot lookups. */
+			region?: string;
+		} & Attribution
+	>();
 
 	if (!summonerId) {
 		return c.text("Summoner ID is required", 400);
@@ -117,11 +208,23 @@ app.post("/:id/join", async (c) => {
 		);
 	}
 
+	// Cost cap, not a security control: an automated client hammering this
+	// endpoint mints RealtimeKit meetings, which bill participant-minutes.
+	if (
+		!(await consumeJoinQuota(c.env, c.req.raw.headers.get("CF-Connecting-IP")))
+	) {
+		return c.text("Too many joins from this network. Try again later.", 429);
+	}
+
 	// Validate Summoner ID via Riot API
 	// 1. Check if API Key exists (and validation is not disabled)
 	const apiKey = c.env.RIOT_GAME_API_KEY;
 	const validationDisabled = c.env.RIOT_VALIDATION_ENABLED === "false";
 	let validIconUrl = iconUrl;
+	// Recorded on the roster entry. Only the branch that actually asks Riot who
+	// this is may set it — moderation treats an unvalidated name as an unproven
+	// claim, because that is exactly what it is.
+	let identityValidated = false;
 
 	if (validationDisabled) {
 		console.warn(
@@ -137,6 +240,7 @@ app.post("/:id/join", async (c) => {
 		}
 
 		console.log(`[Join] Found Account: ${account.gameName}#${account.tagLine}`);
+		identityValidated = true;
 
 		// 2. Fetch Summoner to get Icon
 		// Icon lookup is best-effort: a miss (unknown platform, 404, outage) leaves
@@ -174,6 +278,15 @@ app.post("/:id/join", async (c) => {
 	}
 
 	let session: Session;
+	// Which side of the funnel this join is: following someone's invite, or
+	// minting the room yourself. The ratio between them is the host-conversion
+	// number the post-call work is meant to move.
+	//
+	// Keyed off the ORIGINAL mapping, not the post-reset `meetingId`. A room
+	// whose stale mock meeting had to be recreated (the mock/real branch above
+	// nulls `meetingId`) still had someone share its ID — counting that as a
+	// freshly minted room would inflate host conversion.
+	const isNewRoom = !mapping;
 
 	if (sessionData && meetingId) {
 		session = JSON.parse(sessionData);
@@ -248,7 +361,13 @@ app.post("/:id/join", async (c) => {
 			summonerId,
 			joinedAt: Date.now(),
 			iconUrl: validIconUrl,
+			validated: identityValidated,
 		});
+	} else if (identityValidated) {
+		// Someone who first joined while validation was off, rejoining after it
+		// was switched on. Upgrade the entry rather than leaving them permanently
+		// unverified for the life of the room.
+		existingUser.validated = true;
 	}
 
 	// Persist the session and refresh the TTL on BOTH keys, unconditionally — so
@@ -294,6 +413,12 @@ app.post("/:id/join", async (c) => {
 			}
 		}
 	}
+
+	await recordFunnel(c, {
+		name: "joined",
+		...funnelContext(c.req.raw.headers, { src, ref, lang: uiLang }),
+		detail: isNewRoom ? "new" : "existing",
+	});
 
 	return c.json({
 		session,
@@ -350,6 +475,35 @@ app.post("/:id/reports", async (c) => {
 		return c.text("Invalid report reason", 400);
 	}
 
+	// Cheap abuse cap first, so a flood is cut off before it costs us a session
+	// lookup. Counts rejected attempts too — probing should burn quota.
+	const ip = c.req.raw.headers.get("CF-Connecting-IP");
+	if (!(await consumeReportQuota(c.env, ip))) {
+		return c.text("Too many reports. Try again later.", 429);
+	}
+
+	// Both parties must be on this room's roster. Without this the reporter is
+	// just an unvalidated string from the body, and three POSTs with invented
+	// names clear MIN_DISTINCT_REPORTERS and auto-ban any Riot ID for 24h.
+	// The roster is append-only, so someone who has already left can still be
+	// reported (and can still report) — which is the behaviour we want.
+	const session = await loadSession(c.env, sessionId);
+	if (!session) {
+		return c.text("Session not found", 404);
+	}
+	const entryFor = (riotId: string) =>
+		session.users.find(
+			(u) => normalizeRiotId(u.summonerId) === normalizeRiotId(riotId),
+		);
+	const reporterEntry = entryFor(reporter);
+	const reportedEntry = entryFor(reported);
+	if (!reporterEntry) {
+		return c.text("You can only report from a room you joined", 403);
+	}
+	if (!reportedEntry) {
+		return c.text("That user is not in this room", 403);
+	}
+
 	const createdAt = Date.now();
 
 	// Persisted to D1 with no expiry, Riot IDs in the clear. Both parties are
@@ -369,6 +523,33 @@ app.post("/:id/reports", async (c) => {
 	// severe to let a score-based auto-ban be weaponized). The row is stored the
 	// same way; `evaluateReports` is what skips it.
 	if (reason === CHILD_SAFETY_REASON) {
+		return c.json({ ok: true });
+	}
+
+	// Kill switch. Set MODERATION_AUTO_BAN_ENABLED="false" to fall back to
+	// "record + client-side local mute + human review": suspensions stop being
+	// automatic, but nothing about the evidence trail changes. Meant for when a
+	// weaponization pattern shows up faster than a fix can ship.
+	if (c.env.MODERATION_AUTO_BAN_ENABLED === "false") {
+		return c.json({ ok: true });
+	}
+
+	// Roster membership only proves "a real, distinct person" when joining
+	// required proving who you are. With RIOT_VALIDATION_ENABLED="false" — the
+	// current production setting while RSO approval is pending — join accepts any
+	// self-asserted name, so one attacker can walk a room's roster full of
+	// invented reporters plus their victim and clear MIN_DISTINCT_REPORTERS
+	// alone. Requiring both sides to be Riot-verified is what makes the
+	// distinct-reporter threshold mean anything.
+	//
+	// The report is still recorded above and the reporter's client still mutes
+	// locally; only the automatic suspension is withheld. When validation is off
+	// this disables auto-ban wholesale, which is the correct behaviour: the
+	// signal it rests on does not exist.
+	if (!(reporterEntry.validated && reportedEntry.validated)) {
+		console.warn(
+			"[reports] skipping auto-ban: identity not Riot-verified for one or both parties",
+		);
 		return c.json({ ok: true });
 	}
 

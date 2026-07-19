@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { REPORT_RATE_LIMIT } from "./_lib/rate-limit";
 import { app } from "./[[route]]";
 
 // Mock environment variables
@@ -642,6 +643,180 @@ describe("Capacity via live presence (RealtimeKit source of truth)", () => {
 	});
 });
 
+// The funnel numbers are what gate the M-sized bets, so the events have to be
+// emitted from the real request paths — not from a beacon a stranger can spam.
+describe("Funnel analytics", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: Mocking KV
+	const mockKV: any = { get: vi.fn(), put: vi.fn() };
+
+	// Captures the args bound to each funnel_stats UPSERT. Column order matches
+	// the INSERT in analytics.ts: day, event, src, ref, lang, country, visitor,
+	// detail.
+	let funnelRuns: unknown[][] = [];
+	const mockDB = {
+		prepare: (sql: string) => ({
+			bind: (...args: unknown[]) => ({
+				run: async () => {
+					if (sql.includes("funnel_stats")) funnelRuns.push(args);
+					return { success: true };
+				},
+			}),
+		}),
+	};
+	const analyticsEnv = {
+		RIOT_CLIENT_ID: "t",
+		RIOT_CLIENT_SECRET: "t",
+		REALTIME_ORG_ID: "o",
+		REALTIME_API_KEY: "k",
+		REALTIME_KIT_APP_ID: "a",
+		VC_SESSIONS: mockKV,
+		// biome-ignore lint/suspicious/noExplicitAny: minimal D1 stand-in
+		VC_DB: mockDB as any,
+		USE_MOCK_REALTIME: "true",
+		RIOT_VALIDATION_ENABLED: "false",
+	};
+
+	beforeEach(() => {
+		funnelRuns = [];
+		mockKV.get.mockResolvedValue(null);
+	});
+	afterEach(() => vi.clearAllMocks());
+
+	// The last funnel row, as a labelled object (drops the leading day column,
+	// which is time-dependent and covered in the analytics unit tests).
+	const lastFunnel = () => {
+		const a = funnelRuns.at(-1) ?? [];
+		return {
+			event: a[1],
+			src: a[2],
+			ref: a[3],
+			lang: a[4],
+			country: a[5],
+			visitor: a[6],
+			detail: a[7],
+		};
+	};
+
+	it("records a join with its channel, and flags it as a room the joiner minted", async () => {
+		const res = await app.request(
+			"/api/sessions/room-new/join",
+			{
+				method: "POST",
+				body: JSON.stringify({
+					summonerId: "u#JP1",
+					src: "line",
+					ref: "streamer_01",
+					lang: "ja",
+				}),
+				headers: { "Content-Type": "application/json", "CF-IPCountry": "JP" },
+			},
+			analyticsEnv,
+		);
+		expect(res.status).toBe(200);
+
+		expect(lastFunnel()).toEqual({
+			event: "joined",
+			src: "line",
+			ref: "streamer_01",
+			lang: "ja",
+			country: "JP",
+			visitor: "human",
+			detail: "new",
+		});
+	});
+
+	it("distinguishes following someone's invite from minting a room", async () => {
+		mockKV.get.mockImplementation((key: string) =>
+			Promise.resolve(
+				key === "game:room-live"
+					? "mock-meeting-live"
+					: key === "session:mock-meeting-live"
+						? JSON.stringify({
+								sessionId: "room-live",
+								meetingId: "mock-meeting-live",
+								users: [],
+								createdAt: 0,
+							})
+						: null,
+			),
+		);
+
+		await app.request(
+			"/api/sessions/room-live/join",
+			{
+				method: "POST",
+				body: JSON.stringify({ summonerId: "u#JP1", src: "copy", lang: "ja" }),
+				headers: { "Content-Type": "application/json" },
+			},
+			analyticsEnv,
+		);
+
+		expect(lastFunnel().detail).toBe("existing");
+	});
+
+	// A room whose stale mock meeting has to be recreated is still a room
+	// somebody shared. Deriving "new" from the post-reset meetingId counted it
+	// as freshly minted, inflating the host-conversion number this event exists
+	// to measure.
+	it("counts a room whose meeting had to be recreated as existing, not new", async () => {
+		mockKV.get.mockImplementation((key: string) =>
+			// The mapping is there, but points at a mock meeting while we are in
+			// real mode — the join path discards the ID and makes a new meeting.
+			Promise.resolve(key === "game:room-stale" ? "mock-meeting-stale" : null),
+		);
+
+		await app.request(
+			"/api/sessions/room-stale/join",
+			{
+				method: "POST",
+				body: JSON.stringify({ summonerId: "u#JP1", src: "copy", lang: "ja" }),
+				headers: { "Content-Type": "application/json" },
+			},
+			{ ...analyticsEnv, USE_MOCK_REALTIME: "false" },
+		);
+
+		expect(lastFunnel().detail).toBe("existing");
+	});
+
+	// An unbounded ?src= would let anyone inflate row cardinality by editing a
+	// shared link, so unknown channels collapse rather than pass through.
+	it("collapses an unknown channel and drops a malformed partner tag", async () => {
+		await app.request(
+			"/api/sessions/room-odd/join",
+			{
+				method: "POST",
+				body: JSON.stringify({
+					summonerId: "u#JP1",
+					src: "made-up-channel",
+					ref: "not a valid ref",
+					lang: "kl",
+				}),
+				headers: { "Content-Type": "application/json" },
+			},
+			analyticsEnv,
+		);
+
+		const f = lastFunnel();
+		expect([f.event, f.src, f.ref, f.lang]).toEqual([
+			"joined",
+			"other",
+			"",
+			"other",
+		]);
+	});
+
+	it("still creates a session when the D1 binding is absent", async () => {
+		const { VC_DB, ...withoutDb } = analyticsEnv;
+		const res = await app.request(
+			"/api/sessions",
+			{ method: "POST" },
+			withoutDb,
+		);
+		expect(res.status).toBe(200);
+		expect(funnelRuns).toHaveLength(0);
+	});
+});
+
 // Phase 1: report persists both Riot IDs in the clear, permanently, and
 // (client-side) mutes the reported user. Phase 2/3: distinct reporters accrue
 // into a temporary auto-ban that blocks the reported user's next join.
@@ -680,19 +855,68 @@ describe("Reports & auto-ban (moderation)", () => {
 		USE_MOCK_REALTIME: "true",
 	};
 
+	// A report is only accepted from — and against — someone actually on the
+	// room's roster, so every test needs a room staged in KV. Tests that exercise
+	// the guard itself shrink `roster` or replace the stub outright.
+	const ROOM = "room-1";
+	const MEETING = "mock-meeting-1";
+	let roster: string[] = [];
+	let reportsThisWindow = 0;
+
+	// Whether the staged roster counts as Riot-verified. Auto-ban requires it —
+	// see the "unverified roster" tests below.
+	let rosterValidated = true;
+
+	const stageRoom = () => {
+		mockKV.get.mockImplementation((key: string) => {
+			if (key === `game:${ROOM}`) return Promise.resolve(MEETING);
+			if (key === `session:${MEETING}`)
+				return Promise.resolve(
+					JSON.stringify({
+						sessionId: ROOM,
+						meetingId: MEETING,
+						users: roster.map((summonerId) => ({
+							summonerId,
+							joinedAt: 0,
+							validated: rosterValidated,
+						})),
+						createdAt: 0,
+					}),
+				);
+			if (key.startsWith("rl:report:"))
+				return Promise.resolve(
+					reportsThisWindow ? String(reportsThisWindow) : null,
+				);
+			return Promise.resolve(null);
+		});
+	};
+
 	beforeEach(() => {
 		stagedRows = [];
 		inserts = [];
+		reportsThisWindow = 0;
+		rosterValidated = true;
+		roster = [
+			"Alice#JP1",
+			"TROLL#JP1",
+			"reporter3#JP1",
+			"reporter4#JP1",
+			"r1#JP1",
+		];
+		stageRoom();
 	});
 	afterEach(() => vi.clearAllMocks());
 
-	const postReport = (body: unknown) =>
+	const postReport = (body: unknown, ip = "203.0.113.1") =>
 		app.request(
-			"/api/sessions/room-1/reports",
+			`/api/sessions/${ROOM}/reports`,
 			{
 				method: "POST",
 				body: JSON.stringify(body),
-				headers: { "Content-Type": "application/json" },
+				headers: {
+					"Content-Type": "application/json",
+					"CF-Connecting-IP": ip,
+				},
 			},
 			env,
 		);
@@ -744,6 +968,155 @@ describe("Reports & auto-ban (moderation)", () => {
 	it("requires both summoner IDs", async () => {
 		const res = await postReport({ reason: "spam" });
 		expect(res.status).toBe(400);
+	});
+
+	// The reporter used to be an unverified string from the request body, so
+	// three POSTs with invented names cleared MIN_DISTINCT_REPORTERS and banned
+	// any Riot ID for 24h. Membership in the room is what makes a reporter real.
+	it("rejects a report from someone who never joined the room", async () => {
+		const res = await postReport({
+			reporterSummonerId: "ghost#JP1",
+			reportedSummonerId: "TROLL#JP1",
+			reason: "harassment",
+		});
+		expect(res.status).toBe(403);
+		expect(inserts).toHaveLength(0);
+	});
+
+	it("rejects a report against someone who never joined the room", async () => {
+		const res = await postReport({
+			reporterSummonerId: "Alice#JP1",
+			reportedSummonerId: "stranger#JP1",
+			reason: "harassment",
+		});
+		expect(res.status).toBe(403);
+		expect(inserts).toHaveLength(0);
+	});
+
+	it("rejects a report for a room that does not exist", async () => {
+		mockKV.get.mockImplementation(() => Promise.resolve(null));
+		const res = await postReport({
+			reporterSummonerId: "Alice#JP1",
+			reportedSummonerId: "TROLL#JP1",
+			reason: "harassment",
+		});
+		expect(res.status).toBe(404);
+		expect(inserts).toHaveLength(0);
+	});
+
+	// The roster stores whatever case the user typed; a ban must not hinge on it.
+	it("matches the roster case-insensitively", async () => {
+		const res = await postReport({
+			reporterSummonerId: "alice#jp1",
+			reportedSummonerId: "troll#jp1",
+			reason: "harassment",
+		});
+		expect(res.status).toBe(200);
+		expect(inserts).toHaveLength(1);
+	});
+
+	// Second line of defence: even a real participant cannot spray reports across
+	// many rooms from one machine.
+	it("rate limits a flood of reports from one IP", async () => {
+		reportsThisWindow = REPORT_RATE_LIMIT;
+		const res = await postReport({
+			reporterSummonerId: "Alice#JP1",
+			reportedSummonerId: "TROLL#JP1",
+			reason: "harassment",
+		});
+		expect(res.status).toBe(429);
+		expect(inserts).toHaveLength(0);
+	});
+
+	// The roster check alone is not identity. With RIOT_VALIDATION_ENABLED
+	// "false" — production today — join accepts any self-asserted name, so one
+	// attacker can seed a room with invented reporters plus the victim and clear
+	// MIN_DISTINCT_REPORTERS unaided. Reproduced end-to-end against a local
+	// `wrangler pages dev`: 4 joins + 3 reports = a 24h ban, no accounts needed.
+	it("does not auto-ban when the roster is not Riot-verified", async () => {
+		rosterValidated = false;
+		const now = Date.now();
+		stagedRows = [
+			{ reporter_riot_id: "r1", reason: "harassment", created_at: now },
+			{ reporter_riot_id: "r2", reason: "hate", created_at: now },
+			{ reporter_riot_id: "r3", reason: "illegal", created_at: now },
+		];
+		const res = await postReport({
+			reporterSummonerId: "reporter3#JP1",
+			reportedSummonerId: "TROLL#JP1",
+			reason: "illegal",
+		});
+
+		// The report is still evidence: recorded, and the client still mutes.
+		expect(res.status).toBe(200);
+		expect(inserts).toHaveLength(1);
+		// Only the automatic suspension is withheld.
+		expect(putKeys().some((k) => k.startsWith("ban:"))).toBe(false);
+	});
+
+	it("does not auto-ban when only one of the two parties is verified", async () => {
+		const now = Date.now();
+		stagedRows = [
+			{ reporter_riot_id: "r1", reason: "harassment", created_at: now },
+			{ reporter_riot_id: "r2", reason: "hate", created_at: now },
+			{ reporter_riot_id: "r3", reason: "illegal", created_at: now },
+		];
+		// Verified reporter, unverified target: an attacker who cannot forge
+		// reporters could otherwise still ban a name nobody has proven.
+		mockKV.get.mockImplementation((key: string) => {
+			if (key === `game:${ROOM}`) return Promise.resolve(MEETING);
+			if (key === `session:${MEETING}`)
+				return Promise.resolve(
+					JSON.stringify({
+						sessionId: ROOM,
+						meetingId: MEETING,
+						users: [
+							{ summonerId: "reporter3#JP1", joinedAt: 0, validated: true },
+							{ summonerId: "TROLL#JP1", joinedAt: 0, validated: false },
+						],
+						createdAt: 0,
+					}),
+				);
+			return Promise.resolve(null);
+		});
+
+		const res = await postReport({
+			reporterSummonerId: "reporter3#JP1",
+			reportedSummonerId: "TROLL#JP1",
+			reason: "illegal",
+		});
+		expect(res.status).toBe(200);
+		expect(putKeys().some((k) => k.startsWith("ban:"))).toBe(false);
+	});
+
+	// Kill switch: keep recording reports (and client-side local mute) while
+	// taking humans back into the loop for the actual suspension.
+	it("records the report but skips the auto-ban when the kill switch is off", async () => {
+		const now = Date.now();
+		stagedRows = [
+			{ reporter_riot_id: "r1", reason: "harassment", created_at: now },
+			{ reporter_riot_id: "r2", reason: "hate", created_at: now },
+			{ reporter_riot_id: "r3", reason: "illegal", created_at: now },
+		];
+		const res = await app.request(
+			`/api/sessions/${ROOM}/reports`,
+			{
+				method: "POST",
+				body: JSON.stringify({
+					reporterSummonerId: "reporter3#JP1",
+					reportedSummonerId: "TROLL#JP1",
+					reason: "illegal",
+				}),
+				headers: {
+					"Content-Type": "application/json",
+					"CF-Connecting-IP": "203.0.113.9",
+				},
+			},
+			{ ...env, MODERATION_AUTO_BAN_ENABLED: "false" },
+		);
+		expect(res.status).toBe(200);
+		expect(inserts).toHaveLength(1);
+		expect(putKeys().some((k) => k.startsWith("ban:"))).toBe(false);
 	});
 
 	it("issues a temporary ban once enough DISTINCT reporters flag severe reasons", async () => {

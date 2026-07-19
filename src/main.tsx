@@ -32,6 +32,12 @@ import "./theme/lang-fonts.css";
 // Initialize i18n (ja / ko / en) before the app renders.
 import "./i18n";
 
+import { captureAttribution } from "./lib/attribution";
+
+// Before the first render: joining navigates to the room path, and that drops
+// the query string the invite arrived with.
+captureAttribution();
+
 const rootElement = document.getElementById("root");
 if (rootElement) {
 	createRoot(rootElement).render(

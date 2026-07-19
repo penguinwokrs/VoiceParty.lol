@@ -1,5 +1,13 @@
 /// <reference types="@cloudflare/workers-types" />
 
+import {
+	classifyVisitor,
+	sanitizeRef,
+	sanitizeSource,
+	writeFunnelEvent,
+} from "./api/_lib/analytics";
+import type { Bindings } from "./api/_types";
+
 // Edge localization of the SPA's <head>. Crawlers and social scrapers do not
 // run the React app, so this rewrites the static index.html per request based
 // on the URL's language prefix (/ja, /ko, /zh-TW; default English at /). Keep
@@ -50,12 +58,12 @@ const META: Record<Lang, Meta> = {
 const isLang = (value: string | undefined): value is Lang =>
 	!!value && (LANGS as readonly string[]).includes(value);
 
-const langFromPath = (pathname: string): Lang => {
+export const langFromPath = (pathname: string): Lang => {
 	const seg = pathname.split("/")[1];
 	return isLang(seg) && seg !== DEFAULT_LANG ? seg : DEFAULT_LANG;
 };
 
-const stripLang = (pathname: string): string => {
+export const stripLang = (pathname: string): string => {
 	const parts = pathname.split("/");
 	if (isLang(parts[1]) && parts[1] !== DEFAULT_LANG) {
 		parts.splice(1, 1);
@@ -64,10 +72,30 @@ const stripLang = (pathname: string): string => {
 	return rest === "" ? "/" : rest;
 };
 
-const localize = (base: string, lang: Lang): string => {
+export const localize = (base: string, lang: Lang): string => {
 	if (lang === DEFAULT_LANG) return base;
 	return base === "/" ? `/${lang}` : `/${lang}${base}`;
 };
+
+/**
+ * Is this path a shareable room? Shared rooms get invite treatment and must not
+ * be indexed.
+ *
+ * Matches the region-qualified form too (/join/<region>/<id>, which is what the
+ * app actually mints — see roomPath in components/VoiceChat). The pattern this
+ * replaced ended at a single segment, so region rooms were left indexable.
+ * Takes a lang-stripped path (see stripLang).
+ */
+export const isSessionRoomPath = (basePath: string): boolean =>
+	/^\/join\/[^/]+/.test(basePath);
+
+/** Which part of the funnel a page view belongs to. */
+export const pageDetail = (basePath: string): string =>
+	isSessionRoomPath(basePath)
+		? "invite"
+		: basePath === "/"
+			? "landing"
+			: "other";
 
 const escapeAttr = (value: string): string =>
 	value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
@@ -84,7 +112,7 @@ const setText = (value: string) => ({
 	},
 });
 
-export const onRequest: PagesFunction = async (context) => {
+export const onRequest: PagesFunction<Bindings> = async (context) => {
 	const url = new URL(context.request.url);
 
 	// The default language (English) is served without a prefix. Redirect an
@@ -114,8 +142,23 @@ export const onRequest: PagesFunction = async (context) => {
 	const { origin } = url;
 	const selfUrl = origin + localize(basePath, lang);
 	const ogImage = origin + meta.ogImage;
-	// Session rooms (/join/<id>) are shareable but should not be indexed.
-	const isSessionRoom = /^\/join\/[^/]+$/.test(basePath);
+	const isSessionRoom = isSessionRoomPath(basePath);
+
+	// Top of the funnel, counted on the HTML request itself. Landing on an
+	// invite is the step no server API sees otherwise, and it is the
+	// denominator for "how many invites actually convert into a join". Under
+	// waitUntil so the counter write never delays the page.
+	context.waitUntil(
+		writeFunnelEvent(context.env, {
+			name: "page_view",
+			src: sanitizeSource(url.searchParams.get("src")),
+			ref: sanitizeRef(url.searchParams.get("ref")),
+			lang,
+			country: context.request.headers.get("CF-IPCountry") ?? "XX",
+			visitor: classifyVisitor(context.request.headers.get("User-Agent")),
+			detail: pageDetail(basePath),
+		}),
+	);
 
 	const alternates = [...LANGS]
 		.map(
@@ -124,12 +167,9 @@ export const onRequest: PagesFunction = async (context) => {
 		)
 		.join("");
 	const xDefault = `<link rel="alternate" hreflang="x-default" href="${escapeAttr(origin + basePath)}" />`;
-	const robots = isSessionRoom
-		? `<meta name="robots" content="noindex, follow" />`
-		: "";
-	const headExtras = alternates + xDefault + robots;
+	const headExtras = alternates + xDefault;
 
-	return new HTMLRewriter()
+	const rewriter = new HTMLRewriter()
 		.on("html", setAttr("lang", lang))
 		.on("title", setText(meta.title))
 		.on('meta[name="description"]', setAttr("content", meta.description))
@@ -149,6 +189,15 @@ export const onRequest: PagesFunction = async (context) => {
 			element(el: Element) {
 				el.append(headExtras, { html: true });
 			},
-		})
-		.transform(res);
+		});
+
+	// Rewrite the existing robots tag rather than appending a second one. Two
+	// robots metas is not an error (crawlers take the most restrictive), but it
+	// leaves the page asserting both "index" and "noindex" — and reading the
+	// HTML is how anyone would check whether a room is indexable.
+	if (isSessionRoom) {
+		rewriter.on('meta[name="robots"]', setAttr("content", "noindex, follow"));
+	}
+
+	return rewriter.transform(res);
 };
