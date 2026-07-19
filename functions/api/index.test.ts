@@ -719,6 +719,30 @@ describe("Funnel analytics", () => {
 		expect(lastPoint().blobs.at(-1)).toBe("existing");
 	});
 
+	// A room whose stale mock meeting has to be recreated is still a room
+	// somebody shared. Deriving "new" from the post-reset meetingId counted it
+	// as freshly minted, inflating the host-conversion number this event exists
+	// to measure.
+	it("counts a room whose meeting had to be recreated as existing, not new", async () => {
+		mockKV.get.mockImplementation((key: string) =>
+			// The mapping is there, but points at a mock meeting while we are in
+			// real mode — the join path discards the ID and makes a new meeting.
+			Promise.resolve(key === "game:room-stale" ? "mock-meeting-stale" : null),
+		);
+
+		await app.request(
+			"/api/sessions/room-stale/join",
+			{
+				method: "POST",
+				body: JSON.stringify({ summonerId: "u#JP1", src: "copy", lang: "ja" }),
+				headers: { "Content-Type": "application/json" },
+			},
+			{ ...analyticsEnv, USE_MOCK_REALTIME: "false" },
+		);
+
+		expect(lastPoint().blobs.at(-1)).toBe("existing");
+	});
+
 	// An unbounded ?src= would let anyone inflate column cardinality by editing
 	// a shared link, so unknown channels collapse rather than pass through.
 	it("collapses an unknown channel and drops a malformed partner tag", async () => {
