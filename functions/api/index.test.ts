@@ -640,6 +640,123 @@ describe("Capacity via live presence (RealtimeKit source of truth)", () => {
 	});
 });
 
+// The funnel numbers are what gate the M-sized bets, so the events have to be
+// emitted from the real request paths — not from a beacon a stranger can spam.
+describe("Funnel analytics", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: Mocking KV
+	const mockKV: any = { get: vi.fn(), put: vi.fn() };
+	const writeDataPoint = vi.fn();
+	const analyticsEnv = {
+		RIOT_CLIENT_ID: "t",
+		RIOT_CLIENT_SECRET: "t",
+		REALTIME_ORG_ID: "o",
+		REALTIME_API_KEY: "k",
+		REALTIME_KIT_APP_ID: "a",
+		VC_SESSIONS: mockKV,
+		USE_MOCK_REALTIME: "true",
+		RIOT_VALIDATION_ENABLED: "false",
+		VC_ANALYTICS: { writeDataPoint },
+	};
+
+	beforeEach(() => {
+		mockKV.get.mockResolvedValue(null);
+	});
+	afterEach(() => vi.clearAllMocks());
+
+	// biome-ignore lint/suspicious/noExplicitAny: mock call tuple
+	const lastPoint = (): any => writeDataPoint.mock.calls.at(-1)?.[0];
+
+	it("records a join with its channel, and flags it as a room the joiner minted", async () => {
+		const res = await app.request(
+			"/api/sessions/room-new/join",
+			{
+				method: "POST",
+				body: JSON.stringify({
+					summonerId: "u#JP1",
+					src: "line",
+					ref: "streamer_01",
+					lang: "ja",
+				}),
+				headers: { "Content-Type": "application/json", "CF-IPCountry": "JP" },
+			},
+			analyticsEnv,
+		);
+		expect(res.status).toBe(200);
+
+		expect(lastPoint()).toEqual({
+			indexes: ["line"],
+			blobs: ["joined", "line", "streamer_01", "ja", "JP", "human", "new"],
+			doubles: [1],
+		});
+	});
+
+	it("distinguishes following someone's invite from minting a room", async () => {
+		mockKV.get.mockImplementation((key: string) =>
+			Promise.resolve(
+				key === "game:room-live"
+					? "mock-meeting-live"
+					: key === "session:mock-meeting-live"
+						? JSON.stringify({
+								sessionId: "room-live",
+								meetingId: "mock-meeting-live",
+								users: [],
+								createdAt: 0,
+							})
+						: null,
+			),
+		);
+
+		await app.request(
+			"/api/sessions/room-live/join",
+			{
+				method: "POST",
+				body: JSON.stringify({ summonerId: "u#JP1", src: "copy", lang: "ja" }),
+				headers: { "Content-Type": "application/json" },
+			},
+			analyticsEnv,
+		);
+
+		expect(lastPoint().blobs.at(-1)).toBe("existing");
+	});
+
+	// An unbounded ?src= would let anyone inflate column cardinality by editing
+	// a shared link, so unknown channels collapse rather than pass through.
+	it("collapses an unknown channel and drops a malformed partner tag", async () => {
+		await app.request(
+			"/api/sessions/room-odd/join",
+			{
+				method: "POST",
+				body: JSON.stringify({
+					summonerId: "u#JP1",
+					src: "made-up-channel",
+					ref: "not a valid ref",
+					lang: "kl",
+				}),
+				headers: { "Content-Type": "application/json" },
+			},
+			analyticsEnv,
+		);
+
+		expect(lastPoint().blobs.slice(0, 4)).toEqual([
+			"joined",
+			"other",
+			"",
+			"other",
+		]);
+	});
+
+	it("still creates a session when the binding is absent", async () => {
+		const { VC_ANALYTICS, ...withoutBinding } = analyticsEnv;
+		const res = await app.request(
+			"/api/sessions",
+			{ method: "POST" },
+			withoutBinding,
+		);
+		expect(res.status).toBe(200);
+		expect(writeDataPoint).not.toHaveBeenCalled();
+	});
+});
+
 // Phase 1: report persists both Riot IDs in the clear, permanently, and
 // (client-side) mutes the reported user. Phase 2/3: distinct reporters accrue
 // into a temporary auto-ban that blocks the reported user's next join.

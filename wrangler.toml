@@ -17,6 +17,14 @@ database_name = "voicecrew-reports"
 database_id = "0b49755f-8c3a-477d-93a6-47ff1fe0cd13"
 migrations_dir = "migrations"
 
+# Funnel metrics (page_view -> room_created -> joined, by share channel).
+# Append-only and aggregate; no identifier is ever written. KV was rejected for
+# this: it has no atomic increment, so concurrent writes drop counts silently.
+# See functions/api/_lib/analytics.ts and docs/analytics.md.
+[[analytics_engine_datasets]]
+binding = "VC_ANALYTICS"
+dataset = "voicecrew_funnel"
+
 # Temporary: Riot API validation is disabled while awaiting RSO production
 # approval (~1 month lead time). The RSO/validation code is kept intact.
 # Set to "true" or remove this to re-enable validation.

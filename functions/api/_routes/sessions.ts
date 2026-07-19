@@ -1,4 +1,11 @@
 import { Hono } from "hono";
+import {
+	classifyVisitor,
+	sanitizeLang,
+	sanitizeRef,
+	sanitizeSource,
+	writeFunnelEvent,
+} from "../_lib/analytics";
 import { isBanned, maybeAutoBan } from "../_lib/moderation";
 import { callRealtimeKit, getActiveParticipantCount } from "../_lib/realtime";
 import { recordReport } from "../_lib/reports";
@@ -37,8 +44,34 @@ const REPORT_REASONS = new Set([
 const CHILD_SAFETY_REASON = "child_safety";
 const MAX_NOTE_LENGTH = 280;
 
+/** Attribution the client sends along with a create/join request. */
+type Attribution = { src?: string; ref?: string; lang?: string };
+
+/**
+ * Attribution travels in the request body, not the URL: the app navigates to
+ * the room path before joining and react-router drops the query string, so by
+ * the time we are called the original ?src= is gone from the address bar. The
+ * client holds it in memory and hands it back here.
+ */
+const funnelContext = (headers: Headers, body: Attribution) => ({
+	src: sanitizeSource(body.src),
+	ref: sanitizeRef(body.ref),
+	lang: sanitizeLang(body.lang),
+	country: headers.get("CF-IPCountry") ?? "XX",
+	visitor: classifyVisitor(headers.get("User-Agent")),
+});
+
 app.post("/", async (c) => {
 	const sessionId = crypto.randomUUID();
+
+	// Attribution is optional here and the endpoint has always accepted an empty
+	// body, so a missing/!JSON body must stay a successful create.
+	let attribution: Attribution = {};
+	try {
+		attribution = (await c.req.json<Attribution>()) ?? {};
+	} catch {
+		attribution = {};
+	}
 
 	let meetingId: string | undefined;
 
@@ -89,15 +122,29 @@ app.post("/", async (c) => {
 		);
 	}
 
+	writeFunnelEvent(c.env, {
+		name: "room_created",
+		...funnelContext(c.req.raw.headers, attribution),
+		detail: "explicit",
+	});
+
 	return c.json(session);
 });
 
 app.post("/:id/join", async (c) => {
 	const sessionId = c.req.param("id");
-	const { summonerId, iconUrl } = await c.req.json<{
-		summonerId: string;
-		iconUrl?: string;
-	}>();
+	const {
+		summonerId,
+		iconUrl,
+		src,
+		ref,
+		lang: uiLang,
+	} = await c.req.json<
+		{
+			summonerId: string;
+			iconUrl?: string;
+		} & Attribution
+	>();
 
 	if (!summonerId) {
 		return c.text("Summoner ID is required", 400);
@@ -168,6 +215,10 @@ app.post("/:id/join", async (c) => {
 	}
 
 	let session: Session;
+	// Which side of the funnel this join is: following someone's invite, or
+	// minting the room yourself. The ratio between them is the host-conversion
+	// number the post-call work is meant to move.
+	const isNewRoom = !(sessionData && meetingId);
 
 	if (sessionData && meetingId) {
 		session = JSON.parse(sessionData);
@@ -288,6 +339,12 @@ app.post("/:id/join", async (c) => {
 			}
 		}
 	}
+
+	writeFunnelEvent(c.env, {
+		name: "joined",
+		...funnelContext(c.req.raw.headers, { src, ref, lang: uiLang }),
+		detail: isNewRoom ? "new" : "existing",
+	});
 
 	return c.json({
 		session,
