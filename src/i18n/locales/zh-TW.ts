@@ -134,7 +134,7 @@ export const zhTW: PartialTranslationResources = {
 		linkCopied: "已複製連結",
 		shareText: "🎮 我正在 VoiceCrew 開語音一起玩！用這條連結加入我吧 👉",
 		safetyNote:
-			"🔒 語音不會被錄製。你可能會和陌生人交談——請勿分享個人資訊；若感到不適，可以靜音、檢舉或離開。",
+			"🔒 VoiceCrew 不會錄製語音（但無法阻止參加者自行直播或錄影）。你可能會和陌生人交談——請勿分享個人資訊；若感到不適，可以靜音、檢舉或離開。",
 		noiseSuppression: "降噪",
 		noiseSuppressionOn: "降噪：開啟",
 		noiseSuppressionOff: "降噪：關閉",
