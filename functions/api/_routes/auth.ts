@@ -16,9 +16,10 @@ const app = new Hono<{ Bindings: Bindings }>();
  * It verifies the identity exists and returns the resolved account + profile icon.
  */
 app.post("/riot-id", async (c) => {
-	let body: { riotId?: string };
+	let body: { riotId?: string; region?: string };
 	try {
-		body = await c.req.json<{ riotId?: string }>();
+		// `region` is the Riot platform (e.g. "na1"); it routes the lookups below.
+		body = await c.req.json<{ riotId?: string; region?: string }>();
 	} catch {
 		return c.text("Invalid JSON body", 400);
 	}
@@ -55,14 +56,19 @@ app.post("/riot-id", async (c) => {
 		return c.text("Configuration error: Missing Riot API Key", 503);
 	}
 
-	const account = await getAccountByRiotId(riotId, apiKey);
+	const region = body.region;
+	const account = await getAccountByRiotId(riotId, apiKey, region);
 	if (!account) {
 		return c.text("Riot ID not found", 404);
 	}
 
-	// Best-effort icon lookup; identity is valid even if this fails.
+	// Best-effort icon lookup; identity is valid even if this fails. Without a
+	// platform there is nothing to query — SUMMONER-V4 is platform-scoped — so
+	// the caller just gets no icon.
 	let iconUrl: string | undefined;
-	const summoner = await getSummonerByPuuid(account.puuid, apiKey);
+	const summoner = region
+		? await getSummonerByPuuid(account.puuid, apiKey, region)
+		: null;
 	if (summoner) {
 		iconUrl = await getProfileIconUrl(summoner.profileIconId);
 	}

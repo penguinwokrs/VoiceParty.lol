@@ -129,7 +129,7 @@ export const en: TranslationResources = {
 		shareText:
 			"🎮 Jumping into VoiceCrew for some crystal-clear voice chat — come play with me! 👉",
 		safetyNote:
-			"🔒 Voice is never recorded. You may be talking with strangers — don't share personal information, and mute, report, or leave if you feel uncomfortable.",
+			"🔒 VoiceCrew never records voice (it cannot stop a participant streaming or recording). You may be talking with strangers — don't share personal information, and mute, report, or leave if you feel uncomfortable.",
 		noiseSuppression: "Noise suppression",
 		noiseSuppressionOn: "Noise suppression: on",
 		noiseSuppressionOff: "Noise suppression: off",
@@ -177,7 +177,7 @@ export const en: TranslationResources = {
 	legal: {
 		disclaimer:
 			"VoiceCrew isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.",
-		updated: "Last updated: July 18, 2026",
+		updated: "Last updated: July 19, 2026",
 		nav: {
 			home: "Home",
 			privacy: "Privacy Policy",
@@ -194,7 +194,7 @@ export const en: TranslationResources = {
 				},
 				{
 					heading: "2. Handling of voice",
-					body: "Voice is transmitted between participants in real time via WebRTC. The Service does not record or store voice.",
+					body: "Voice is transmitted between participants in real time via WebRTC. The Service does not record or store voice.\nThat the Service does not record voice means the operator does not record it. It does not prevent recording, streaming or retransmission by participants or other third parties. If someone in your room live-streams or records the call, your voice and display name (Riot ID) may be published to third parties and stored beyond the Service's control. The operator cannot control how such a stream or recording is handled and cannot act on a request to delete it. The rules between participants are set out in Section 5 of the Terms of Use.",
 				},
 				{
 					heading: "3. Cookies and analytics",
@@ -269,7 +269,7 @@ export const en: TranslationResources = {
 				},
 				{
 					heading: "5. Voice calls and self-protection",
-					body: "The Service does not record or store voice. You can protect yourself using per-participant mute, leaving, and switching rooms. You may report inappropriate users via the in-app report feature or the contact point. You may speak with strangers on the Service, so do not casually share personal information.",
+					body: "The Service does not record or store voice. You can protect yourself using per-participant mute, leaving, and switching rooms. You may report inappropriate users via the in-app report feature or the contact point. You may speak with strangers on the Service, so do not casually share personal information.\n\n[Streaming and recording a call]\nThe Service does not prohibit you from live-streaming or recording a call. The operator, however, cannot prevent it technically and cannot detect that it has happened.\nIf you stream or record, you must:\n・Before the call begins, or before you start streaming, tell the others in the room that you are streaming or recording, and where it will be published.\n・If anyone objects, keep that person's voice and display name (Riot ID) out of the stream or recording. If you cannot, do not stream or record.\n・Not obstruct anyone who chooses to leave.\nPublishing a participant's voice or display name without giving the notice above may constitute a prohibited act under Section 4 (harassment; exposing another person's personal information).\nYou join a call understanding that others in the room may stream or record it on the terms above. If you do not want to be streamed, protect yourself by leaving once you are told. Nothing in this Section makes the operator responsible for the contents of a stream or recording.",
 				},
 				{
 					heading: "6. Operator measures",
