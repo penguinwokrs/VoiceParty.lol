@@ -21,9 +21,20 @@ migrations_dir = "migrations"
 # Append-only and aggregate; no identifier is ever written. KV was rejected for
 # this: it has no atomic increment, so concurrent writes drop counts silently.
 # See functions/api/_lib/analytics.ts and docs/analytics.md.
-[[analytics_engine_datasets]]
-binding = "VC_ANALYTICS"
-dataset = "voicecrew_funnel"
+#
+# COMMENTED OUT: enabling this binding makes the Pages *deploy* stage fail while
+# the build still succeeds. Analytics Engine is not included in the Workers Free
+# plan, and this account has no Workers Paid subscription (only calls_paid and
+# r2_paid). Every branch carrying this block failed to deploy; every branch
+# without it deployed fine.
+#
+# The instrumentation ships dormant: writeFunnelEvent() no-ops when the binding
+# is absent, so nothing breaks — there is simply no data until this is enabled.
+# To turn it on: subscribe to Workers Paid, uncomment, redeploy. Nothing else
+# changes. See docs/analytics.md ("計測を有効にする").
+# [[analytics_engine_datasets]]
+# binding = "VC_ANALYTICS"
+# dataset = "voicecrew_funnel"
 
 # Temporary: Riot API validation is disabled while awaiting RSO production
 # approval (~1 month lead time). The RSO/validation code is kept intact.

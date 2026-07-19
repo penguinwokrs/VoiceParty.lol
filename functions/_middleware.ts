@@ -58,12 +58,12 @@ const META: Record<Lang, Meta> = {
 const isLang = (value: string | undefined): value is Lang =>
 	!!value && (LANGS as readonly string[]).includes(value);
 
-const langFromPath = (pathname: string): Lang => {
+export const langFromPath = (pathname: string): Lang => {
 	const seg = pathname.split("/")[1];
 	return isLang(seg) && seg !== DEFAULT_LANG ? seg : DEFAULT_LANG;
 };
 
-const stripLang = (pathname: string): string => {
+export const stripLang = (pathname: string): string => {
 	const parts = pathname.split("/");
 	if (isLang(parts[1]) && parts[1] !== DEFAULT_LANG) {
 		parts.splice(1, 1);
@@ -72,10 +72,30 @@ const stripLang = (pathname: string): string => {
 	return rest === "" ? "/" : rest;
 };
 
-const localize = (base: string, lang: Lang): string => {
+export const localize = (base: string, lang: Lang): string => {
 	if (lang === DEFAULT_LANG) return base;
 	return base === "/" ? `/${lang}` : `/${lang}${base}`;
 };
+
+/**
+ * Is this path a shareable room? Shared rooms get invite treatment and must not
+ * be indexed.
+ *
+ * Matches the region-qualified form too (/join/<region>/<id>, which is what the
+ * app actually mints — see roomPath in components/VoiceChat). The pattern this
+ * replaced ended at a single segment, so region rooms were left indexable.
+ * Takes a lang-stripped path (see stripLang).
+ */
+export const isSessionRoomPath = (basePath: string): boolean =>
+	/^\/join\/[^/]+/.test(basePath);
+
+/** Which part of the funnel a page view belongs to. */
+export const pageDetail = (basePath: string): string =>
+	isSessionRoomPath(basePath)
+		? "invite"
+		: basePath === "/"
+			? "landing"
+			: "other";
 
 const escapeAttr = (value: string): string =>
 	value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
@@ -122,11 +142,7 @@ export const onRequest: PagesFunction<Bindings> = async (context) => {
 	const { origin } = url;
 	const selfUrl = origin + localize(basePath, lang);
 	const ogImage = origin + meta.ogImage;
-	// Session rooms are shareable but should not be indexed. Matches the
-	// region-qualified form too (/join/<region>/<id>, which is what the app
-	// actually mints — see roomPath in components/VoiceChat): the previous
-	// pattern ended at a single segment, so those rooms were left indexable.
-	const isSessionRoom = /^\/join\/[^/]+/.test(basePath);
+	const isSessionRoom = isSessionRoomPath(basePath);
 
 	// Top of the funnel, counted on the HTML request itself. Landing on an
 	// invite is the step no server API sees otherwise, and it is the
@@ -138,7 +154,7 @@ export const onRequest: PagesFunction<Bindings> = async (context) => {
 		lang,
 		country: context.request.headers.get("CF-IPCountry") ?? "XX",
 		visitor: classifyVisitor(context.request.headers.get("User-Agent")),
-		detail: isSessionRoom ? "invite" : basePath === "/" ? "landing" : "other",
+		detail: pageDetail(basePath),
 	});
 
 	const alternates = [...LANGS]
