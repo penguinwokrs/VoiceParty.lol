@@ -12,6 +12,10 @@ export type Bindings = {
 	REALTIME_API_KEY: string;
 	REALTIME_KIT_APP_ID: string;
 	USE_MOCK_REALTIME: string;
+	// Set to "false" to stop reports from issuing automatic bans (they are still
+	// recorded, and the client still mutes locally). Any other value, including
+	// unset, keeps the automatic suspension on.
+	MODERATION_AUTO_BAN_ENABLED: string;
 };
 
 /** One row of the permanent report store, as read by the auto-ban aggregator. */

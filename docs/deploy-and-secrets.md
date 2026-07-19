@@ -38,8 +38,12 @@ Current secrets and where each is (re)generated:
 | `RIOT_GAME_API_KEY` | Riot Developer Portal |
 | `CLOUD_FLARE_API_KEY` | Cloudflare (the token/key the app uses) |
 
-Plain (non-secret) vars like `RIOT_VALIDATION_ENABLED` live in `wrangler.toml`
-`[vars]`, not here.
+Plain (non-secret) vars live in `wrangler.toml` `[vars]`, not here:
+
+| Var | Effect |
+|-----|--------|
+| `RIOT_VALIDATION_ENABLED` | `"false"` skips the Riot API lookup on join. |
+| `MODERATION_AUTO_BAN_ENABLED` | `"false"` stops reports from issuing automatic 24h bans. Reports are still recorded and the reporter's client still mutes locally — only the automatic suspension stops. Emergency switch for a weaponization pattern; see [moderation.md](./moderation.md) §1.5. |
 
 ### Backup / source of truth
 

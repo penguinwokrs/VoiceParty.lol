@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import { isBanned, maybeAutoBan } from "../_lib/moderation";
+import { consumeReportQuota } from "../_lib/rate-limit";
 import { callRealtimeKit, getActiveParticipantCount } from "../_lib/realtime";
-import { recordReport } from "../_lib/reports";
+import { normalizeRiotId, recordReport } from "../_lib/reports";
 import {
 	getAccountByRiotId,
 	getProfileIconUrl,
@@ -36,6 +37,27 @@ const REPORT_REASONS = new Set([
 // automatic score (which could be weaponized for such a severe category).
 const CHILD_SAFETY_REASON = "child_safety";
 const MAX_NOTE_LENGTH = 280;
+
+/**
+ * Resolve a room ID to its stored session, following the same two hops as the
+ * join handler: `game:{sessionId}` -> meetingId -> `session:{meetingId}`.
+ * Returns null when either hop is missing (unknown room, or one whose 6h TTL
+ * has lapsed).
+ */
+async function loadSession(
+	env: Bindings,
+	sessionId: string,
+): Promise<Session | null> {
+	const meetingId = await env.VC_SESSIONS.get(`game:${sessionId}`);
+	if (!meetingId) return null;
+	const raw = await env.VC_SESSIONS.get(`session:${meetingId}`);
+	if (!raw) return null;
+	try {
+		return JSON.parse(raw) as Session;
+	} catch {
+		return null;
+	}
+}
 
 app.post("/", async (c) => {
 	const sessionId = crypto.randomUUID();
@@ -344,6 +366,32 @@ app.post("/:id/reports", async (c) => {
 		return c.text("Invalid report reason", 400);
 	}
 
+	// Cheap abuse cap first, so a flood is cut off before it costs us a session
+	// lookup. Counts rejected attempts too — probing should burn quota.
+	const ip = c.req.raw.headers.get("CF-Connecting-IP");
+	if (!(await consumeReportQuota(c.env, ip))) {
+		return c.text("Too many reports. Try again later.", 429);
+	}
+
+	// Both parties must be on this room's roster. Without this the reporter is
+	// just an unvalidated string from the body, and three POSTs with invented
+	// names clear MIN_DISTINCT_REPORTERS and auto-ban any Riot ID for 24h.
+	// The roster is append-only, so someone who has already left can still be
+	// reported (and can still report) — which is the behaviour we want.
+	const session = await loadSession(c.env, sessionId);
+	if (!session) {
+		return c.text("Session not found", 404);
+	}
+	const roster = new Set(
+		session.users.map((u) => normalizeRiotId(u.summonerId)),
+	);
+	if (!roster.has(normalizeRiotId(reporter))) {
+		return c.text("You can only report from a room you joined", 403);
+	}
+	if (!roster.has(normalizeRiotId(reported))) {
+		return c.text("That user is not in this room", 403);
+	}
+
 	const createdAt = Date.now();
 
 	// Persisted to D1 with no expiry, Riot IDs in the clear. Both parties are
@@ -363,6 +411,14 @@ app.post("/:id/reports", async (c) => {
 	// severe to let a score-based auto-ban be weaponized). The row is stored the
 	// same way; `evaluateReports` is what skips it.
 	if (reason === CHILD_SAFETY_REASON) {
+		return c.json({ ok: true });
+	}
+
+	// Kill switch. Set MODERATION_AUTO_BAN_ENABLED="false" to fall back to
+	// "record + client-side local mute + human review": suspensions stop being
+	// automatic, but nothing about the evidence trail changes. Meant for when a
+	// weaponization pattern shows up faster than a fix can ship.
+	if (c.env.MODERATION_AUTO_BAN_ENABLED === "false") {
 		return c.json({ ok: true });
 	}
 
