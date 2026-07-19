@@ -8,9 +8,13 @@ binding = "VC_SESSIONS"
 id = "74421f4d32f648e4b6ad64a9ef5498ee"
 preview_id = "bfac51e6cf5e4e4388609f68c70f8c5d"
 
-# Report records live here rather than in KV: they are retained permanently
-# (no TTL) and need to be queried by reported user, so KV's list+metadata
-# aggregation no longer fits. See docs/moderation.md and the privacy policy.
+# D1 holds two unrelated things, both queried by key:
+#   - `reports`: permanent, plaintext PII (see docs/moderation.md, privacy policy)
+#   - `funnel_stats`: identifier-free aggregate counters (see docs/analytics.md)
+# They share this database only to avoid provisioning a second one; the funnel
+# table carries no PII, so it does not widen the reports table's exposure.
+# (Funnel metrics were prototyped on Analytics Engine but AE is not in the
+# Workers Free plan and broke the Pages deploy — hence D1 counters instead.)
 [[d1_databases]]
 binding = "VC_DB"
 database_name = "voicecrew-reports"

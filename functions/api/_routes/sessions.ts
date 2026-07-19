@@ -1,4 +1,12 @@
 import { Hono } from "hono";
+import {
+	classifyVisitor,
+	type FunnelEventInput,
+	sanitizeLang,
+	sanitizeRef,
+	sanitizeSource,
+	writeFunnelEvent,
+} from "../_lib/analytics";
 import { isBanned, maybeAutoBan } from "../_lib/moderation";
 import { consumeJoinQuota, consumeReportQuota } from "../_lib/rate-limit";
 import { callRealtimeKit, getActiveParticipantCount } from "../_lib/realtime";
@@ -38,6 +46,43 @@ const REPORT_REASONS = new Set([
 const CHILD_SAFETY_REASON = "child_safety";
 const MAX_NOTE_LENGTH = 280;
 
+/** Attribution the client sends along with a create/join request. */
+type Attribution = { src?: string; ref?: string; lang?: string };
+
+/**
+ * Attribution travels in the request body, not the URL: the app navigates to
+ * the room path before joining and react-router drops the query string, so by
+ * the time we are called the original ?src= is gone from the address bar. The
+ * client holds it in memory and hands it back here.
+ */
+const funnelContext = (headers: Headers, body: Attribution) => ({
+	src: sanitizeSource(body.src),
+	ref: sanitizeRef(body.ref),
+	lang: sanitizeLang(body.lang),
+	country: headers.get("CF-IPCountry") ?? "XX",
+	visitor: classifyVisitor(headers.get("User-Agent")),
+});
+
+/**
+ * Fire a funnel write without delaying the response. `c.executionCtx` throws
+ * when absent (unit tests), so probe it: in production the write runs under
+ * waitUntil and this resolves immediately; in tests there is no execCtx so we
+ * await the write, which lets assertions see the row. Mirrors the auto-ban
+ * dispatch below. Awaiting this in prod costs one microtask, not the D1 write.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: Hono context, only used for executionCtx
+const recordFunnel = async (c: any, event: FunnelEventInput): Promise<void> => {
+	const write = () => writeFunnelEvent(c.env, event);
+	let execCtx: ExecutionContext | undefined;
+	try {
+		execCtx = c.executionCtx;
+	} catch {
+		execCtx = undefined;
+	}
+	if (execCtx) execCtx.waitUntil(write());
+	else await write();
+};
+
 /**
  * Resolve a room ID to its stored session, following the same two hops as the
  * join handler: `game:{sessionId}` -> meetingId -> `session:{meetingId}`.
@@ -61,6 +106,15 @@ async function loadSession(
 
 app.post("/", async (c) => {
 	const sessionId = crypto.randomUUID();
+
+	// Attribution is optional here and the endpoint has always accepted an empty
+	// body, so a missing/!JSON body must stay a successful create.
+	let attribution: Attribution = {};
+	try {
+		attribution = (await c.req.json<Attribution>()) ?? {};
+	} catch {
+		attribution = {};
+	}
 
 	let meetingId: string | undefined;
 
@@ -111,15 +165,29 @@ app.post("/", async (c) => {
 		);
 	}
 
+	await recordFunnel(c, {
+		name: "room_created",
+		...funnelContext(c.req.raw.headers, attribution),
+		detail: "explicit",
+	});
+
 	return c.json(session);
 });
 
 app.post("/:id/join", async (c) => {
 	const sessionId = c.req.param("id");
-	const { summonerId, iconUrl } = await c.req.json<{
-		summonerId: string;
-		iconUrl?: string;
-	}>();
+	const {
+		summonerId,
+		iconUrl,
+		src,
+		ref,
+		lang: uiLang,
+	} = await c.req.json<
+		{
+			summonerId: string;
+			iconUrl?: string;
+		} & Attribution
+	>();
 
 	if (!summonerId) {
 		return c.text("Summoner ID is required", 400);
@@ -203,6 +271,15 @@ app.post("/:id/join", async (c) => {
 	}
 
 	let session: Session;
+	// Which side of the funnel this join is: following someone's invite, or
+	// minting the room yourself. The ratio between them is the host-conversion
+	// number the post-call work is meant to move.
+	//
+	// Keyed off the ORIGINAL mapping, not the post-reset `meetingId`. A room
+	// whose stale mock meeting had to be recreated (the mock/real branch above
+	// nulls `meetingId`) still had someone share its ID — counting that as a
+	// freshly minted room would inflate host conversion.
+	const isNewRoom = !mapping;
 
 	if (sessionData && meetingId) {
 		session = JSON.parse(sessionData);
@@ -329,6 +406,12 @@ app.post("/:id/join", async (c) => {
 			}
 		}
 	}
+
+	await recordFunnel(c, {
+		name: "joined",
+		...funnelContext(c.req.raw.headers, { src, ref, lang: uiLang }),
+		detail: isNewRoom ? "new" : "existing",
+	});
 
 	return c.json({
 		session,

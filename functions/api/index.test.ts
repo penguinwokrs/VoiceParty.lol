@@ -641,6 +641,180 @@ describe("Capacity via live presence (RealtimeKit source of truth)", () => {
 	});
 });
 
+// The funnel numbers are what gate the M-sized bets, so the events have to be
+// emitted from the real request paths — not from a beacon a stranger can spam.
+describe("Funnel analytics", () => {
+	// biome-ignore lint/suspicious/noExplicitAny: Mocking KV
+	const mockKV: any = { get: vi.fn(), put: vi.fn() };
+
+	// Captures the args bound to each funnel_stats UPSERT. Column order matches
+	// the INSERT in analytics.ts: day, event, src, ref, lang, country, visitor,
+	// detail.
+	let funnelRuns: unknown[][] = [];
+	const mockDB = {
+		prepare: (sql: string) => ({
+			bind: (...args: unknown[]) => ({
+				run: async () => {
+					if (sql.includes("funnel_stats")) funnelRuns.push(args);
+					return { success: true };
+				},
+			}),
+		}),
+	};
+	const analyticsEnv = {
+		RIOT_CLIENT_ID: "t",
+		RIOT_CLIENT_SECRET: "t",
+		REALTIME_ORG_ID: "o",
+		REALTIME_API_KEY: "k",
+		REALTIME_KIT_APP_ID: "a",
+		VC_SESSIONS: mockKV,
+		// biome-ignore lint/suspicious/noExplicitAny: minimal D1 stand-in
+		VC_DB: mockDB as any,
+		USE_MOCK_REALTIME: "true",
+		RIOT_VALIDATION_ENABLED: "false",
+	};
+
+	beforeEach(() => {
+		funnelRuns = [];
+		mockKV.get.mockResolvedValue(null);
+	});
+	afterEach(() => vi.clearAllMocks());
+
+	// The last funnel row, as a labelled object (drops the leading day column,
+	// which is time-dependent and covered in the analytics unit tests).
+	const lastFunnel = () => {
+		const a = funnelRuns.at(-1) ?? [];
+		return {
+			event: a[1],
+			src: a[2],
+			ref: a[3],
+			lang: a[4],
+			country: a[5],
+			visitor: a[6],
+			detail: a[7],
+		};
+	};
+
+	it("records a join with its channel, and flags it as a room the joiner minted", async () => {
+		const res = await app.request(
+			"/api/sessions/room-new/join",
+			{
+				method: "POST",
+				body: JSON.stringify({
+					summonerId: "u#JP1",
+					src: "line",
+					ref: "streamer_01",
+					lang: "ja",
+				}),
+				headers: { "Content-Type": "application/json", "CF-IPCountry": "JP" },
+			},
+			analyticsEnv,
+		);
+		expect(res.status).toBe(200);
+
+		expect(lastFunnel()).toEqual({
+			event: "joined",
+			src: "line",
+			ref: "streamer_01",
+			lang: "ja",
+			country: "JP",
+			visitor: "human",
+			detail: "new",
+		});
+	});
+
+	it("distinguishes following someone's invite from minting a room", async () => {
+		mockKV.get.mockImplementation((key: string) =>
+			Promise.resolve(
+				key === "game:room-live"
+					? "mock-meeting-live"
+					: key === "session:mock-meeting-live"
+						? JSON.stringify({
+								sessionId: "room-live",
+								meetingId: "mock-meeting-live",
+								users: [],
+								createdAt: 0,
+							})
+						: null,
+			),
+		);
+
+		await app.request(
+			"/api/sessions/room-live/join",
+			{
+				method: "POST",
+				body: JSON.stringify({ summonerId: "u#JP1", src: "copy", lang: "ja" }),
+				headers: { "Content-Type": "application/json" },
+			},
+			analyticsEnv,
+		);
+
+		expect(lastFunnel().detail).toBe("existing");
+	});
+
+	// A room whose stale mock meeting has to be recreated is still a room
+	// somebody shared. Deriving "new" from the post-reset meetingId counted it
+	// as freshly minted, inflating the host-conversion number this event exists
+	// to measure.
+	it("counts a room whose meeting had to be recreated as existing, not new", async () => {
+		mockKV.get.mockImplementation((key: string) =>
+			// The mapping is there, but points at a mock meeting while we are in
+			// real mode — the join path discards the ID and makes a new meeting.
+			Promise.resolve(key === "game:room-stale" ? "mock-meeting-stale" : null),
+		);
+
+		await app.request(
+			"/api/sessions/room-stale/join",
+			{
+				method: "POST",
+				body: JSON.stringify({ summonerId: "u#JP1", src: "copy", lang: "ja" }),
+				headers: { "Content-Type": "application/json" },
+			},
+			{ ...analyticsEnv, USE_MOCK_REALTIME: "false" },
+		);
+
+		expect(lastFunnel().detail).toBe("existing");
+	});
+
+	// An unbounded ?src= would let anyone inflate row cardinality by editing a
+	// shared link, so unknown channels collapse rather than pass through.
+	it("collapses an unknown channel and drops a malformed partner tag", async () => {
+		await app.request(
+			"/api/sessions/room-odd/join",
+			{
+				method: "POST",
+				body: JSON.stringify({
+					summonerId: "u#JP1",
+					src: "made-up-channel",
+					ref: "not a valid ref",
+					lang: "kl",
+				}),
+				headers: { "Content-Type": "application/json" },
+			},
+			analyticsEnv,
+		);
+
+		const f = lastFunnel();
+		expect([f.event, f.src, f.ref, f.lang]).toEqual([
+			"joined",
+			"other",
+			"",
+			"other",
+		]);
+	});
+
+	it("still creates a session when the D1 binding is absent", async () => {
+		const { VC_DB, ...withoutDb } = analyticsEnv;
+		const res = await app.request(
+			"/api/sessions",
+			{ method: "POST" },
+			withoutDb,
+		);
+		expect(res.status).toBe(200);
+		expect(funnelRuns).toHaveLength(0);
+	});
+});
+
 // Phase 1: report persists both Riot IDs in the clear, permanently, and
 // (client-side) mutes the reported user. Phase 2/3: distinct reporters accrue
 // into a temporary auto-ban that blocks the reported user's next join.

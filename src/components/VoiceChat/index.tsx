@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import type { LanguageCode } from "../../i18n";
 import { localizePath } from "../../i18n/paths";
+import { getAttribution } from "../../lib/attribution";
 import { ActiveSessionView } from "./ActiveSessionView";
 import { JoinSessionForm } from "./JoinSessionForm";
 import { isRegionCode } from "./regions";
@@ -142,10 +143,13 @@ export const VoiceChat = () => {
 		setLoading(true);
 		setError("");
 		try {
+			const { src, ref } = getAttribution();
 			const res = await fetch(`/api/sessions/${targetSessionId}/join`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ summonerId, region }),
+				// src/ref/lang are attribution only — the server sanitizes them
+				// against its own allowlist and never stores them per-user.
+				body: JSON.stringify({ summonerId, region, src, ref, lang }),
 			});
 
 			if (!res.ok) {
