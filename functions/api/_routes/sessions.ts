@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { isBanned, maybeAutoBan } from "../_lib/moderation";
-import { consumeReportQuota } from "../_lib/rate-limit";
+import { consumeJoinQuota, consumeReportQuota } from "../_lib/rate-limit";
 import { callRealtimeKit, getActiveParticipantCount } from "../_lib/realtime";
 import { normalizeRiotId, recordReport } from "../_lib/reports";
 import {
@@ -137,11 +137,23 @@ app.post("/:id/join", async (c) => {
 		);
 	}
 
+	// Cost cap, not a security control: an automated client hammering this
+	// endpoint mints RealtimeKit meetings, which bill participant-minutes.
+	if (
+		!(await consumeJoinQuota(c.env, c.req.raw.headers.get("CF-Connecting-IP")))
+	) {
+		return c.text("Too many joins from this network. Try again later.", 429);
+	}
+
 	// Validate Summoner ID via Riot API
 	// 1. Check if API Key exists (and validation is not disabled)
 	const apiKey = c.env.RIOT_GAME_API_KEY;
 	const validationDisabled = c.env.RIOT_VALIDATION_ENABLED === "false";
 	let validIconUrl = iconUrl;
+	// Recorded on the roster entry. Only the branch that actually asks Riot who
+	// this is may set it — moderation treats an unvalidated name as an unproven
+	// claim, because that is exactly what it is.
+	let identityValidated = false;
 
 	if (validationDisabled) {
 		console.warn(
@@ -157,6 +169,7 @@ app.post("/:id/join", async (c) => {
 		}
 
 		console.log(`[Join] Found Account: ${account.gameName}#${account.tagLine}`);
+		identityValidated = true;
 
 		// 2. Fetch Summoner to get Icon
 		const summoner = await getSummonerByPuuid(account.puuid, apiKey);
@@ -264,7 +277,13 @@ app.post("/:id/join", async (c) => {
 			summonerId,
 			joinedAt: Date.now(),
 			iconUrl: validIconUrl,
+			validated: identityValidated,
 		});
+	} else if (identityValidated) {
+		// Someone who first joined while validation was off, rejoining after it
+		// was switched on. Upgrade the entry rather than leaving them permanently
+		// unverified for the life of the room.
+		existingUser.validated = true;
 	}
 
 	// Persist the session and refresh the TTL on BOTH keys, unconditionally — so
@@ -382,13 +401,16 @@ app.post("/:id/reports", async (c) => {
 	if (!session) {
 		return c.text("Session not found", 404);
 	}
-	const roster = new Set(
-		session.users.map((u) => normalizeRiotId(u.summonerId)),
-	);
-	if (!roster.has(normalizeRiotId(reporter))) {
+	const entryFor = (riotId: string) =>
+		session.users.find(
+			(u) => normalizeRiotId(u.summonerId) === normalizeRiotId(riotId),
+		);
+	const reporterEntry = entryFor(reporter);
+	const reportedEntry = entryFor(reported);
+	if (!reporterEntry) {
 		return c.text("You can only report from a room you joined", 403);
 	}
-	if (!roster.has(normalizeRiotId(reported))) {
+	if (!reportedEntry) {
 		return c.text("That user is not in this room", 403);
 	}
 
@@ -419,6 +441,25 @@ app.post("/:id/reports", async (c) => {
 	// automatic, but nothing about the evidence trail changes. Meant for when a
 	// weaponization pattern shows up faster than a fix can ship.
 	if (c.env.MODERATION_AUTO_BAN_ENABLED === "false") {
+		return c.json({ ok: true });
+	}
+
+	// Roster membership only proves "a real, distinct person" when joining
+	// required proving who you are. With RIOT_VALIDATION_ENABLED="false" — the
+	// current production setting while RSO approval is pending — join accepts any
+	// self-asserted name, so one attacker can walk a room's roster full of
+	// invented reporters plus their victim and clear MIN_DISTINCT_REPORTERS
+	// alone. Requiring both sides to be Riot-verified is what makes the
+	// distinct-reporter threshold mean anything.
+	//
+	// The report is still recorded above and the reporter's client still mutes
+	// locally; only the automatic suspension is withheld. When validation is off
+	// this disables auto-ban wholesale, which is the correct behaviour: the
+	// signal it rests on does not exist.
+	if (!(reporterEntry.validated && reportedEntry.validated)) {
+		console.warn(
+			"[reports] skipping auto-ban: identity not Riot-verified for one or both parties",
+		);
 		return c.json({ ok: true });
 	}
 

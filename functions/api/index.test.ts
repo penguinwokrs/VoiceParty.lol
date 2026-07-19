@@ -687,6 +687,10 @@ describe("Reports & auto-ban (moderation)", () => {
 	let roster: string[] = [];
 	let reportsThisWindow = 0;
 
+	// Whether the staged roster counts as Riot-verified. Auto-ban requires it —
+	// see the "unverified roster" tests below.
+	let rosterValidated = true;
+
 	const stageRoom = () => {
 		mockKV.get.mockImplementation((key: string) => {
 			if (key === `game:${ROOM}`) return Promise.resolve(MEETING);
@@ -695,7 +699,11 @@ describe("Reports & auto-ban (moderation)", () => {
 					JSON.stringify({
 						sessionId: ROOM,
 						meetingId: MEETING,
-						users: roster.map((summonerId) => ({ summonerId, joinedAt: 0 })),
+						users: roster.map((summonerId) => ({
+							summonerId,
+							joinedAt: 0,
+							validated: rosterValidated,
+						})),
 						createdAt: 0,
 					}),
 				);
@@ -711,6 +719,7 @@ describe("Reports & auto-ban (moderation)", () => {
 		stagedRows = [];
 		inserts = [];
 		reportsThisWindow = 0;
+		rosterValidated = true;
 		roster = [
 			"Alice#JP1",
 			"TROLL#JP1",
@@ -841,6 +850,67 @@ describe("Reports & auto-ban (moderation)", () => {
 		});
 		expect(res.status).toBe(429);
 		expect(inserts).toHaveLength(0);
+	});
+
+	// The roster check alone is not identity. With RIOT_VALIDATION_ENABLED
+	// "false" — production today — join accepts any self-asserted name, so one
+	// attacker can seed a room with invented reporters plus the victim and clear
+	// MIN_DISTINCT_REPORTERS unaided. Reproduced end-to-end against a local
+	// `wrangler pages dev`: 4 joins + 3 reports = a 24h ban, no accounts needed.
+	it("does not auto-ban when the roster is not Riot-verified", async () => {
+		rosterValidated = false;
+		const now = Date.now();
+		stagedRows = [
+			{ reporter_riot_id: "r1", reason: "harassment", created_at: now },
+			{ reporter_riot_id: "r2", reason: "hate", created_at: now },
+			{ reporter_riot_id: "r3", reason: "illegal", created_at: now },
+		];
+		const res = await postReport({
+			reporterSummonerId: "reporter3#JP1",
+			reportedSummonerId: "TROLL#JP1",
+			reason: "illegal",
+		});
+
+		// The report is still evidence: recorded, and the client still mutes.
+		expect(res.status).toBe(200);
+		expect(inserts).toHaveLength(1);
+		// Only the automatic suspension is withheld.
+		expect(putKeys().some((k) => k.startsWith("ban:"))).toBe(false);
+	});
+
+	it("does not auto-ban when only one of the two parties is verified", async () => {
+		const now = Date.now();
+		stagedRows = [
+			{ reporter_riot_id: "r1", reason: "harassment", created_at: now },
+			{ reporter_riot_id: "r2", reason: "hate", created_at: now },
+			{ reporter_riot_id: "r3", reason: "illegal", created_at: now },
+		];
+		// Verified reporter, unverified target: an attacker who cannot forge
+		// reporters could otherwise still ban a name nobody has proven.
+		mockKV.get.mockImplementation((key: string) => {
+			if (key === `game:${ROOM}`) return Promise.resolve(MEETING);
+			if (key === `session:${MEETING}`)
+				return Promise.resolve(
+					JSON.stringify({
+						sessionId: ROOM,
+						meetingId: MEETING,
+						users: [
+							{ summonerId: "reporter3#JP1", joinedAt: 0, validated: true },
+							{ summonerId: "TROLL#JP1", joinedAt: 0, validated: false },
+						],
+						createdAt: 0,
+					}),
+				);
+			return Promise.resolve(null);
+		});
+
+		const res = await postReport({
+			reporterSummonerId: "reporter3#JP1",
+			reportedSummonerId: "TROLL#JP1",
+			reason: "illegal",
+		});
+		expect(res.status).toBe(200);
+		expect(putKeys().some((k) => k.startsWith("ban:"))).toBe(false);
 	});
 
 	// Kill switch: keep recording reports (and client-side local mute) while

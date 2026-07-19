@@ -42,7 +42,7 @@ Plain (non-secret) vars live in `wrangler.toml` `[vars]`, not here:
 
 | Var | Effect |
 |-----|--------|
-| `RIOT_VALIDATION_ENABLED` | `"false"` skips the Riot API lookup on join. |
+| `RIOT_VALIDATION_ENABLED` | `"false"` skips the Riot API lookup on join. **This also disables automatic bans**: an unverified name is not an identity, so the distinct-reporter threshold means nothing without it. See [moderation.md](./moderation.md) §1.6. |
 | `MODERATION_AUTO_BAN_ENABLED` | `"false"` stops reports from issuing automatic 24h bans. Reports are still recorded and the reporter's client still mutes locally — only the automatic suspension stops. Emergency switch for a weaponization pattern; see [moderation.md](./moderation.md) §1.5. |
 
 ### Backup / source of truth
