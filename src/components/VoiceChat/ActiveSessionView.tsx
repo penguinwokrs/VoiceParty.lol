@@ -192,6 +192,14 @@ type ActiveSessionViewProps = {
 	activeSpeakers?: Set<string>;
 	selfSpeaking?: boolean;
 	peers?: Peer[];
+	// Idle handling: a lone participant is a billed RealtimeKit connection with
+	// nobody to talk to. `idleWarning` flags the about-to-pause grace window;
+	// `idlePaused` means the connection was dropped to stop the meter (the room
+	// persists — onResume re-joins). onKeepAlive cancels a pending pause.
+	idleWarning?: boolean;
+	idlePaused?: boolean;
+	onResume?: () => void;
+	onKeepAlive?: () => void;
 };
 
 // Small connection dot shown on each participant avatar.
@@ -391,6 +399,10 @@ export const ActiveSessionView = ({
 	activeSpeakers,
 	selfSpeaking = false,
 	peers = [], // Default to empty array
+	idleWarning = false,
+	idlePaused = false,
+	onResume,
+	onKeepAlive,
 }: ActiveSessionViewProps) => {
 	const { t } = useTranslation();
 
@@ -731,8 +743,10 @@ export const ActiveSessionView = ({
 					</Alert>
 				)}
 
-				{/* Terminal disconnect — offer a manual reconnect */}
-				{state === "disconnected" && (
+				{/* Terminal disconnect — offer a manual reconnect. Suppressed while
+				    idle-paused: that is a deliberate pause, not a lost connection, and
+				    has its own panel below with the right wording. */}
+				{state === "disconnected" && !idlePaused && (
 					<Alert
 						severity="error"
 						sx={{ mb: 2 }}
@@ -750,6 +764,45 @@ export const ActiveSessionView = ({
 						}
 					>
 						{t("session.disconnected")}
+					</Alert>
+				)}
+
+				{/* About to pause a solo connection — let an attentive waiter keep it. */}
+				{idleWarning && !idlePaused && (
+					<Alert
+						severity="info"
+						sx={{ mb: 2 }}
+						action={
+							onKeepAlive && (
+								<Button color="inherit" size="small" onClick={onKeepAlive}>
+									{t("session.idleKeep")}
+								</Button>
+							)
+						}
+					>
+						{t("session.idleWarning")}
+					</Alert>
+				)}
+
+				{/* Solo too long: connection dropped to stop the meter, room persists. */}
+				{idlePaused && (
+					<Alert
+						severity="info"
+						sx={{ mb: 2 }}
+						action={
+							onResume && (
+								<Button
+									color="inherit"
+									size="small"
+									startIcon={<RefreshIcon />}
+									onClick={onResume}
+								>
+									{t("session.idleResume")}
+								</Button>
+							)
+						}
+					>
+						{t("session.idlePaused")}
 					</Alert>
 				)}
 

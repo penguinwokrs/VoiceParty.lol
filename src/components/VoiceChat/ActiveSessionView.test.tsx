@@ -112,6 +112,64 @@ describe("ActiveSessionView connection state", () => {
 	});
 });
 
+// A lone participant keeps a billed RealtimeKit connection. The warning lets an
+// attentive waiter keep it; the paused state is what a dropped-to-save-money
+// connection looks like, and must read as resumable, not broken.
+describe("ActiveSessionView idle handling", () => {
+	const renderIdle = (
+		props: Partial<Parameters<typeof ActiveSessionView>[0]>,
+	) =>
+		render(
+			<ActiveSessionView
+				session={session}
+				summonerId="Ashe#JP1"
+				isConnected={false}
+				connectionState="disconnected"
+				isMicMuted={false}
+				loading={false}
+				error=""
+				onErrorClose={noop}
+				onToggleMic={noop}
+				onLeave={noop}
+				peers={[]}
+				{...props}
+			/>,
+		);
+
+	it("offers to keep waiting during the warning window", () => {
+		const onKeepAlive = vi.fn();
+		renderIdle({
+			isConnected: true,
+			connectionState: "connected",
+			idleWarning: true,
+			onKeepAlive,
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Keep waiting" }));
+		expect(onKeepAlive).toHaveBeenCalledTimes(1);
+	});
+
+	it("shows a resumable paused state and calls onResume", () => {
+		const onResume = vi.fn();
+		renderIdle({ idlePaused: true, onResume });
+		expect(screen.getByText(/paused/i)).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "Resume call" }));
+		expect(onResume).toHaveBeenCalledTimes(1);
+	});
+
+	// When paused, the connection state is "disconnected" — but that is a
+	// deliberate pause, so the generic "connection lost / Reconnect" alert must
+	// not also appear (only the idle panel, with its own wording).
+	it("suppresses the generic disconnected alert while paused", () => {
+		renderIdle({ idlePaused: true, onResume: noop, onReconnect: noop });
+		expect(
+			screen.queryByRole("button", { name: "Reconnect" }),
+		).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Resume call" }),
+		).toBeInTheDocument();
+	});
+});
+
 // An empty room is the moment the invite either gets sent or doesn't, so the
 // share affordance changes shape based on whether anyone else has arrived.
 describe("ActiveSessionView invite", () => {

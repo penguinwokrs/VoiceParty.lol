@@ -18,6 +18,14 @@ import { useRealtime } from "./useRealtime";
 // alphabet is far past brute force, and stays short enough to paste anywhere.
 const ROOM_ID_LENGTH = 12;
 
+// A lone participant is a live RealtimeKit connection billed by the minute
+// (participant-minutes) with nobody to talk to. After a spell alone we warn,
+// then drop the connection to stop the meter — the room stays and one tap
+// rejoins. Anyone else being present cancels it. Tuned so an attentive waiter
+// (who dismisses the warning) is never paused; only an abandoned tab is.
+const WARN_AFTER_ALONE_MS = 4 * 60 * 1000;
+const PAUSE_AFTER_ALONE_MS = 5 * 60 * 1000;
+
 export const VoiceChat = () => {
 	const { t, i18n } = useTranslation();
 	const lang = (i18n.resolvedLanguage ?? "en") as LanguageCode;
@@ -48,6 +56,11 @@ export const VoiceChat = () => {
 	const [currentSession, setCurrentSession] = useState<Session | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
+	// Idle handling for a solo connection (see WARN_/PAUSE_AFTER_ALONE_MS).
+	const [idleWarning, setIdleWarning] = useState(false);
+	const [idlePaused, setIdlePaused] = useState(false);
+	// Bumped to re-arm the alone timers when the user says "keep waiting".
+	const [keepAliveNonce, setKeepAliveNonce] = useState(0);
 	// Whether the player pressed Join. A ref, not state: it gates an effect that
 	// must see the new value on the very next run, without a re-render of its own.
 	const joinRequested = useRef(false);
@@ -182,11 +195,57 @@ export const VoiceChat = () => {
 		}
 	};
 
+	// Watch a live, solo connection and pause it before it wastes many minutes.
+	// `peers` is the live SDK roster (who is actually connected), not the
+	// append-only KV list — so this reflects real presence. Anyone joining, or
+	// the connection ending for any other reason, cancels the timers.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: keepAliveNonce is the re-arm signal
+	useEffect(() => {
+		if (!isConnected || peers.length > 0 || idlePaused) {
+			setIdleWarning(false);
+			return;
+		}
+		const warnTimer = setTimeout(
+			() => setIdleWarning(true),
+			WARN_AFTER_ALONE_MS,
+		);
+		const pauseTimer = setTimeout(() => {
+			setIdleWarning(false);
+			setIdlePaused(true);
+			// leave() drops the RealtimeKit connection (stops billing) without
+			// navigating away, so the room view stays and resume can re-join.
+			leave().catch((e) => console.error("[idle] pause failed:", e));
+		}, PAUSE_AFTER_ALONE_MS);
+		return () => {
+			clearTimeout(warnTimer);
+			clearTimeout(pauseTimer);
+		};
+	}, [isConnected, peers.length, idlePaused, keepAliveNonce, leave]);
+
+	// "Keep waiting" from the warning: dismiss it and restart the alone timers.
+	const handleKeepAlive = () => {
+		setIdleWarning(false);
+		setKeepAliveNonce((n) => n + 1);
+	};
+
+	// Resume from an idle pause: re-join the same room.
+	const handleResume = async () => {
+		setIdlePaused(false);
+		setError("");
+		try {
+			await reconnect();
+		} catch {
+			setError(t("errors.reconnectFailed"));
+		}
+	};
+
 	const handleLeave = async () => {
 		await leave();
 		setCurrentSession(null);
 		// Leaving ends the intent to be in a room, and the next one is a new room.
 		joinRequested.current = false;
+		setIdlePaused(false);
+		setIdleWarning(false);
 		setSessionId(nanoid(ROOM_ID_LENGTH));
 		navigate("/");
 	};
@@ -222,6 +281,10 @@ export const VoiceChat = () => {
 				activeSpeakers={activeSpeakers}
 				selfSpeaking={selfSpeaking}
 				peers={peers}
+				idleWarning={idleWarning}
+				idlePaused={idlePaused}
+				onResume={handleResume}
+				onKeepAlive={handleKeepAlive}
 			/>
 		);
 	}
