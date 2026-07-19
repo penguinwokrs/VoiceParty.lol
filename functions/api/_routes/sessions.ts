@@ -94,9 +94,11 @@ app.post("/", async (c) => {
 
 app.post("/:id/join", async (c) => {
 	const sessionId = c.req.param("id");
-	const { summonerId, iconUrl } = await c.req.json<{
+	const { summonerId, iconUrl, region } = await c.req.json<{
 		summonerId: string;
 		iconUrl?: string;
+		/** Riot platform the player picked (e.g. "na1"); routes the Riot lookups. */
+		region?: string;
 	}>();
 
 	if (!summonerId) {
@@ -128,7 +130,7 @@ app.post("/:id/join", async (c) => {
 	} else if (apiKey) {
 		// Strict validation requested
 		console.log(`[Join] Validating SummonerID: ${summonerId}`);
-		const account = await getAccountByRiotId(summonerId, apiKey);
+		const account = await getAccountByRiotId(summonerId, apiKey, region);
 
 		if (!account) {
 			return c.text("Summoner not found (Riot ID invalid)", 404);
@@ -137,7 +139,11 @@ app.post("/:id/join", async (c) => {
 		console.log(`[Join] Found Account: ${account.gameName}#${account.tagLine}`);
 
 		// 2. Fetch Summoner to get Icon
-		const summoner = await getSummonerByPuuid(account.puuid, apiKey);
+		// Icon lookup is best-effort: a miss (unknown platform, 404, outage) leaves
+		// the player without an avatar but must never block them from talking.
+		const summoner = region
+			? await getSummonerByPuuid(account.puuid, apiKey, region)
+			: null;
 		if (summoner) {
 			validIconUrl = await getProfileIconUrl(summoner.profileIconId);
 			console.log(`[Join] Fetched Icon URL: ${validIconUrl}`);
