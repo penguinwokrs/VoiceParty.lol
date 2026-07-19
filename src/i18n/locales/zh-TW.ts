@@ -130,6 +130,10 @@ export const zhTW: PartialTranslationResources = {
 		reconnectingHint: "正在等待網路恢復，請稍候。",
 		reconnect: "重新連線",
 		share: "複製連結",
+		shareOnLine: "用 LINE 傳送",
+		inviteTitle: "先把連結傳出去",
+		inviteBody:
+			"目前這個通話只有你。把連結傳給對方，他不用安裝也不用註冊就能加入。",
 		shareOnX: "分享到 X",
 		linkCopied: "已複製連結",
 		shareText: "🎮 我正在 VoiceCrew 開語音一起玩！用這條連結加入我吧 👉",

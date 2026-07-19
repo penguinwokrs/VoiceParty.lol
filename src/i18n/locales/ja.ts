@@ -121,6 +121,10 @@ export const ja = {
 			"ネットワークの復帰を待っています。そのままお待ちください。",
 		reconnect: "再接続",
 		share: "リンクをコピー",
+		shareOnLine: "LINE で送る",
+		inviteTitle: "まずはリンクを送りましょう",
+		inviteBody:
+			"この通話にはまだあなただけです。リンクを送れば、相手はインストールも登録もなしで合流できます。",
 		shareOnX: "X で共有",
 		linkCopied: "リンクをコピーしました",
 		shareText:

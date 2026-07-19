@@ -121,6 +121,10 @@ export const ko: TranslationResources = {
 			"네트워크 복구를 기다리고 있습니다. 잠시만 기다려 주세요.",
 		reconnect: "다시 연결",
 		share: "링크 복사",
+		shareOnLine: "LINE으로 보내기",
+		inviteTitle: "먼저 링크를 보내세요",
+		inviteBody:
+			"아직 이 통화에는 당신뿐입니다. 링크를 보내면 상대는 설치도 가입도 없이 합류할 수 있습니다.",
 		shareOnX: "X에 공유",
 		linkCopied: "링크를 복사했습니다",
 		shareText:

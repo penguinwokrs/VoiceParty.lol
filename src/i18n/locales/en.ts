@@ -120,6 +120,10 @@ export const en: TranslationResources = {
 		reconnectingHint: "Waiting for the network to come back. Hang tight.",
 		reconnect: "Reconnect",
 		share: "Copy link",
+		shareOnLine: "Share on LINE",
+		inviteTitle: "Send the link first",
+		inviteBody:
+			"You are the only one here so far. Whoever you send this to can join with no install and no sign-up.",
 		shareOnX: "Share on X",
 		linkCopied: "Link copied",
 		shareText:
