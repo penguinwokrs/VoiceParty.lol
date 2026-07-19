@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	inviteMetaFor,
 	isSessionRoomPath,
 	langFromPath,
 	localize,
@@ -80,5 +81,43 @@ describe("language routing", () => {
 		// English is served without a prefix — it is the canonical form.
 		expect(localize("/join/jp1/abc", "en")).toBe("/join/jp1/abc");
 		expect(localize("/", "ja")).toBe("/ja");
+	});
+});
+
+// Which invite wording a shared link gets is a conversion decision, and it is
+// made from a query parameter anyone can edit — so the default matters more
+// than the happy path.
+describe("invite preview copy", () => {
+	it("claims a personal invitation only for links our own buttons minted", () => {
+		for (const src of ["copy", "line", "qr"]) {
+			expect(inviteMetaFor("ja", src).title).toContain("招待されています");
+			expect(inviteMetaFor("en", src).title).toContain("invited");
+		}
+	});
+
+	it("stays neutral for links posted where anyone can read them", () => {
+		for (const src of ["x", "lfg", "stream"]) {
+			expect(inviteMetaFor("ja", src).title).not.toContain("招待されています");
+			expect(inviteMetaFor("en", src).title).not.toContain("invited");
+		}
+	});
+
+	// Telling a stranger they were personally invited is the worse mistake of
+	// the two, so an unlabelled link must never make that claim.
+	it("defaults to neutral when the link carries no channel", () => {
+		for (const src of ["direct", "other", ""]) {
+			expect(inviteMetaFor("ja", src).title).not.toContain("招待されています");
+			expect(inviteMetaFor("en", src).title).not.toContain("invited");
+		}
+	});
+
+	it("covers every shipped language in both variants", () => {
+		for (const lang of ["en", "ja", "ko", "zh-TW"] as const) {
+			for (const src of ["copy", "x"]) {
+				const meta = inviteMetaFor(lang, src);
+				expect(meta.title.length).toBeGreaterThan(0);
+				expect(meta.description.length).toBeGreaterThan(0);
+			}
+		}
 	});
 });

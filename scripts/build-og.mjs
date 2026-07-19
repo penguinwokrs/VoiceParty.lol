@@ -47,9 +47,16 @@ const T = {
 // ---------------------------------------------------------------- content
 // Mirrors landing.* in src/i18n/locales/. Kept literal (not imported) so this
 // script stays runnable without a TS toolchain.
+//
+// Two sets of cards:
+//   - the landing cards, for links to the site itself
+//   - the invite cards, for /join/<room> links, where the reader is deciding
+//     whether to walk into a room rather than whether to try a product
+// `locale` picks the font stack and sizing; `id` only has to be unique.
 const LOCALES = [
 	{
 		id: "en",
+		locale: "en",
 		file: "og-image.png",
 		lang: "en",
 		headline: "The call before you commit.",
@@ -58,6 +65,7 @@ const LOCALES = [
 	},
 	{
 		id: "ja",
+		locale: "ja",
 		file: "og-image-ja.png",
 		lang: "ja",
 		headline: "合流を決める、その前の一声。",
@@ -66,6 +74,7 @@ const LOCALES = [
 	},
 	{
 		id: "ko",
+		locale: "ko",
 		file: "og-image-ko.png",
 		lang: "ko",
 		headline: "합류를 정하기 전, 그 한마디.",
@@ -78,6 +87,7 @@ const LOCALES = [
 	},
 	{
 		id: "zh-TW",
+		locale: "zh-TW",
 		file: "og-image-zh-TW.png",
 		lang: "zh-Hant-TW",
 		headline: "決定組隊前，先聽一句。",
@@ -85,6 +95,52 @@ const LOCALES = [
 		trust: ["免下載", "瀏覽器就能用", "路人保持靜音"],
 	},
 ];
+
+// Invite cards, shown when a /join/<room> link is shared. The reader here has
+// been handed a room, not pitched a product, so the copy answers "what happens
+// if I tap this" rather than "what is this service". Personal-vs-public wording
+// lives in the meta tags (functions/_middleware.ts); one card serves both.
+const INVITES = [
+	{
+		id: "en-invite",
+		locale: "en",
+		file: "og-invite.png",
+		lang: "en",
+		headline: "A voice room is waiting.",
+		lead: "Open the link, enter your Riot ID, and you're in. No install, no sign-up.",
+		trust: ["No download", "Talking in a minute", "Up to 5 people"],
+	},
+	{
+		id: "ja-invite",
+		locale: "ja",
+		file: "og-invite-ja.png",
+		lang: "ja",
+		headline: "通話ルームが開いています。",
+		lead: "リンクを開いて Riot ID を入れるだけ。インストールも登録も要りません。",
+		trust: ["ダウンロード不要", "1分で通話開始", "定員5人"],
+	},
+	{
+		id: "ko-invite",
+		locale: "ko",
+		file: "og-invite-ko.png",
+		lang: "ko",
+		headline: "음성 대화방이 열려 있습니다.",
+		lead: "링크를 열고 Riot ID만 입력하면 끝. 설치도 가입도 필요 없습니다.",
+		trust: ["다운로드 불필요", "1분이면 통화 시작", "최대 5명"],
+	},
+	{
+		id: "zh-TW-invite",
+		locale: "zh-TW",
+		file: "og-invite-zh-TW.png",
+		lang: "zh-Hant-TW",
+		headline: "語音房已經開好了。",
+		lead: "打開連結、輸入 Riot ID 就能加入。免安裝、免註冊。",
+		trust: ["免下載", "一分鐘就能開講", "最多 5 人"],
+	},
+];
+
+// Every card the script renders.
+const CARDS = [...LOCALES, ...INVITES];
 
 // The mark, inlined — same geometry as src/components/BrandMark.tsx.
 const MARK = `
@@ -131,7 +187,7 @@ ${FONT_CSS.map((h) => `<link rel="stylesheet" href="${h}">`).join("\n")}
       radial-gradient(90% 130% at 100% 0%, color-mix(in srgb, ${T.ember} 13%, transparent), transparent 58%),
       linear-gradient(180deg, ${T.bgTop} 0%, ${T.bgBase} 100%);
     color: ${T.textPrimary};
-    font-family: 'Inter', ${CJK[L.id]}, system-ui, sans-serif;
+    font-family: 'Inter', ${CJK[L.locale]}, system-ui, sans-serif;
     position: relative;
     overflow: hidden;
   }
@@ -151,14 +207,14 @@ ${FONT_CSS.map((h) => `<link rel="stylesheet" href="${h}">`).join("\n")}
   }
   .brand { display: flex; align-items: center; gap: 18px; }
   .wordmark {
-    font-family: 'Space Grotesk', ${CJK[L.id]}, sans-serif;
+    font-family: 'Space Grotesk', ${CJK[L.locale]}, sans-serif;
     font-weight: 700; font-size: 40px; letter-spacing: 0.06em;
     text-transform: uppercase;
   }
   h1 {
-    font-family: 'Space Grotesk', ${CJK[L.id]}, sans-serif;
+    font-family: 'Space Grotesk', ${CJK[L.locale]}, sans-serif;
     font-weight: 700; letter-spacing: -0.022em; line-height: 1.06;
-    font-size: ${L.id === "en" ? 86 : 74}px;
+    font-size: ${L.locale === "en" ? 86 : 74}px;
     max-width: 22ch; text-wrap: balance;
     margin-top: 22px;
   }
@@ -213,7 +269,7 @@ const MIME = {
 const server = createServer((req, res) => {
 	const path = decodeURIComponent(req.url.split("?")[0]);
 
-	const card = LOCALES.find((L) => path === `/og/${L.id}`);
+	const card = CARDS.find((L) => path === `/og/${L.id}`);
 	if (card) {
 		res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
 		res.end(html(card));
@@ -264,7 +320,7 @@ try {
 	const page = await browser.newPage();
 	await page.setViewport({ width: 1200, height: 630, deviceScaleFactor: 1 });
 
-	for (const L of LOCALES) {
+	for (const L of CARDS) {
 		await page.goto(`http://127.0.0.1:${port}/og/${L.id}`, {
 			waitUntil: "networkidle0",
 		});

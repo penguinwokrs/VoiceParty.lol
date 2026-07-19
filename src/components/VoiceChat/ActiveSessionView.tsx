@@ -447,12 +447,17 @@ export const ActiveSessionView = ({
 	// The link carries the region: players on another platform can't join this
 	// game at all, so an invite that omits it is an invite to a dead end. Left
 	// language-neutral on purpose — the recipient gets their own language.
-	const shareUrl =
+	const roomUrl =
 		typeof window !== "undefined"
 			? `${window.location.origin}${
 					region ? `/join/${encodeURIComponent(region)}` : "/join"
 				}/${encodeURIComponent(session.sessionId)}`
 			: "";
+	// Each button stamps the channel it is. Two things read it: the funnel
+	// metrics (docs/analytics.md), and the preview card the recipient sees —
+	// a link copied for one person says "you've been invited", one posted to a
+	// public timeline stays neutral (see INVITE_META in functions/_middleware).
+	const shareUrl = (src: string) => (roomUrl ? `${roomUrl}?src=${src}` : "");
 	const [copiedToast, setCopiedToast] = useState(false);
 	const copyLink = () => {
 		// clipboard is undefined in insecure contexts / older browsers — guard so
@@ -462,14 +467,14 @@ export const ActiveSessionView = ({
 			return;
 		}
 		navigator.clipboard
-			.writeText(shareUrl)
+			.writeText(shareUrl("copy"))
 			.then(() => setCopiedToast(true))
 			.catch((e) => console.error("[share] copy failed:", e));
 	};
 	const shareToX = () => {
 		const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
 			t("session.shareText"),
-		)}&url=${encodeURIComponent(shareUrl)}`;
+		)}&url=${encodeURIComponent(shareUrl("x"))}`;
 		window.open(intent, "_blank", "noopener,noreferrer");
 	};
 
