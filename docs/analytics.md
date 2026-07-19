@@ -6,6 +6,32 @@
 
 - 最終更新日: 2026-07-19
 
+## ⚠️ 現在この計測は動いていない（バインディング未設定）
+
+`wrangler.toml` の `[[analytics_engine_datasets]]` は**コメントアウトしてある**。
+有効にすると Pages の **deploy 段が失敗する**（build 段は成功する）。
+
+- Analytics Engine は **Workers Free プランに含まれない**。Free に含まれるのは
+  Workers / Pages Functions / Workers KV / Hyperdrive のみ。
+- このアカウントの課金は `calls_paid`（RealtimeKit）と `r2_paid` だけで、
+  **Workers Paid には未加入**。
+- 実際、このブロックを含むブランチは 3 本ともデプロイに失敗し、含まないブランチは
+  2 本とも成功した。
+
+コードは**バインディング不在で no-op** になるよう書いてあるので（`writeFunnelEvent`）、
+この状態でも何も壊れない。単にデータが 1 件も入らないだけである。
+
+### 計測を有効にする
+
+1. Workers Paid に加入する（最低 $5/月）。
+2. `wrangler.toml` の `[[analytics_engine_datasets]]` のコメントを外す。
+3. デプロイする。
+
+コードの変更は不要。書き込みは初回で自動的にデータセットを作る。
+
+**有効にするまでは、この文書のクエリはすべて空を返す。** 施策の効果を数字で語る
+前に、まずここが有効になっているかを確認すること。
+
 ## なぜ Analytics Engine なのか
 
 KV のカウンタは**採用しない**。KV にアトミックなインクリメントが無いため、同時

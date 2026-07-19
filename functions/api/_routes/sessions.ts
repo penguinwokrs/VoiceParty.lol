@@ -218,7 +218,12 @@ app.post("/:id/join", async (c) => {
 	// Which side of the funnel this join is: following someone's invite, or
 	// minting the room yourself. The ratio between them is the host-conversion
 	// number the post-call work is meant to move.
-	const isNewRoom = !(sessionData && meetingId);
+	//
+	// Keyed off the ORIGINAL mapping, not the post-reset `meetingId`. A room
+	// whose stale mock meeting had to be recreated (the mock/real branch above
+	// nulls `meetingId`) still had someone share its ID — counting that as a
+	// freshly minted room would inflate host conversion.
+	const isNewRoom = !mapping;
 
 	if (sessionData && meetingId) {
 		session = JSON.parse(sessionData);

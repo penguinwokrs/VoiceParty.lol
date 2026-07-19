@@ -234,6 +234,47 @@ describe("VoiceChat", () => {
 			await waitFor(() => expect(writeText).toHaveBeenCalled());
 			expect(writeText.mock.calls[0][0]).toContain("?src=copy");
 		});
+
+		// Same reason as the copy test, opposite outcome: X is a public timeline,
+		// so its tag is what keeps the preview from claiming a personal invite.
+		it("stamps the X share link with its own channel", async () => {
+			vi.spyOn(Storage.prototype, "getItem").mockImplementation((k) =>
+				k === "vp_age_ok" ? "true" : null,
+			);
+			const open = vi.fn();
+			vi.stubGlobal("open", open);
+			global.fetch = vi.fn().mockResolvedValue({
+				ok: true,
+				text: () => Promise.resolve(""),
+				json: () =>
+					Promise.resolve({
+						session: {
+							sessionId: "session-123",
+							users: [{ summonerId: "test-user", joinedAt: Date.now() }],
+							createdAt: Date.now(),
+						},
+						realtime: { token: "mock-token", meetingId: "mock-id" },
+					}),
+			});
+
+			renderAt("/join/kr/session-123");
+			fireEvent.change(screen.getByLabelText("Riot ID"), {
+				target: { value: "test-user" },
+			});
+			fireEvent.click(screen.getByRole("button", { name: "Join Game" }));
+			await waitFor(() => {
+				expect(screen.getByText(/Session:.*session-123/)).toBeInTheDocument();
+			});
+
+			fireEvent.click(screen.getByRole("button", { name: /Share on X/ }));
+
+			expect(open).toHaveBeenCalledTimes(1);
+			const intent = open.mock.calls[0][0] as string;
+			expect(decodeURIComponent(intent)).toContain(
+				"/join/kr/session-123?src=x",
+			);
+			vi.unstubAllGlobals();
+		});
 	});
 
 	// Regression: a returning player has a stored Riot ID, which used to be

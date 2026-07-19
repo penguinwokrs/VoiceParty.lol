@@ -146,15 +146,24 @@ const INVITE_IMAGE: Record<Lang, string> = {
  */
 const PERSONAL_SOURCES = new Set(["copy", "line", "qr"]);
 
+/**
+ * Preview copy for a shared room: the personal wording when our own share
+ * button minted the link for one person, the neutral wording otherwise.
+ * `open` is the default — see INVITE_META for why claiming a stranger was
+ * personally invited is the worse of the two mistakes.
+ */
+export const inviteMetaFor = (lang: Lang, src: string): InviteMeta =>
+	INVITE_META[lang][PERSONAL_SOURCES.has(src) ? "personal" : "open"];
+
 const isLang = (value: string | undefined): value is Lang =>
 	!!value && (LANGS as readonly string[]).includes(value);
 
-const langFromPath = (pathname: string): Lang => {
+export const langFromPath = (pathname: string): Lang => {
 	const seg = pathname.split("/")[1];
 	return isLang(seg) && seg !== DEFAULT_LANG ? seg : DEFAULT_LANG;
 };
 
-const stripLang = (pathname: string): string => {
+export const stripLang = (pathname: string): string => {
 	const parts = pathname.split("/");
 	if (isLang(parts[1]) && parts[1] !== DEFAULT_LANG) {
 		parts.splice(1, 1);
@@ -163,10 +172,30 @@ const stripLang = (pathname: string): string => {
 	return rest === "" ? "/" : rest;
 };
 
-const localize = (base: string, lang: Lang): string => {
+export const localize = (base: string, lang: Lang): string => {
 	if (lang === DEFAULT_LANG) return base;
 	return base === "/" ? `/${lang}` : `/${lang}${base}`;
 };
+
+/**
+ * Is this path a shareable room? Shared rooms get invite treatment and must not
+ * be indexed.
+ *
+ * Matches the region-qualified form too (/join/<region>/<id>, which is what the
+ * app actually mints — see roomPath in components/VoiceChat). The pattern this
+ * replaced ended at a single segment, so region rooms were left indexable.
+ * Takes a lang-stripped path (see stripLang).
+ */
+export const isSessionRoomPath = (basePath: string): boolean =>
+	/^\/join\/[^/]+/.test(basePath);
+
+/** Which part of the funnel a page view belongs to. */
+export const pageDetail = (basePath: string): string =>
+	isSessionRoomPath(basePath)
+		? "invite"
+		: basePath === "/"
+			? "landing"
+			: "other";
 
 const escapeAttr = (value: string): string =>
 	value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
@@ -212,19 +241,13 @@ export const onRequest: PagesFunction<Bindings> = async (context) => {
 	const basePath = stripLang(url.pathname);
 	const { origin } = url;
 	const selfUrl = origin + localize(basePath, lang);
-	// Session rooms are shareable but should not be indexed. Matches the
-	// region-qualified form too (/join/<region>/<id>, which is what the app
-	// actually mints — see roomPath in components/VoiceChat): the previous
-	// pattern ended at a single segment, so those rooms were left indexable.
-	const isSessionRoom = /^\/join\/[^/]+/.test(basePath);
+	const isSessionRoom = isSessionRoomPath(basePath);
 	const src = sanitizeSource(url.searchParams.get("src"));
 
 	// A shared room gets invite copy and the invite card; everything else keeps
 	// the landing pitch. Which invite wording depends on how the link was minted
 	// — see INVITE_META.
-	const invite = isSessionRoom
-		? INVITE_META[lang][PERSONAL_SOURCES.has(src) ? "personal" : "open"]
-		: null;
+	const invite = isSessionRoom ? inviteMetaFor(lang, src) : null;
 	const title = invite?.title ?? meta.title;
 	const description = invite?.description ?? meta.description;
 	const ogImage = origin + (isSessionRoom ? INVITE_IMAGE[lang] : meta.ogImage);
@@ -239,7 +262,7 @@ export const onRequest: PagesFunction<Bindings> = async (context) => {
 		lang,
 		country: context.request.headers.get("CF-IPCountry") ?? "XX",
 		visitor: classifyVisitor(context.request.headers.get("User-Agent")),
-		detail: isSessionRoom ? "invite" : basePath === "/" ? "landing" : "other",
+		detail: pageDetail(basePath),
 	});
 
 	const alternates = [...LANGS]
