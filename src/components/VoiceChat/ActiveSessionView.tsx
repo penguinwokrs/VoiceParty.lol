@@ -31,7 +31,7 @@ import {
 	Tooltip,
 	Typography,
 } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ConnectionState, Session } from "./types";
 
@@ -101,6 +101,43 @@ const XLogo = () => (
 		<title>X</title>
 		<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
 	</svg>
+);
+
+/**
+ * One row of share buttons. Rendered in two places — inside the invite panel
+ * while the room is empty, and on its own once someone else has joined — so a
+ * new share target is added in one place, not two.
+ *
+ * `leadWith` is the first button's variant: the empty room makes copying the
+ * primary action, the occupied room keeps every option quiet.
+ */
+type ShareTarget = {
+	key: string;
+	label: string;
+	icon: ReactNode;
+	onClick: () => void;
+};
+
+const ShareButtons = ({
+	targets,
+	leadWith,
+}: {
+	targets: ShareTarget[];
+	leadWith: "contained" | "outlined";
+}) => (
+	<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+		{targets.map((target, i) => (
+			<Button
+				key={target.key}
+				size="small"
+				variant={i === 0 ? leadWith : "outlined"}
+				startIcon={target.icon}
+				onClick={target.onClick}
+			>
+				{target.label}
+			</Button>
+		))}
+	</Stack>
 );
 
 // Keyframes reused by the connection indicators (defined once on the Card root).
@@ -503,9 +540,32 @@ export const ActiveSessionView = ({
 		window.open(intent, "_blank", "noopener,noreferrer");
 	};
 
+	const shareTargets: ShareTarget[] = [
+		{
+			key: "copy",
+			label: t("session.share"),
+			icon: <ContentCopyIcon />,
+			onClick: copyLink,
+		},
+		{
+			key: "line",
+			label: t("session.shareOnLine"),
+			icon: <LineLogo />,
+			onClick: shareToLine,
+		},
+		{
+			key: "x",
+			label: t("session.shareOnX"),
+			icon: <XLogo />,
+			onClick: shareToX,
+		},
+	];
+
 	// Nobody else has joined yet, so the only thing worth doing is sending the
-	// link. The compact button row below is easy to skim past when it is the
-	// difference between a call and an empty room.
+	// link. The compact button row is easy to skim past when it is the
+	// difference between a call and an empty room. `<= 1` rather than `=== 1`
+	// only because an empty roster should read the same way; you are always on
+	// it in practice.
 	const isAlone = session.users.length <= 1;
 
 	// Local user's lifecycle. Falls back to the boolean for older callers/tests.
@@ -616,60 +676,12 @@ export const ActiveSessionView = ({
 						<Typography variant="body2" color="text.secondary" mb={1.5}>
 							{t("session.inviteBody")}
 						</Typography>
-						<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-							<Button
-								size="small"
-								variant="contained"
-								startIcon={<ContentCopyIcon />}
-								onClick={copyLink}
-							>
-								{t("session.share")}
-							</Button>
-							<Button
-								size="small"
-								variant="outlined"
-								startIcon={<LineLogo />}
-								onClick={shareToLine}
-							>
-								{t("session.shareOnLine")}
-							</Button>
-							<Button
-								size="small"
-								variant="outlined"
-								startIcon={<XLogo />}
-								onClick={shareToX}
-							>
-								{t("session.shareOnX")}
-							</Button>
-						</Stack>
+						<ShareButtons targets={shareTargets} leadWith="contained" />
 					</Box>
 				) : (
-					<Stack direction="row" spacing={1} mb={2} flexWrap="wrap" useFlexGap>
-						<Button
-							size="small"
-							variant="outlined"
-							startIcon={<ContentCopyIcon />}
-							onClick={copyLink}
-						>
-							{t("session.share")}
-						</Button>
-						<Button
-							size="small"
-							variant="outlined"
-							startIcon={<LineLogo />}
-							onClick={shareToLine}
-						>
-							{t("session.shareOnLine")}
-						</Button>
-						<Button
-							size="small"
-							variant="outlined"
-							startIcon={<XLogo />}
-							onClick={shareToX}
-						>
-							{t("session.shareOnX")}
-						</Button>
-					</Stack>
+					<Box mb={2}>
+						<ShareButtons targets={shareTargets} leadWith="outlined" />
+					</Box>
 				)}
 
 				{/* Reconnection phase — prominent, animated */}
