@@ -12,6 +12,10 @@ export type Bindings = {
 	REALTIME_API_KEY: string;
 	REALTIME_KIT_APP_ID: string;
 	USE_MOCK_REALTIME: string;
+	// Set to "false" to stop reports from issuing automatic bans (they are still
+	// recorded, and the client still mutes locally). Any other value, including
+	// unset, keeps the automatic suspension on.
+	MODERATION_AUTO_BAN_ENABLED?: string;
 };
 
 /** One row of the permanent report store, as read by the auto-ban aggregator. */
@@ -25,6 +29,16 @@ export type User = {
 	summonerId: string;
 	joinedAt: number;
 	iconUrl?: string;
+	/**
+	 * Whether the Riot API actually confirmed this identity when they joined.
+	 * False/absent means the name is self-asserted — either validation was off
+	 * (RIOT_VALIDATION_ENABLED) or no API key was configured.
+	 *
+	 * Moderation reads this: being on a roster only proves a real, distinct
+	 * person when joining required proving who you are. Absent that, one
+	 * attacker can populate a roster with as many invented names as they like.
+	 */
+	validated?: boolean;
 };
 
 export type Session = {

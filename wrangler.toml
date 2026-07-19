@@ -26,3 +26,8 @@ migrations_dir = "migrations"
 # Set to "true" or remove this to re-enable validation.
 [vars]
 RIOT_VALIDATION_ENABLED = "false"
+
+# Emergency switch for moderation. Uncomment to stop reports from issuing
+# automatic 24h bans; reports are still recorded and the reporter's client still
+# mutes locally. See docs/moderation.md §1.5.
+# MODERATION_AUTO_BAN_ENABLED = "false"

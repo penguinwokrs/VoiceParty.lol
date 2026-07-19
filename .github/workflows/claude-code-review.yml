@@ -21,8 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
-      issues: read
+      # write が必要: OIDC で発行される App トークンはこの permissions を継承するため、
+      # read のままだとレビュー本体・インラインコメントの投稿が権限拒否される。
+      pull-requests: write
+      issues: write
       id-token: write
 
     steps:
